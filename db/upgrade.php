@@ -17,7 +17,7 @@
 /**
  * Plugin upgrade steps are defined here.
  *
- * @package     local_sits_grade_push
+ * @package     local_sitsgradepush
  * @category    upgrade
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -25,20 +25,14 @@
  */
 
 /**
- * Execute local_sits_grade_push upgrade from the given old version.
+ * Execute local_sitsgradepush upgrade from the given old version.
  *
  * @param int $oldversion
  * @return bool
  */
-function xmldb_local_sits_grade_push_upgrade($oldversion) {
+function xmldb_local_sitsgradepush_upgrade($oldversion) {
     global $DB;
-
     $dbman = $DB->get_manager();
-
-    // For further information please read {@link https://docs.moodle.org/dev/Upgrade_API}.
-    //
-    // You will also have to create the db/install.xml file by using the XMLDB Editor.
-    // Documentation for the XMLDB Editor can be found at {@link https://docs.moodle.org/dev/XMLDB_editor}.
 
     return true;
 }

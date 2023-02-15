@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/sitsgradepush/db" VERSION="20230215" COMMENT="XMLDB file for Moodle local/sits_grade_push"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_sitsgradepush_mapping" COMMENT="Assessment to SITS component grade mapping">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Course module instance id"/>
+        <FIELD NAME="moduletypeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Module type id"/>
+        <FIELD NAME="componentgradeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Id for SITS component grade in local_sits_component_grades"/>
+        <FIELD NAME="reassessment" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="componentgradeid" TYPE="foreign-unique" FIELDS="componentgradeid" REFTABLE="local_sits_component_grades" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_sitsgradepush_mab" COMMENT="Corresponding to SITS CAM_MAB table">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="modcode" TYPE="char" LENGTH="12" NOTNULL="true" SEQUENCE="false" COMMENT="SITS module code"/>
+        <FIELD NAME="modocc" TYPE="char" LENGTH="6" NOTNULL="true" SEQUENCE="false" COMMENT="Module Occurrence"/>
+        <FIELD NAME="academicyear" TYPE="char" LENGTH="12" NOTNULL="true" SEQUENCE="false" COMMENT="Academic Year (AYR) code"/>
+        <FIELD NAME="periodslotcode" TYPE="char" LENGTH="6" NOTNULL="true" SEQUENCE="false" COMMENT="Period Slot (PSL) code"/>
+        <FIELD NAME="mapcode" TYPE="char" LENGTH="12" NOTNULL="true" SEQUENCE="false" COMMENT="Module Assessment Pattern"/>
+        <FIELD NAME="mabseq" TYPE="char" LENGTH="3" NOTNULL="true" SEQUENCE="false" COMMENT="MAB Sequence number"/>
+        <FIELD NAME="astcode" TYPE="char" LENGTH="6" NOTNULL="true" SEQUENCE="false" COMMENT="Assessment Type code"/>
+        <FIELD NAME="mabperc" TYPE="int" LENGTH="4" NOTNULL="true" SEQUENCE="false" COMMENT="Percentage/Proportion"/>
+        <FIELD NAME="mabname" TYPE="char" LENGTH="120" NOTNULL="true" SEQUENCE="false" COMMENT="Module assessment body full name"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idxcomponentgrade" UNIQUE="true" FIELDS="modcode, modocc, academicyear, periodslotcode, mabseq"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

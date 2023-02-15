@@ -17,31 +17,54 @@
 /**
  * Plugin administration pages are defined here.
  *
- * @package     local_sits_grade_push
+ * @package     local_sitsgradepush
  * @category    admin
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 
+use local_sitsgradepush\manager;
+use local_sitsgradepush\plugininfo\sitsapiclient;
+
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    $settings = new admin_settingpage('local_sits_grade_push_settings', new lang_string('pluginname', 'local_sits_grade_push'));
-    $ADMIN->add('localplugins', $settings);
+    $ADMIN->add('localplugins', new admin_category('localsitssettings', 'SITS'));
+    $ADMIN->add('localsitssettings', new admin_category('apiclients', 'API Clients'));
+    $settings = new admin_settingpage('local_sitsgradepush_settings', new lang_string('pluginname', 'local_sitsgradepush'));
+    $ADMIN->add('localsitssettings', $settings);
 
     if ($ADMIN->fulltree) {
         // General settings.
-        $settings->add(new admin_setting_heading('local_sits_grade_push_general_settings',
-            get_string('settings:generalsettingsheader', 'local_sits_grade_push'),
+        $settings->add(new admin_setting_heading('local_sitsgradepush_general_settings',
+            get_string('settings:generalsettingsheader', 'local_sitsgradepush'),
             ''
         ));
         // Setting to enable/disable the plugin.
         $settings->add(new admin_setting_configcheckbox(
-            'local_sits_grade_push/enabled',
-            get_string('settings:enable', 'local_sits_grade_push'),
-            get_string('settings:enable:desc', 'local_sits_grade_push'),
+            'local_sitsgradepush/enabled',
+            get_string('settings:enable', 'local_sitsgradepush'),
+            get_string('settings:enable:desc', 'local_sitsgradepush'),
             '1'
         ));
+
+        // Setting to select API client.
+        $manager = manager::getmanager();
+        $options = ['' => get_string('settings:apiclientselect', 'local_sitsgradepush')] + $manager->getapiclientlist();
+
+        $settings->add(new admin_setting_configselect(
+            'local_sitsgradepush/apiclient',
+            get_string('settings:apiclient', 'local_sitsgradepush'),
+            get_string('settings:apiclient:desc', 'local_sitsgradepush'),
+            null,
+            $options
+        ));
+    }
+
+    $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
+    foreach ($subplugins as $plugin) {
+        /** @var sitsapiclient $plugin */
+        $plugin->load_settings($ADMIN, 'apiclients', $hassiteconfig);
     }
 }

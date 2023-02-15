@@ -14,35 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace local_sitsgradepush\api;
+
 /**
- * Listen moodle events related to grading.
+ * Interface iclient
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-defined('MOODLE_INTERNAL') || die();
+interface iclient {
+    /**
+     * Send request.
+     *
+     * @package local_sitsgradepush
+     * @param request $request
+     * @return mixed
+     */
+    public function sendrequest(request $request);
 
-$observers = array(
-    array(
-        'eventname'   => '\mod_assign\event\submission_graded',
-        'callback'    => 'local_sitsgradepush::submission_graded',
-        'priority'    => 200,
-    ),
-    array(
-        'eventname'   => '\mod_quiz\event\attempt_submitted',
-        'callback'    => 'local_sitsgradepush::quiz_attempt_submitted',
-        'priority'    => 200,
-    ),
-    array(
-        'eventname'   => '\core\event\user_graded',
-        'callback'    => 'local_sitsgradepush::user_graded',
-        'priority'    => 200,
-    ),
-    array(
-        'eventname'   => '\mod_quiz\event\attempt_regraded',
-        'callback'    => 'local_sitsgradepush::quiz_attempt_regraded',
-        'priority'    => 200,
-    ),
-);
+    /**
+     * Build request.
+     *
+     * @package local_sitsgradepush
+     * @param string $action
+     * @param \stdClass $data
+     * @return mixed
+     */
+    public function buildrequest(string $action, \stdClass $data);
+}

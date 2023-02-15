@@ -17,7 +17,7 @@
 /**
  * Plugin strings are defined here.
  *
- * @package     local_sits_grade_push
+ * @package     sitsapiclient_stutalkdirect
  * @category    string
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -26,7 +26,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'SITS Grade Push';
-$string['settings:enable'] = 'Enable Grade Push';
-$string['settings:enable:desc'] = 'Enable grade push to SITS';
+$string['pluginname'] = 'Stutalk Direct';
 $string['settings:generalsettingsheader'] = 'General Settings';
+$string['settings:endpoint_component_grade'] = 'SITS endpoint for component grades';
+$string['settings:endpoint_component_grade:desc'] = 'SITS endpoint for component grades';
+$string['settings:username'] = 'SITS Username';
+$string['settings:username:desc'] = 'Username used to connect to SITS';
+$string['settings:password'] = 'SITS Password';
+$string['settings:password:desc'] = 'Password used to connect to SITS';
+

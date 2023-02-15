@@ -15,18 +15,21 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Code to be executed after the plugin's database scheme has been installed is defined here.
+ * Plugin version and other meta-data are defined here.
  *
- * @package     local_sitsgradepush
- * @category    upgrade
+ * @package     sitsapiclient_stutalkdirect
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 
-/**
- * Custom code to be run on installing the plugin.
- */
-function xmldb_local_sitsgradepush_install() {
-    return true;
-}
+defined('MOODLE_INTERNAL') || die();
+
+$plugin->component = 'sitsapiclient_stutalkdirect';
+$plugin->release = '0.1.0';
+$plugin->version = 2022021001;
+$plugin->requires = 2021051708;
+$plugin->maturity = MATURITY_ALPHA;
+$plugin->dependencies = array(
+    'local_sitsgradepush' => 2022020101
+);
