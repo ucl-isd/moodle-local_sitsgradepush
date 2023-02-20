@@ -13,36 +13,33 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+namespace local_sitsgradepush\api;
 
 /**
- * Listen moodle events related to grading.
+ * Factory class for creating API client.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-defined('MOODLE_INTERNAL') || die();
-
-$observers = array(
-    array(
-        'eventname'   => '\mod_assign\event\submission_graded',
-        'callback'    => 'local_sitsgradepush::submission_graded',
-        'priority'    => 200,
-    ),
-    array(
-        'eventname'   => '\mod_quiz\event\attempt_submitted',
-        'callback'    => 'local_sitsgradepush::quiz_attempt_submitted',
-        'priority'    => 200,
-    ),
-    array(
-        'eventname'   => '\core\event\user_graded',
-        'callback'    => 'local_sitsgradepush::user_graded',
-        'priority'    => 200,
-    ),
-    array(
-        'eventname'   => '\mod_quiz\event\attempt_regraded',
-        'callback'    => 'local_sitsgradepush::quiz_attempt_regraded',
-        'priority'    => 200,
-    ),
-);
+class client_factory {
+    /**
+     * Return requested API client.
+     *
+     * @param string $classname
+     * @return client
+     * @throws \moodle_exception
+     */
+    public static function getapiclient(string $classname) {
+        $file = __DIR__ . '/../../apiclients/' .$classname.'/'.'lib.php';
+        if (file_exists($file)) {
+            require_once($file);
+            $class = 'sitsapiclient_' . $classname . '\\' . $classname;
+            if (class_exists($class)) {
+                return new $class();
+            }
+        }
+        throw new \moodle_exception('API client ' . $classname . ' not found.');
+    }
+}
