@@ -31,7 +31,7 @@ class client_factory {
      * @return client
      * @throws \moodle_exception
      */
-    public static function getapiclient(string $classname) {
+    public static function get_api_client(string $classname) {
         $file = __DIR__ . '/../../apiclients/' .$classname.'/'.'lib.php';
         if (file_exists($file)) {
             require_once($file);

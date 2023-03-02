@@ -20,6 +20,8 @@ use local_sitsgradepush\api\client;
 use local_sitsgradepush\api\request;
 use local_sitsgradepush\manager;
 use sitsapiclient_stutalkdirect\requests\getcomponentgrade;
+use sitsapiclient_stutalkdirect\requests\getstudent;
+use sitsapiclient_stutalkdirect\requests\pushgrade;
 
 /**
  * Global library class for sitsapiclient_stutalkdirect.
@@ -47,10 +49,18 @@ class stutalkdirect extends client {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function buildrequest(string $action, \stdClass $data) {
+    public function build_request(string $action, \stdClass $data) {
         $request = null;
-        if ($action == manager::GET_COMPONENT_GRADE) {
-            $request = new getcomponentgrade($data);
+        switch ($action) {
+            case manager::GET_COMPONENT_GRADE:
+                $request = new getcomponentgrade($data);
+                break;
+            case manager::GET_STUDENT:
+                $request = new getstudent($data);
+                break;
+            case manager::PUSH_GRADE:
+                $request = new pushgrade($data);
+                break;
         }
 
         return $request;
@@ -64,7 +74,7 @@ class stutalkdirect extends client {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function sendrequest(request $request) {
+    public function send_request(request $request) {
         // Get username and password.
         $username = get_config('sitsapiclient_stutalkdirect', 'username');
         $password = get_config('sitsapiclient_stutalkdirect', 'password');
@@ -77,9 +87,19 @@ class stutalkdirect extends client {
             $curlclient = curl_init();
             curl_setopt($curlclient, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($curlclient, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curlclient, CURLOPT_URL, $request->getendpointurlwithparams());
+            curl_setopt($curlclient, CURLOPT_URL, $request->get_endpoint_url_with_params());
             curl_setopt($curlclient, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($curlclient, CURLOPT_USERPWD, $username . ":" . $password);
+            curl_setopt($curlclient, CURLOPT_CUSTOMREQUEST, $request->get_method());
+            if (in_array($request->get_method(), ['PUT', 'POST'])) {
+                curl_setopt($curlclient, CURLOPT_POSTFIELDS, $request->get_request_body());
+                curl_setopt(
+                    $curlclient,
+                    CURLOPT_HTTPHEADER,
+                    array('Content-Type: application/json')
+                );
+            }
+
             $curlresponse = curl_exec($curlclient);
 
             if ($curlresponse === false) {
@@ -94,9 +114,11 @@ class stutalkdirect extends client {
             curl_close($curlclient);
 
             // Convert JSON to array.
-            $data = $request->processresponse(json_decode($curlresponse, true));
+            $data = $request->process_response(json_decode($curlresponse, true));
         } catch (\Exception $e) {
-            throw new \moodle_exception('Unable to get data from request: ' . $request->getrequestname() . '. ' . $e->getMessage());
+            throw new \moodle_exception(
+                'Unable to get data from request: ' . $request->get_request_name() . '. ' . $e->getMessage()
+            );
         }
 
         return $data;

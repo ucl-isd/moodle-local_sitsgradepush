@@ -39,10 +39,10 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
     if (get_config('local_sitsgradepush', 'enabled') !== '1') {
         return;
     }
-    $manager = manager::getmanager();
+    $manager = manager::get_manager();
     // Display settings for certain type of activities only.
     $modulename = $formwrapper->get_current()->modulename;
-    if (in_array($modulename, $manager->getallowedactivities())) {
+    if (in_array($modulename, $manager->get_allowed_activities())) {
         // Add setting header.
         $mform->addElement('header', 'gradepushheader', 'Grade Push');
 
@@ -67,10 +67,10 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
         $mform->addHelpButton('reassessment', 'reassessmentselect', 'local_sitsgradepush');
 
         // Add component grades options to the dropdown list.
-        $manager = manager::getmanager();
-        if (empty($manager->getapierrors())) {
+        $manager = manager::get_manager();
+        if (empty($manager->get_api_errors())) {
             // Get component grade options.
-            $options = $manager->getcomponentgradeoptions($formwrapper->get_course()->id);
+            $options = $manager->get_component_grade_options($formwrapper->get_course()->id);
             if (empty($options)) {
                 $reassessment->updateAttributes(['disabled' => 'disabled']);
                 $mform->addElement('html', "<p class=\"alert-info alert\">No lookup records were found </p>");
@@ -80,7 +80,7 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                 }
                 if ($cm = $formwrapper->get_coursemodule()) {
                     // Disable the settings if this activity is already mapped.
-                    if ($assessmentmapping = $manager->getassessmentmapping($cm->id, $cm->module)) {
+                    if ($assessmentmapping = $manager->get_assessment_mapping($cm->id)) {
                         $select->setSelected($assessmentmapping->componentgradeid);
                         $reassessment->setSelected($assessmentmapping->reassessment);
                         $select->updateAttributes(['disabled' => 'disabled']);
@@ -91,7 +91,7 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
         }
 
         // Display any API error.
-        foreach ($manager->getapierrors() as $msg) {
+        foreach ($manager->get_api_errors() as $msg) {
             $mform->addElement('html', "<p class=\"alert alert-danger\">" . $msg . "</p>");
         }
     }
@@ -106,10 +106,10 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
  * @throws dml_exception
  */
 function local_sitsgradepush_coursemodule_edit_post_actions($data, $course) {
-    $manager = manager::getmanager();
+    $manager = manager::get_manager();
     // Save assessment mapping.
     if (!empty($data->gradepushassessmentselect)) {
-        $manager->saveassessmentmapping($data);
+        $manager->save_assessment_mapping($data);
     }
 
     return $data;
@@ -124,14 +124,60 @@ function local_sitsgradepush_coursemodule_edit_post_actions($data, $course) {
  * @throws dml_exception
  */
 function local_sitsgradepush_coursemodule_validation($fromform, $fields) {
-    $manager = manager::getmanager();
+    $manager = manager::get_manager();
     // Extract activity type from form class name e.g. assign, quiz etc.
     $activitytype = explode('_', get_class($fromform));
 
     // Check if the component grade has been mapped to another activity.
-    if (in_array($activitytype[1], $manager->getallowedactivities()) && !empty($fields['gradepushassessmentselect'])) {
-        if ($manager->iscomponentgrademapped($fields['gradepushassessmentselect'])) {
+    if (in_array($activitytype[1], $manager->get_allowed_activities()) && !empty($fields['gradepushassessmentselect'])) {
+        if ($manager->is_component_grade_mapped($fields['gradepushassessmentselect'])) {
             return ['gradepushassessmentselect' => get_string('error:gradecomponentmapped', 'local_sitsgradepush')];
         }
+    }
+}
+
+/**
+ * Attach a grade push link in the activity's settings menu.
+ *
+ * @param settings_navigation $settingsnav
+ * @param context $context
+ * @return void|null
+ * @throws coding_exception
+ * @throws moodle_exception
+ */
+function local_sitsgradepush_extend_settings_navigation(settings_navigation $settingsnav, context $context) {
+    global $PAGE;
+
+    // Must be under a module page.
+    $cm = $PAGE->cm;
+    if (!$cm) {
+        return null;
+    }
+
+    // Must be one of the allowed activities.
+    if (!in_array($cm->modname, manager::ALLOWED_ACTIVITIES)) {
+        return null;
+    }
+
+    // Build the grade push page url.
+    $url = new moodle_url('/local/sitsgradepush/index.php', array(
+        'id' => $cm->id,
+        'modname' => $cm->modname
+    ));
+
+    // Create the node.
+    $node = navigation_node::create(
+        get_string('pluginname', 'local_sitsgradepush'),
+        $url,
+        navigation_node::NODETYPE_LEAF,
+        'local_sitsgradepush',
+        'local_sitsgradepush',
+        new pix_icon('i/grades', get_string('pluginname', 'local_sitsgradepush'))
+    );
+
+    // Get the module settings node.
+    if ($modulesettings = $settingsnav->get('modulesettings')) {
+        // Add node.
+        $modulesettings->add_node($node);
     }
 }

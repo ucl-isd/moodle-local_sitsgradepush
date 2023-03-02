@@ -32,7 +32,7 @@ interface iclient {
      * @param request $request
      * @return mixed
      */
-    public function sendrequest(request $request);
+    public function send_request(request $request);
 
     /**
      * Build request.
@@ -42,5 +42,5 @@ interface iclient {
      * @param \stdClass $data
      * @return mixed
      */
-    public function buildrequest(string $action, \stdClass $data);
+    public function build_request(string $action, \stdClass $data);
 }

@@ -13,35 +13,55 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-namespace local_sitsgradepush\api;
+
+namespace local_sitsgradepush\assessment;
 
 /**
- * Parent class for all potential api clients.
+ * Parent class for assessment.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-abstract class client implements iclient {
-    /** @var string Name of the api client */
-    protected $clientname;
+abstract class assessment implements iassessment {
+    /** @var int mod instance id */
+    public $modinstanceid;
+
+    /** @var int course module id */
+    public $coursemoduleid;
+
+    /** @var string assessment name */
+    public $assessmentname;
+
+    /** @var string module name */
+    public $modulename;
+
+    /**
+     * Set assessment name.
+     *
+     * @param int $id
+     * @return mixed
+     */
+    abstract protected function set_assessment_name(int $id);
 
     /**
      * Constructor.
      *
-     * @param string $clientname
+     * @param \stdClass $coursemodule
      */
-    public function __construct(string $clientname) {
-        $this->clientname = $clientname;
+    public function __construct(\stdClass $coursemodule) {
+        $this->coursemoduleid = $coursemodule->id;
+        $this->modinstanceid = $coursemodule->instance;
+        $this->set_assessment_name($coursemodule->instance);
     }
 
     /**
-     * Returns API client name.
+     * Return the assessment name.
      *
      * @return string
      */
-    public function get_client_name(): string {
-        return $this->clientname;
+    public function get_assessment_name(): string {
+        return $this->assessmentname;
     }
 }

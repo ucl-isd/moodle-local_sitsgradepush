@@ -50,8 +50,8 @@ if ($hassiteconfig) {
         ));
 
         // Setting to select API client.
-        $manager = manager::getmanager();
-        $options = ['' => get_string('settings:apiclientselect', 'local_sitsgradepush')] + $manager->getapiclientlist();
+        $manager = manager::get_manager();
+        $options = ['' => get_string('settings:apiclientselect', 'local_sitsgradepush')] + $manager->get_api_client_list();
 
         $settings->add(new admin_setting_configselect(
             'local_sitsgradepush/apiclient',

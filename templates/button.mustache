@@ -1,0 +1,39 @@
+{{!
+    This file is part the Local Analytics plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/button
+
+    Template for displaying a simple button
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * id - Button id.
+    * name - Button display name.
+    * url - The URL to navigate to.
+
+    Example context (json):
+    {"url":"https://moodlesite/index.php?id=125&modname=assign","id":"local_sitsgradepush_pushbutton","name":"Push"}
+}}
+<div class="continuebutton">
+    <p>
+        <a href="{{url}}" class="btn btn-primary" id="{{id}}">{{name}}</a>
+    </p>
+</div>

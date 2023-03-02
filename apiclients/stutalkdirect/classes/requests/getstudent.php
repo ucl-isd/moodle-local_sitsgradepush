@@ -19,21 +19,20 @@ namespace sitsapiclient_stutalkdirect\requests;
 use local_sitsgradepush\api\request;
 
 /**
- * Class for getcomponentgrade type request.
+ * Class for getstudent type request.
  *
  * @package     sitsapiclient_stutalkdirect
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class getcomponentgrade extends request {
+class getstudent extends request {
 
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
-        'mod_code' => 'MOD_CODE',
-        'mod_occ_year_code' => 'AYR_CODE',
-        'mod_occ_psl_code' => 'PSL_CODE',
-        'mod_occ_mav' => 'MAV_OCCUR'
+        'idnumber' => 'STU_CODE',
+        'mapcode' => 'MAP_CODE',
+        'mabseq' => 'MAB_SEQ'
     ];
 
     /** @var string request method */
@@ -48,13 +47,13 @@ class getcomponentgrade extends request {
      */
     public function __construct(\stdClass $data) {
         // Set request name.
-        $this->name = 'Get component grade';
+        $this->name = 'Get student';
 
         // Define the parameters required for this request.
-        $this->endpointparams = ['MOD_CODE', 'AYR_CODE', 'PSL_CODE', 'MAV_OCCUR'];
+        $this->endpointparams = ['STU_CODE', 'MAP_CODE', 'MAB_SEQ'];
 
         // Get request endpoint.
-        $endpointurl = get_config('sitsapiclient_stutalkdirect', 'endpoint_component_grade');
+        $endpointurl = get_config('sitsapiclient_stutalkdirect', 'endpoint_student');
 
         // Check if endpoint is set.
         if (empty($endpointurl)) {
