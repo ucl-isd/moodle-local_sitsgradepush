@@ -31,11 +31,20 @@ class manager {
     /** @var string Action identifier for get component grades */
     const GET_COMPONENT_GRADE = 'getcomponentgrade';
 
+    /** @var string Action identifier for get student from SITS */
+    const GET_STUDENT = 'getstudent';
+
+    /** @var string Action identifier for pushing grades to SITS */
+    const PUSH_GRADE = 'pushgrade';
+
     /** @var string DB table for storing component grades from SITS */
     const TABLE_COMPONENT_GRADE = 'local_sitsgradepush_mab';
 
     /** @var string DB table for storing assessment mappings */
     const TABLE_ASSESSMENT_MAPPING = 'local_sitsgradepush_mapping';
+
+    /** @var string DB table for storing grade transfer log */
+    const TABLE_TRANSFER_LOG = 'local_sitsgradepush_tfr_log';
 
     /** @var string[] Fields mapping - Local DB component grades table fields to returning SITS fields */
     const MAPPING_COMPONENT_GRADE = [
@@ -74,7 +83,7 @@ class manager {
             }
 
             // Get api client instance.
-            $apiclient = client_factory::getapiclient($clientname);
+            $apiclient = client_factory::get_api_client($clientname);
             if ($apiclient instanceof iclient) {
                 $this->apiclient = $apiclient;
             }
@@ -88,7 +97,7 @@ class manager {
      *
      * @return manager|null
      */
-    public static function getmanager() {
+    public static function get_manager() {
         if (self::$instance == null) {
             self::$instance = new manager();
         }
@@ -102,15 +111,15 @@ class manager {
      * @param array $modocc module occurrences of the current course.
      * @return bool
      */
-    public function fetchcomponentgradesfromsits(array $modocc): bool {
+    public function fetch_component_grades_from_sits(array $modocc): bool {
         try {
             if (!empty($modocc)) {
                 // Get component grades from SITS.
                 foreach ($modocc as $occ) {
-                    $request = $this->apiclient->buildrequest(self::GET_COMPONENT_GRADE, $occ);
-                    $response = $this->apiclient->sendrequest($request);
+                    $request = $this->apiclient->build_request(self::GET_COMPONENT_GRADE, $occ);
+                    $response = $this->apiclient->send_request($request);
                     // Save component grades to DB.
-                    $this->savecomponentgrades($response);
+                    $this->save_component_grades($response);
                 }
 
                 return true;
@@ -129,15 +138,15 @@ class manager {
      * @return array
      * @throws \dml_exception
      */
-    public function getcomponentgradeoptions(int $courseid): array {
+    public function get_component_grade_options(int $courseid): array {
         $options = [];
         // Get module occurrences from portico enrolments block.
         $modocc = \block_portico_enrolments\manager::get_modocc_mappings($courseid);
 
         // Fetch component grades from SITS.
-        if ($this->fetchcomponentgradesfromsits($modocc)) {
+        if ($this->fetch_component_grades_from_sits($modocc)) {
             // Get the updated records from local component grades table.
-            $records = $this->getlocalcomponentgrades($modocc);
+            $records = $this->get_local_component_grades($modocc);
             if (!empty($records)) {
                 foreach ($records as $record) {
                     $option = new \stdClass();
@@ -170,7 +179,7 @@ class manager {
      * @return array
      * @throws \dml_exception
      */
-    public function getlocalcomponentgrades(array $modocc) {
+    public function get_local_component_grades(array $modocc): array {
         global $DB;
         $componentgrades = [];
         foreach ($modocc as $occ) {
@@ -202,7 +211,7 @@ class manager {
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function savecomponentgrades(array $componentgrades) {
+    public function save_component_grades(array $componentgrades) {
         global $DB;
 
         if (!empty($componentgrades)) {
@@ -247,14 +256,14 @@ class manager {
      * @return void
      * @throws \dml_exception
      */
-    public function saveassessmentmapping(\stdClass $data) {
+    public function save_assessment_mapping(\stdClass $data) {
         global $DB;
 
-        if (!$this->isactivitymapped($data->coursemodule, $data->module)) {
+        if (!$this->is_activity_mapped($data->coursemodule)) {
             $record = new \stdClass();
             $record->courseid = $data->course;
-            $record->instanceid = $data->coursemodule;
-            $record->moduletypeid = $data->module;
+            $record->coursemoduleid = $data->coursemodule;
+            $record->moduletype = $data->modulename;
             $record->componentgradeid = $data->gradepushassessmentselect;
             if ($data->reassessment == '1') {
                 $record->reassessment = '1';
@@ -270,26 +279,24 @@ class manager {
      * Lookup assessment mapping
      *
      * @param int $cmid course module id
-     * @param int $moduletypeid module type id
      * @return false|mixed|\stdClass
      * @throws \dml_exception
      */
-    public function getassessmentmapping(int $cmid, int $moduletypeid) {
+    public function get_assessment_mapping(int $cmid) {
         global $DB;
-        return $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['instanceid' => $cmid, 'moduletypeid' => $moduletypeid]);
+        return $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['coursemoduleid' => $cmid]);
     }
 
     /**
      * Check if the activity is mapped to a component grade.
      *
      * @param int $cmid
-     * @param int $moduletypeid
      * @return bool
      * @throws \dml_exception
      */
-    public function isactivitymapped(int $cmid, int $moduletypeid) {
+    public function is_activity_mapped(int $cmid): bool {
         global $DB;
-        return $DB->record_exists(self::TABLE_ASSESSMENT_MAPPING, ['instanceid' => $cmid, 'moduletypeid' => $moduletypeid]);
+        return $DB->record_exists(self::TABLE_ASSESSMENT_MAPPING, ['coursemoduleid' => $cmid]);
     }
 
     /**
@@ -299,7 +306,7 @@ class manager {
      * @return bool
      * @throws \dml_exception
      */
-    public function iscomponentgrademapped(int $id) {
+    public function is_component_grade_mapped(int $id): bool {
         global $DB;
         return $DB->record_exists(self::TABLE_ASSESSMENT_MAPPING, ['componentgradeid' => $id]);
     }
@@ -309,7 +316,7 @@ class manager {
      *
      * @return array
      */
-    public function getapierrors() {
+    public function get_api_errors(): array {
         return $this->apierrors;
     }
 
@@ -319,13 +326,13 @@ class manager {
      * @return array
      * @throws \moodle_exception
      */
-    public function getapiclientlist() {
+    public function get_api_client_list(): array {
         $dir = new DirectoryIterator(__DIR__ . '/../apiclients');
         $list = [];
         foreach ($dir as $fileinfo) {
             if ($fileinfo->isDir() && !$fileinfo->isDot()) {
-                $client = client_factory::getapiclient($fileinfo->getFilename());
-                $list[$fileinfo->getFilename()] = $client->getclientname();
+                $client = client_factory::get_api_client($fileinfo->getFilename());
+                $list[$fileinfo->getFilename()] = $client->get_client_name();
             }
         }
 
@@ -337,7 +344,136 @@ class manager {
      *
      * @return string[]
      */
-    public function getallowedactivities() {
+    public function get_allowed_activities(): array {
         return self::ALLOWED_ACTIVITIES;
+    }
+
+    /**
+     * Return course module data.
+     *
+     * @param int $id
+     * @return false|mixed|\stdClass
+     * @throws \dml_exception
+     */
+    public function get_course_module(int $id) {
+        global $DB;
+        return $DB->get_record("course_modules", ["id" => $id]);
+    }
+
+    /**
+     * Get local component grade by id.
+     *
+     * @param int $id
+     * @return false|mixed|\stdClass
+     * @throws \dml_exception
+     */
+    public function get_local_component_grade_by_id(int $id) {
+        global $DB;
+        return $DB->get_record("local_sitsgradepush_mab", ['id' => $id]);
+    }
+
+    /**
+     * Get student SPR_CODE from SITS.
+     *
+     * @param \stdClass $componentgrade
+     * @param \stdClass $grade
+     * @return mixed
+     */
+    public function get_student_from_sits(\stdClass $componentgrade, \stdClass $grade) {
+        $data = new \stdClass();
+        $data->idnumber = $grade->idnumber;
+        $data->mapcode = $componentgrade->mapcode;
+        $data->mabseq = $componentgrade->mabseq;
+
+        $request = $this->apiclient->build_request('getstudent', $data);
+        return $this->apiclient->send_request($request);
+    }
+
+    /**
+     * Push grade to SITS.
+     *
+     * @param int $coursemoduleid
+     * @param \stdClass $grade
+     * @return mixed
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function push_grade_to_sits(int $coursemoduleid, \stdClass $grade) {
+        // Check mapping.
+        if (!$mapping = $this->get_assessment_mapping($coursemoduleid)) {
+            throw new \moodle_exception('This activity is not mapped to a component grade');
+        }
+
+        // Check component grade.
+        if (!$componentgrade = $this->get_local_component_grade_by_id($mapping->componentgradeid)) {
+            throw new \moodle_exception('Cannot find component grade id: ' . $mapping->componentgradeid);
+        }
+
+        // Get SPR_CODE from SITS.
+        if (!$student = $this->get_student_from_sits($componentgrade, $grade)) {
+            throw new \moodle_exception('Cannot get student from sits.');
+        }
+
+        // Build the request data.
+        $requestdata = new \stdClass();
+        $requestdata->mapcode = $componentgrade->mapcode;
+        $requestdata->mabseq = $componentgrade->mabseq;
+        $requestdata->sprcode = $student[0]['SPR_CODE'];
+        $requestdata->academicyear = $componentgrade->academicyear;
+        $requestdata->pslcode = $componentgrade->periodslotcode;
+        $requestdata->reassessment = $mapping->reassessment;
+        $requestdata->srarseq = '001'; // Just a dummy reassessment sequence number for now.
+        $requestdata->marks = $grade->marks;
+        $requestdata->grade = ''; // TODO: Where to get the grade?
+
+        $request = $this->apiclient->build_request(self::PUSH_GRADE, $requestdata);
+        $response = $this->apiclient->send_request($request);
+
+        // Save transfer log.
+        $this->save_transfer_log($mapping, $grade, $response);
+
+        return $response;
+    }
+
+    /**
+     * Return the last push log for a given grade push.
+     *
+     * @param int $coursemoduleid
+     * @param int $userid
+     * @return false|mixed
+     * @throws \dml_exception
+     */
+    public function get_grade_push_status (int $coursemoduleid, int $userid) {
+        global $DB;
+        $sql = "SELECT *
+                FROM {" . self::TABLE_TRANSFER_LOG . "}
+                WHERE userid = :userid AND coursemoduleid = :coursemoduleid
+                ORDER BY timecreated DESC LIMIT 1";
+        return $DB->get_record_sql($sql, ['coursemoduleid' => $coursemoduleid, 'userid' => $userid]);
+    }
+
+    /**
+     * Save grade push log.
+     *
+     * @param \stdClass $mapping
+     * @param \stdClass $grade
+     * @param array $response
+     * @return void
+     * @throws \dml_exception
+     */
+    private function save_transfer_log(\stdClass $mapping, \stdClass $grade, array $response) {
+        global $USER, $DB;
+        $insert = new \stdClass();
+        $insert->userid = $grade->userid;
+        $insert->assessmentmappingid = $mapping->id;
+        $insert->coursemoduleid = $mapping->coursemoduleid;
+        $insert->componentgradeid = $mapping->componentgradeid;
+        $insert->marks = $grade->marks;
+        $insert->grade = ''; // TODO: Where to get the grade?
+        $insert->responsecode = $response['code'];
+        $insert->usermodified = $USER->id;
+        $insert->timecreated = time();
+
+        $DB->insert_record(self::TABLE_TRANSFER_LOG, $insert);
     }
 }

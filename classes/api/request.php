@@ -31,11 +31,20 @@ abstract class request {
     /** @var string[] Required endpoint parameters */
     protected $endpointparams;
 
-    /** @var array Request payload  */
-    protected $payload;
+    /** @var array Request params data */
+    protected $paramsdata;
 
     /** @var string Request name */
     protected $name;
+
+    /** @var array Local data fields to SITS fields mapping */
+    protected $mapping;
+
+    /** @var string request method, e.g. GET, PUT, etc. */
+    protected $method;
+
+    /** @var string request body */
+    protected $body;
 
     /**
      * Returns processed response.
@@ -43,24 +52,38 @@ abstract class request {
      * @param array $response
      * @return mixed
      */
-    abstract public function processresponse(array $response);
+    abstract public function process_response(array $response);
+
+    /**
+     * Constructor.
+     *
+     * @param array $mapping
+     * @param \stdClass $data
+     * @param string $method
+     * @throws \moodle_exception
+     */
+    protected function __construct(array $mapping, \stdClass $data, string $method = 'GET') {
+        $this->mapping = $mapping;
+        $this->set_params_data($data);
+        $this->method = $method;
+    }
 
     /**
      * Returns the endpoint's URL.
      *
      * @return string
      */
-    public function getendpointurl(): string {
+    public function get_endpoint_url(): string {
         return $this->endpointurl;
     }
 
     /**
-     * Return request's payload.
+     * Return request's params data.
      *
      * @return array
      */
-    public function getpayload(): array {
-        return $this->payload;
+    public function get_params_data(): array {
+        return $this->paramsdata;
     }
 
     /**
@@ -68,7 +91,7 @@ abstract class request {
      *
      * @return string
      */
-    public function getrequestname(): string {
+    public function get_request_name(): string {
         return $this->name;
     }
 
@@ -78,19 +101,37 @@ abstract class request {
      * @return string
      * @throws \moodle_exception
      */
-    public function getendpointurlwithparams(): string {
+    public function get_endpoint_url_with_params(): string {
         $url = $this->endpointurl;
         // Construct the final URL if endpoint parameters are defined.
         if (is_array($this->endpointparams) && count($this->endpointparams) > 0) {
             foreach ($this->endpointparams as $param) {
-                if (empty($this->payload[$param])) {
+                if (empty($this->paramsdata[$param])) {
                     throw new \moodle_exception('Mandatory field ' . $param . ' cannot be empty.');
                 }
-                $url .= '/' . $param . '/' . $this->replaceinvalidcharacters($this->payload[$param]);
+                $url .= '/' . $param . '/' . $this->replace_invalid_characters($this->paramsdata[$param]);
             }
         }
 
         return $url;
+    }
+
+    /**
+     * Return the request method.
+     *
+     * @return string
+     */
+    public function get_method(): string {
+        return $this->method;
+    }
+
+    /**
+     * Return request body.
+     *
+     * @return string
+     */
+    public function get_request_body(): string {
+        return $this->body;
     }
 
     /**
@@ -99,7 +140,26 @@ abstract class request {
      * @param string $data
      * @return array|string|string[]
      */
-    protected function replaceinvalidcharacters(string $data) {
+    protected function replace_invalid_characters(string $data) {
         return str_replace('/', '&&', $data);
+    }
+
+    /**
+     * Set params data.
+     *
+     * @param \stdClass $data
+     * @return void
+     * @throws \moodle_exception
+     */
+    protected function set_params_data(\stdClass $data) {
+        $paramsdata = [];
+        foreach ($this->mapping as $k => $v) {
+            if (!empty($data->$k)) {
+                $paramsdata[$v] = $data->$k;
+            } else {
+                throw new \moodle_exception('Missing mandatory data ' . $k);
+            }
+        }
+        $this->paramsdata = $paramsdata;
     }
 }

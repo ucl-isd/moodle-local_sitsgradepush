@@ -13,35 +13,32 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-namespace local_sitsgradepush\api;
+
+namespace local_sitsgradepush\assessment;
 
 /**
- * Parent class for all potential api clients.
+ * Interface for assessment.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-abstract class client implements iclient {
-    /** @var string Name of the api client */
-    protected $clientname;
-
+interface iassessment {
     /**
-     * Constructor.
+     * Get all grades of the assignment.
      *
-     * @param string $clientname
+     * @package local_sitsgradepush
+     * @return array
+     * @throws \dml_exception
      */
-    public function __construct(string $clientname) {
-        $this->clientname = $clientname;
-    }
+    public function get_all_grades(): array;
 
     /**
-     * Returns API client name.
+     * Return the assessment name.
      *
+     * @package local_sitsgradepush
      * @return string
      */
-    public function get_client_name(): string {
-        return $this->clientname;
-    }
+    public function get_assessment_name(): string;
 }

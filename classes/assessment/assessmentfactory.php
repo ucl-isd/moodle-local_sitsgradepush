@@ -13,35 +13,34 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-namespace local_sitsgradepush\api;
+
+namespace local_sitsgradepush\assessment;
 
 /**
- * Parent class for all potential api clients.
+ * Factory class for assessment.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-abstract class client implements iclient {
-    /** @var string Name of the api client */
-    protected $clientname;
-
+class assessmentfactory {
     /**
-     * Constructor.
+     * Return assessment object by a given mod name.
      *
-     * @param string $clientname
+     * @param string $modname
+     * @param \stdClass $coursemodule
+     * @return assessment
+     * @throws \moodle_exception
      */
-    public function __construct(string $clientname) {
-        $this->clientname = $clientname;
-    }
+    public static function get_assessment($modname, $coursemodule) {
+        switch ($modname) {
+            case 'quiz':
+                return new quiz($coursemodule);
+            case 'assign':
+                return new assign($coursemodule);
+        }
 
-    /**
-     * Returns API client name.
-     *
-     * @return string
-     */
-    public function get_client_name(): string {
-        return $this->clientname;
+        throw new \moodle_exception('Mod name '. $modname .' not found.');
     }
 }
