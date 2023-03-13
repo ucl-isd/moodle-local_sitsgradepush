@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\api;
 
+use sitsapiclient_stutalkdirect\requests\request;
+
 /**
  * Interface iclient
  *

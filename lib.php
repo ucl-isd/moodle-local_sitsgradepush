@@ -128,10 +128,13 @@ function local_sitsgradepush_coursemodule_validation($fromform, $fields) {
     // Extract activity type from form class name e.g. assign, quiz etc.
     $activitytype = explode('_', get_class($fromform));
 
-    // Check if the component grade has been mapped to another activity.
-    if (in_array($activitytype[1], $manager->get_allowed_activities()) && !empty($fields['gradepushassessmentselect'])) {
-        if ($manager->is_component_grade_mapped($fields['gradepushassessmentselect'])) {
-            return ['gradepushassessmentselect' => get_string('error:gradecomponentmapped', 'local_sitsgradepush')];
+    // Run check for component grade for unmapped activity only.
+    if (!$manager->is_activity_mapped($fields['coursemodule'])) {
+        // Check if the component grade has been mapped to another activity.
+        if (in_array($activitytype[1], $manager->get_allowed_activities()) && !empty($fields['gradepushassessmentselect'])) {
+            if ($manager->is_component_grade_mapped($fields['gradepushassessmentselect'])) {
+                return ['gradepushassessmentselect' => get_string('error:gradecomponentmapped', 'local_sitsgradepush')];
+            }
         }
     }
 }

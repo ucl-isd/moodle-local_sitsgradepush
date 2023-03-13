@@ -14,55 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace local_sitsgradepush\assessment;
+namespace local_sitsgradepush\api;
 
 /**
- * Parent class for assessment.
+ * Interface irequest
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-abstract class assessment implements iassessment {
-    /** @var string Assessment name */
-    public $assessmentname;
-
-    /** @var \stdClass Course module object */
-    public $coursemodule;
-
+interface irequest {
     /**
-     * Set assessment name.
+     * Get request body.
      *
-     * @return void
-     */
-    abstract protected function set_assessment_name();
-
-    /**
-     * Constructor.
-     *
-     * @param \stdClass $coursemodule
-     */
-    public function __construct(\stdClass $coursemodule) {
-        $this->coursemodule = $coursemodule;
-        $this->set_assessment_name();
-    }
-
-    /**
-     * Return the assessment name.
-     *
+     * @package local_sitsgradepush
      * @return string
      */
-    public function get_assessment_name(): string {
-        return $this->assessmentname;
-    }
-
-    /**
-     * Get the course module object related to this assessment.
-     *
-     * @return \stdClass
-     */
-    public function get_course_module(): \stdClass {
-        return $this->coursemodule;
-    }
+    public function get_request_body(): string;
 }

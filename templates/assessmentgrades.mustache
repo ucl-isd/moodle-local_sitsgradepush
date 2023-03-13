@@ -26,29 +26,38 @@
 
     Context variables required for this template:
     * assessmentname - The assessment name
-    * grades - Array variable, array of grades
+    * assessmentdata - Array variable, array of assessment data
 
     Example context (json):
-    {"assessmentname":"","grades":[]}
+    {"assessmentname":"","assessmentdata":[]}
 }}
 <div class="local_sitsgradepush_assessment_grades">
-    <h1>{{#str}} pluginname, local_sitsgradepush {{/str}} - {{assessmentname}}</h1>
     <table class="table table-bordered">
         <tr>
             <th>Student Code</th>
             <th>Student Name</th>
             <th>Marks</th>
-            <th>Status</th>
-            <th>Last Push Time</th>
+            <th>Last Grade Push result</th>
+            <th>Last Grade Push Time</th>
+            <th>Submission Date / Time</th>
+            <th>Hand-in Status</th>
+            <th>Export Staff Member</th>
+            <th>Last Submission Log Push result</th>
+            <th>Last Submission Log Push Time</th>
         </tr>
-        {{#grades}}
+        {{#assessmentdata}}
             <tr>
                 <td>{{idnumber}}</td>
                 <td>{{firstname}} {{lastname}}</td>
                 <td>{{marks}}</td>
-                <td>{{status}}</td>
-                <td>{{lastpushtime}}</td>
+                <td>{{lastgradepushresult}}</td>
+                <td>{{lastgradepushtime}}</td>
+                <td>{{handin_datetime}}</td>
+                <td>{{handin_status}}</td>
+                <td>{{export_staff}}</td>
+                <td>{{lastsublogpushresult}}</td>
+                <td>{{lastsublogpushtime}}</td>
             </tr>
-        {{/grades}}
+        {{/assessmentdata}}
     </table>
 </div>

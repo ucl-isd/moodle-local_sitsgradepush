@@ -26,13 +26,20 @@ namespace local_sitsgradepush\assessment;
  */
 interface iassessment {
     /**
-     * Get all grades of the assignment.
+     * Get all participants of the assessment.
      *
      * @package local_sitsgradepush
      * @return array
-     * @throws \dml_exception
      */
-    public function get_all_grades(): array;
+    public function get_all_participants(): array;
+
+    /**
+     * Get the course module object of this assessment.
+     *
+     * @package local_sitsgradepush
+     * @return \stdClass
+     */
+    public function get_course_module(): \stdClass;
 
     /**
      * Return the assessment name.

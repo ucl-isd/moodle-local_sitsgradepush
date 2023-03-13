@@ -38,15 +38,11 @@ require_login();
 // Course module ID.
 $coursemoduleid = required_param('id', PARAM_INT);
 
-// Module name.
-$modname = required_param('modname', PARAM_TEXT);
-
 // Initiate grade push and show push result.
-$showresult = optional_param('showresult', 0, PARAM_INT);
+$pushgrade = optional_param('pushgrade', 0, PARAM_INT);
 
 // Get manager and check course module exists.
-$manager = manager::get_manager();
-if (!$coursemodule = $manager->get_course_module($coursemoduleid)) {
+if (!$coursemodule = get_coursemodule_from_id(null, $coursemoduleid)) {
     throw new moodle_exception('course module not found.', 'local_sitsgradepush');
 }
 
@@ -55,47 +51,58 @@ $context = context_course::instance($coursemodule->course);
 $course = get_course($coursemodule->course);
 
 // Set the required data into the PAGE object.
-$param = ['id' => $coursemoduleid, 'modname' => $modname];
+$param = ['id' => $coursemoduleid];
 $url = new moodle_url('/local/sitsgradepush/index.php', $param);
 $PAGE->set_context($context);
 $PAGE->set_url($url);
 $PAGE->set_title('SITS Grade Push');
 
 // Get assessment.
-$assessment = assessmentfactory::get_assessment($modname, $coursemodule);
+$assessment = assessmentfactory::get_assessment($coursemodule);
 
 // Set the breadcrumbs.
 $PAGE->navbar->add(get_string('courses'), new moodle_url('/course/index.php'));
 $PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php', ['id' => $coursemodule->course]));
-$PAGE->navbar->add($assessment->get_assessment_name(), new moodle_url('/mod/'.$modname.'/view.php', ['id' => $coursemodule->id]));
+$PAGE->navbar->add(
+    $assessment->get_assessment_name(),
+    new moodle_url('/mod/'.$coursemodule->modname.'/view.php', ['id' => $coursemodule->id])
+);
 $PAGE->navbar->add('SITS Grade Push',
     new moodle_url('/local/sitsgradepush/index.php', $param));
 
 // Page header.
 echo $OUTPUT->header();
 
-// Get all grades for the assessment.
-if ($grades = $assessment->get_all_grades()) {
-    // Get renderer.
-    $renderer = $PAGE->get_renderer('local_sitsgradepush');
+// Get renderer.
+$renderer = $PAGE->get_renderer('local_sitsgradepush');
+$manager = manager::get_manager();
 
-    // Trigger grade push and show results.
-    if ($showresult == 1) {
-        foreach ($grades as &$grade) {
-            $result = $manager->push_grade_to_sits($coursemodule->id, $grade);
-            $grade->pushresult = $result['message'];
-            $grade->pushtime = $result['timestamp'];
+// Assessment header.
+echo '<h1>SITS Grade Push - ' . $assessment->get_assessment_name() . '</h1>';
+
+// Get students with grades.
+$studentswithgrade = $manager->get_assessment_data($assessment);
+
+if (!empty($studentswithgrade)) {
+    // Push grade and submission log.
+    if ($pushgrade == 1) {
+        // Push grades.
+        foreach ($studentswithgrade as $student) {
+            $manager->push_grade_to_sits($assessment, $student->userid);
         }
-        echo $renderer->render_push_result_table($assessment->get_assessment_name(), $grades);
-        echo $renderer->render_button('local_sitsgradepush_finishbutton', 'OK', $url->out(false));
+        // Refresh data after completed all pushes.
+        $studentswithgrade = $manager->get_assessment_data($assessment);
+        $buttonlabel = 'OK';
     } else {
-        // Show the grades and last push status.
-        echo $renderer->render_grades_table($coursemodule->id, $assessment->get_assessment_name(), $grades);
-        $url->param('showresult', 1);
-        echo $renderer->render_button('local_sitsgradepush_pushbutton', 'Push', $url->out(false));
+        $url->param('pushgrade', 1);
+        $buttonlabel = 'Push';
     }
+
+    // Render assessment push status table.
+    echo $renderer->render_assessment_push_status_table($studentswithgrade);
+    echo $renderer->render_button('local_sitsgradepush_finishbutton', $buttonlabel, $url->out(false));
 } else {
-    echo 'No grades found for ' . $assessment->get_assessment_name() . '.';
+    echo '<p>No Record Found.</p>';
 }
 
 // And the page footer.

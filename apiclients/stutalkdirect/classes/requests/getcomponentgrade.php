@@ -16,10 +16,8 @@
 
 namespace sitsapiclient_stutalkdirect\requests;
 
-use local_sitsgradepush\api\request;
-
 /**
- * Class for getcomponentgrade type request.
+ * Class for getcomponentgrade request.
  *
  * @package     sitsapiclient_stutalkdirect
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
@@ -36,6 +34,9 @@ class getcomponentgrade extends request {
         'mod_occ_mav' => 'MAV_OCCUR'
     ];
 
+    /** @var string[] Endpoint params */
+    const ENDPOINT_PARAMS = ['MOD_CODE', 'AYR_CODE', 'PSL_CODE', 'MAV_OCCUR'];
+
     /** @var string request method */
     const METHOD = 'GET';
 
@@ -50,9 +51,6 @@ class getcomponentgrade extends request {
         // Set request name.
         $this->name = 'Get component grade';
 
-        // Define the parameters required for this request.
-        $this->endpointparams = ['MOD_CODE', 'AYR_CODE', 'PSL_CODE', 'MAV_OCCUR'];
-
         // Get request endpoint.
         $endpointurl = get_config('sitsapiclient_stutalkdirect', 'endpoint_component_grade');
 
@@ -61,10 +59,8 @@ class getcomponentgrade extends request {
             throw new \moodle_exception('Endpoint URL for ' . $this->name . '  is not set');
         }
 
-        $this->endpointurl = $endpointurl;
-
-        // Set the fields mapping and parameters data.
-        parent::__construct(self::FIELDS_MAPPING, $data);
+        // Set the fields mapping, params fields and data.
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data);
     }
 
     /**
@@ -74,17 +70,6 @@ class getcomponentgrade extends request {
      * @return array
      */
     public function process_response(array $response): array {
-        $processedresponse = [];
-
-        // Use the first element as keys of the remaining elements.
-        if (!empty($response[0])) {
-            $keys = array_shift($response);
-
-            foreach ($response as $v) {
-                $processedresponse[] = array_combine($keys, $v);
-            }
-        }
-
-        return $processedresponse;
+        return $this->make_array_first_row_as_keys($response);
     }
 }

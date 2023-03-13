@@ -34,5 +34,62 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
 
+    if ($oldversion < 2022030902) {
+
+        // Define field marks to be dropped from local_sitsgradepush_tfr_log.
+        $table = new xmldb_table('local_sitsgradepush_tfr_log');
+
+        $field = new xmldb_field('marks');
+        // Conditionally launch drop field marks.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        $field = new xmldb_field('grade');
+        // Conditionally launch drop field grade.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        $index = new xmldb_index('coursemoduleid_responsecode_idx', XMLDB_INDEX_NOTUNIQUE, ['coursemoduleid', 'responsecode']);
+        // Conditionally launch drop index coursemoduleid_responsecode_idx.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        $index = new xmldb_index('am_rc_idx', XMLDB_INDEX_NOTUNIQUE, ['assessmentmappingid', 'responsecode']);
+        // Conditionally launch drop index am_rc_idx.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        $field = new xmldb_field('responsecode');
+        // Conditionally launch drop field responsecode.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        $field = new xmldb_field('type', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null, 'id');
+        // Conditionally launch add field type.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('requestbody', XMLDB_TYPE_TEXT, null, null, null, null, null, 'componentgradeid');
+        // Conditionally launch add field requestbody.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('response', XMLDB_TYPE_TEXT, null, null, null, null, null, 'requestbody');
+        // Conditionally launch add field response.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2022030902, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

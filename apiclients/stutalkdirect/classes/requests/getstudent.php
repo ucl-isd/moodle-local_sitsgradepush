@@ -16,10 +16,8 @@
 
 namespace sitsapiclient_stutalkdirect\requests;
 
-use local_sitsgradepush\api\request;
-
 /**
- * Class for getstudent type request.
+ * Class for getstudent request.
  *
  * @package     sitsapiclient_stutalkdirect
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
@@ -35,6 +33,9 @@ class getstudent extends request {
         'mabseq' => 'MAB_SEQ'
     ];
 
+    /** @var string[] Endpoint params */
+    const ENDPOINT_PARAMS = ['STU_CODE', 'MAP_CODE', 'MAB_SEQ'];
+
     /** @var string request method */
     const METHOD = 'GET';
 
@@ -49,9 +50,6 @@ class getstudent extends request {
         // Set request name.
         $this->name = 'Get student';
 
-        // Define the parameters required for this request.
-        $this->endpointparams = ['STU_CODE', 'MAP_CODE', 'MAB_SEQ'];
-
         // Get request endpoint.
         $endpointurl = get_config('sitsapiclient_stutalkdirect', 'endpoint_student');
 
@@ -60,10 +58,8 @@ class getstudent extends request {
             throw new \moodle_exception('Endpoint URL for ' . $this->name . '  is not set');
         }
 
-        $this->endpointurl = $endpointurl;
-
-        // Set the fields mapping and parameters data.
-        parent::__construct(self::FIELDS_MAPPING, $data);
+        // Set the fields mapping, params fields and data.
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data);
     }
 
     /**
@@ -73,17 +69,6 @@ class getstudent extends request {
      * @return array
      */
     public function process_response(array $response): array {
-        $processedresponse = [];
-
-        // Use the first element as keys of the remaining elements.
-        if (!empty($response[0])) {
-            $keys = array_shift($response);
-
-            foreach ($response as $v) {
-                $processedresponse[] = array_combine($keys, $v);
-            }
-        }
-
-        return $processedresponse;
+        return $this->make_array_first_row_as_keys($response);
     }
 }
