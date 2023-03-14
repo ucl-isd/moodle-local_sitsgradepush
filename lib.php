@@ -79,11 +79,27 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                     $select->addOption($option->text, $option->value, $option->disabled);
                 }
                 if ($cm = $formwrapper->get_coursemodule()) {
+                    $disableselect = $disablereassessment = false;
                     // Disable the settings if this activity is already mapped.
                     if ($assessmentmapping = $manager->get_assessment_mapping($cm->id)) {
                         $select->setSelected($assessmentmapping->componentgradeid);
                         $reassessment->setSelected($assessmentmapping->reassessment);
+                        $disableselect = $disablereassessment = true;
+                    } else {
+                        if (!$manager->is_current_academic_year_activity($formwrapper->get_course()->id)) {
+                            $mform->addElement(
+                                'html',
+                                "<p class=\"alert-info alert\">" . get_string('error:pastactivity', 'local_sitsgradepush') . "</p>"
+                            );
+                            $disableselect = $disablereassessment = true;
+                        }
+                    }
+
+                    if ($disableselect) {
                         $select->updateAttributes(['disabled' => 'disabled']);
+                    }
+
+                    if ($disablereassessment) {
                         $reassessment->updateAttributes(['disabled' => 'disabled']);
                     }
                 }

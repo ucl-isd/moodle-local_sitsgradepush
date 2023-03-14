@@ -75,7 +75,7 @@ class assign extends submission {
     private function get_assign_submission() {
         global $DB;
 
-        // Get student's quiz attempts.
+        // Get student's moodle assignment.
         $submission = $DB->get_record(
             'assign_submission',
             ['assignment' => $this->coursemodule->instance, 'userid' => $this->userid, 'status' => 'submitted']
