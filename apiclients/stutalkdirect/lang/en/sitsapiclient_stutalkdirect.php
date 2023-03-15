@@ -34,8 +34,9 @@ $string['settings:endpoint_student'] = 'SITS endpoint student';
 $string['settings:endpoint_student:desc'] = 'SITS endpoint for getting student\'s SPR_CODE';
 $string['settings:endpoint_push_grade'] = 'SITS endpoint push grades';
 $string['settings:endpoint_push_grade:desc'] = 'SITS endpoint for pushing grades';
+$string['settings:endpoint_push_submission_log'] = 'SITS endpoint push submission log';
+$string['settings:endpoint_push_submission_log:desc'] = 'SITS endpoint for pushing submission log';
 $string['settings:username'] = 'SITS Username';
 $string['settings:username:desc'] = 'Username used to connect to SITS';
 $string['settings:password'] = 'SITS Password';
 $string['settings:password:desc'] = 'Password used to connect to SITS';
-

@@ -14,37 +14,35 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace local_sitsgradepush\assessment;
+namespace local_sitsgradepush\submission;
 
 /**
- * Class for assessment quiz.
+ * Factory class for submission.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class quiz extends assessment {
+class submissionfactory {
     /**
-     * Get all participants.
+     * Return submission object.
      *
-     * @return array
-     */
-    public function get_all_participants(): array {
-        $context = \context_module::instance($this->coursemodule->id);
-        return get_enrolled_users($context, 'mod/quiz:attempt');
-    }
-
-    /**
-     * Set assessment name.
-     *
-     * @return void
+     * @param \stdClass $coursemodule course module
+     * @param int $userid user id
+     * @return submission
+     * @throws \coding_exception
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
-    protected function set_assessment_name() {
-        global $DB;
-        if ($quiz = $DB->get_record('quiz', ['id' => $this->coursemodule->instance])) {
-            $this->assessmentname = $quiz->name;
+    public static function get_submission(\stdClass $coursemodule, int $userid) {
+        switch ($coursemodule->modname) {
+            case 'quiz':
+                return new quiz($coursemodule, $userid);
+            case 'assign':
+                return new assign($coursemodule, $userid);
         }
+
+        throw new \moodle_exception('Mod name '. $coursemodule->modulename .' not found.');
     }
 }

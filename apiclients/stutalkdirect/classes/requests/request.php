@@ -14,22 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace local_sitsgradepush\api;
+namespace sitsapiclient_stutalkdirect\requests;
+
+use local_sitsgradepush\api\irequest;
 
 /**
  * Parent class for requests.
  *
- * @package     local_sitsgradepush
+ * @package     sitsapiclient_stutalkdirect
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
-abstract class request {
+abstract class request implements irequest {
     /** @var string Request endpoint URL */
     protected $endpointurl;
 
     /** @var string[] Required endpoint parameters */
     protected $endpointparams;
+
+    /** @var \stdClass Original data passed in */
+    protected $data;
 
     /** @var array Request params data */
     protected $paramsdata;
@@ -47,23 +52,22 @@ abstract class request {
     protected $body;
 
     /**
-     * Returns processed response.
-     *
-     * @param array $response
-     * @return mixed
-     */
-    abstract public function process_response(array $response);
-
-    /**
      * Constructor.
      *
      * @param array $mapping
+     * @param string $endpointurl
+     * @param array $endpointparams
      * @param \stdClass $data
      * @param string $method
      * @throws \moodle_exception
      */
-    protected function __construct(array $mapping, \stdClass $data, string $method = 'GET') {
+    protected function __construct(
+        array $mapping, string $endpointurl, array $endpointparams, \stdClass $data, string $method = 'GET'
+    ) {
+        $this->data = $data;
         $this->mapping = $mapping;
+        $this->endpointurl = $endpointurl;
+        $this->endpointparams = $endpointparams;
         $this->set_params_data($data);
         $this->method = $method;
     }
@@ -75,6 +79,15 @@ abstract class request {
      */
     public function get_endpoint_url(): string {
         return $this->endpointurl;
+    }
+
+    /**
+     * Return the original data that passed in the request.
+     *
+     * @return \stdClass
+     */
+    public function get_data() {
+        return $this->data;
     }
 
     /**
@@ -135,6 +148,16 @@ abstract class request {
     }
 
     /**
+     * Returns processed response.
+     *
+     * @param array $response
+     * @return mixed
+     */
+    public function process_response(array $response) {
+        return $response;
+    }
+
+    /**
      * Replace invalid characters in parameter value.
      *
      * @param string $data
@@ -161,5 +184,26 @@ abstract class request {
             }
         }
         $this->paramsdata = $paramsdata;
+    }
+
+    /**
+     * Return array using the first rows value as keys.
+     *
+     * @param array $response
+     * @return array
+     */
+    protected function make_array_first_row_as_keys(array $response): array {
+        $processedresponse = [];
+
+        // Use the first element as keys of the remaining elements.
+        if (!empty($response[0])) {
+            $keys = array_shift($response);
+
+            foreach ($response as $v) {
+                $processedresponse[] = array_combine($keys, $v);
+            }
+        }
+
+        return $processedresponse;
     }
 }

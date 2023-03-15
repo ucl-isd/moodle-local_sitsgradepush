@@ -67,4 +67,11 @@ if ($ADMIN->fulltree) {
         get_string('settings:endpoint_push_grade:desc', 'sitsapiclient_stutalkdirect'),
         'https://stutalk-dev.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDLGRADEPUSH'
     ));
+
+    // Endpoint for push submission log.
+    $settings->add(new admin_setting_configtext('sitsapiclient_stutalkdirect/endpoint_push_submission_log',
+        get_string('settings:endpoint_push_submission_log', 'sitsapiclient_stutalkdirect'),
+        get_string('settings:endpoint_push_submission_log:desc', 'sitsapiclient_stutalkdirect'),
+        'https://stutalk-dev.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDLSUBLOG'
+    ));
 }

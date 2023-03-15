@@ -16,10 +16,9 @@
 
 namespace local_sitsgradepush\output;
 
-use local_courserollover\manager;
-use moodle_url;
+use local_sitsgradepush\assessment\assessment;
+use local_sitsgradepush\manager;
 use plugin_renderer_base;
-use stdClass;
 
 /**
  * Output renderer for local_sitsgradepush.
@@ -44,51 +43,20 @@ class renderer extends plugin_renderer_base {
     }
 
     /**
-     * Render the table displaying the grades of an assessment.
+     * Render the assessment push status table.
      *
-     * @param int $coursemoduleid
-     * @param string $assessmentname
-     * @param array $grades
+     * @param array $assessmentdata
      * @return string
      * @throws \moodle_exception
      */
-    public function render_grades_table(int $coursemoduleid, string $assessmentname, array $grades) : string {
-        $manager = \local_sitsgradepush\manager::get_manager();
-        $grades = array_values($grades);
-        foreach ($grades as &$grade) {
-            $grade->status = '-';
-            $pushstatus = $manager->get_grade_push_status($coursemoduleid, $grade->userid);
-            if (!empty($pushstatus)) {
-                if ($pushstatus->responsecode == 0) {
-                    $grade->status = 'Grade pushed successfully.';
-                } else {
-                    $grade->status = 'Last push with error code: ' . $pushstatus->responsecode;
-                }
-                $grade->lastpushtime = date('Y-m-d H:i:s', $pushstatus->timecreated);
-            }
+    public function render_assessment_push_status_table(array $assessmentdata) : string {
+        // Remove the T character in the timestamp.
+        foreach ($assessmentdata as &$data) {
+            $data->handin_datetime = str_replace('T', ' ', $data->handin_datetime);
         }
-        return $this->output->render_from_template('local_sitsgradepush/assessmentgrades', [
-            'assessmentname' => $assessmentname,
-            'grades' => $grades,
-        ]);
-    }
 
-    /**
-     * Render the table showing the grade push result.
-     *
-     * @param string $assessmentname
-     * @param array $grades
-     * @return string
-     * @throws \moodle_exception
-     */
-    public function render_push_result_table(string $assessmentname, array $grades) : string {
-        $grades = array_values($grades);
-        foreach ($grades as &$grade) {
-            $grade->pushtime = str_replace('T', ' ', $grade->pushtime);
-        }
-        return $this->output->render_from_template('local_sitsgradepush/pushresults', [
-            'assessmentname' => $assessmentname,
-            'grades' => $grades,
+        return $this->output->render_from_template('local_sitsgradepush/assessmentgrades', [
+            'assessmentdata' => $assessmentdata,
         ]);
     }
 }

@@ -17,11 +17,13 @@
 namespace sitsapiclient_stutalkdirect;
 
 use local_sitsgradepush\api\client;
-use local_sitsgradepush\api\request;
 use local_sitsgradepush\manager;
+use local_sitsgradepush\submission\submission;
 use sitsapiclient_stutalkdirect\requests\getcomponentgrade;
 use sitsapiclient_stutalkdirect\requests\getstudent;
 use sitsapiclient_stutalkdirect\requests\pushgrade;
+use sitsapiclient_stutalkdirect\requests\pushsubmissionlog;
+use sitsapiclient_stutalkdirect\requests\request;
 
 /**
  * Global library class for sitsapiclient_stutalkdirect.
@@ -45,11 +47,12 @@ class stutalkdirect extends client {
      *
      * @param string $action
      * @param \stdClass $data
-     * @return getcomponentgrade|null
+     * @param submission|null $submission
+     * @return getcomponentgrade|getstudent|pushgrade|pushsubmissionlog|null
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function build_request(string $action, \stdClass $data) {
+    public function build_request(string $action, \stdClass $data, submission $submission = null) {
         $request = null;
         switch ($action) {
             case manager::GET_COMPONENT_GRADE:
@@ -60,6 +63,9 @@ class stutalkdirect extends client {
                 break;
             case manager::PUSH_GRADE:
                 $request = new pushgrade($data);
+                break;
+            case manager::PUSH_SUBMISSION_LOG:
+                $request = new pushsubmissionlog($data, $submission);
                 break;
         }
 
@@ -101,7 +107,6 @@ class stutalkdirect extends client {
             }
 
             $curlresponse = curl_exec($curlclient);
-
             if ($curlresponse === false) {
                 $info = curl_getinfo($curlclient);
                 curl_close($curlclient);

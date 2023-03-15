@@ -25,40 +25,25 @@ namespace local_sitsgradepush\assessment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class assign extends assessment {
-    /** @var string DB table for storing quiz grades */
-    const GRADE_TABLE = 'assign_grades';
-
     /**
-     * Get all grades of the assignment.
+     * Get all participants.
      *
      * @return array
-     * @throws \dml_exception
      */
-    public function get_all_grades(): array {
-        global $DB;
-        $sql = "SELECT
-                u.id AS 'userid',
-                u.idnumber,
-                u.firstname,
-                u.lastname,
-                ag.assignment AS 'assessmentid',
-                ag.grade AS 'marks',
-                ag.timemodified
-                FROM {" . self::GRADE_TABLE . "} ag JOIN {user} u ON ag.userid = u.id
-                WHERE ag.assignment = :id";
-        return $DB->get_records_sql($sql, ['id' => $this->modinstanceid]);
+    public function get_all_participants(): array {
+        $context = \context_module::instance($this->coursemodule->id);
+        return get_enrolled_users($context, 'mod/assignment:submit');
     }
 
     /**
      * Set assessment name.
      *
-     * @param int $id
      * @return void
      * @throws \dml_exception
      */
-    protected function set_assessment_name(int $id) {
+    protected function set_assessment_name() {
         global $DB;
-        if ($assign = $DB->get_record('assign', ['id' => $id])) {
+        if ($assign = $DB->get_record('assign', ['id' => $this->coursemodule->instance])) {
             $this->assessmentname = $assign->name;
         }
     }

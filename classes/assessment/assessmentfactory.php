@@ -28,19 +28,18 @@ class assessmentfactory {
     /**
      * Return assessment object by a given mod name.
      *
-     * @param string $modname
      * @param \stdClass $coursemodule
      * @return assessment
      * @throws \moodle_exception
      */
-    public static function get_assessment($modname, $coursemodule) {
-        switch ($modname) {
+    public static function get_assessment(\stdClass $coursemodule) {
+        switch ($coursemodule->modname) {
             case 'quiz':
                 return new quiz($coursemodule);
             case 'assign':
                 return new assign($coursemodule);
         }
 
-        throw new \moodle_exception('Mod name '. $modname .' not found.');
+        throw new \moodle_exception('Mod name '. $coursemodule->modname .' not found.');
     }
 }
