@@ -42,3 +42,4 @@ $string['reassessmentselect'] = 'Re-assessment';
 $string['reassessmentselect_help'] = 'Select YES if it is a re-assessment.';
 $string['subplugintype_sitsapiclient'] = 'API client used for data integration.';
 $string['error:gradecomponentmapped'] = 'This component grade had been mapped to another activity.';
+$string['error:pastactivity'] = 'It looks like this course is from a previous academic year, mappings are not allowed.';

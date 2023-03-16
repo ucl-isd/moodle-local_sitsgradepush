@@ -15,6 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 namespace local_sitsgradepush;
 
+use core_course\customfield\course_handler;
 use DirectoryIterator;
 use local_sitsgradepush\api\client_factory;
 use local_sitsgradepush\api\iclient;
@@ -589,6 +590,39 @@ class manager {
         return $assessmentdata;
     }
 
+    /**
+     * Check if this activity belongs to a current academic year course.
+     *
+     * @param int $courseid
+     * @return bool
+     * @throws \dml_exception
+     */
+    public function is_current_academic_year_activity(int $courseid): bool {
+        // Get course custom fields.
+        $customfields = [];
+        $handler = course_handler::create();
+        $data = $handler->get_instance_data($courseid, true);
+
+        foreach ($data as $dta) {
+            $customfields[$dta->get_field()->get('shortname')] = $dta->get_value();
+        }
+
+        // Course academic year not set.
+        if (empty($customfields['course_year'])) {
+            return false;
+        }
+
+        // Get configured late summer assessment end date.
+        $lsaenddate = strtotime(get_config('block_lifecycle', 'late_summer_assessment_end_' . $customfields['course_year']));
+        $lsaendateplusweekdelay = $lsaenddate + \block_lifecycle\manager::get_weeks_delay_in_seconds();
+
+        // Course is not current academic year course.
+        if (time() > $lsaendateplusweekdelay) {
+            return false;
+        }
+
+        return true;
+    }
 
     /**
      * Get grade of an assessment for a student.

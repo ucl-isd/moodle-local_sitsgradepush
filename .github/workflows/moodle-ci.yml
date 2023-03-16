@@ -60,6 +60,7 @@ jobs:
       - name: Install moodle-plugin-ci
         run: |
           moodle-plugin-ci add-plugin -b main --clone https://aspark21:"$GHA_MOODLE_READ_ACCESS"@github.com/ucl-isd/moodle-block_portico_enrolments.git
+          moodle-plugin-ci add-plugin -b main --clone https://aspark21:"$GHA_MOODLE_READ_ACCESS"@github.com/ucl-isd/moodle-block_lifecycle.git
           moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
         env:
           DB: ${{ matrix.database }}
