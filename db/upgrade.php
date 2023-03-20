@@ -91,5 +91,20 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2022030902, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2022032701) {
+
+        // Define field examroomcode to be added to local_sitsgradepush_mab.
+        $table = new xmldb_table('local_sitsgradepush_mab');
+        $field = new xmldb_field('examroomcode', XMLDB_TYPE_CHAR, '30', null, null, null, null, 'mabname');
+
+        // Conditionally launch add field examroomcode.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2022032701, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

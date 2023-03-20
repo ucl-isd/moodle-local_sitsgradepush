@@ -63,7 +63,8 @@ class manager {
         'mabseq' => 'MAB_SEQ',
         'astcode' => 'AST_CODE',
         'mabperc' => 'MAB_PERC',
-        'mabname' => 'MAB_NAME'
+        'mabname' => 'MAB_NAME',
+        'examroomcode' => 'APA_ROMC'
     ];
 
     /** @var string[] Allowed activity types */
@@ -188,6 +189,7 @@ class manager {
      */
     public function get_local_component_grades(array $modocc): array {
         global $DB;
+
         $componentgrades = [];
         foreach ($modocc as $occ) {
             $sql = "SELECT cg.*, am.id AS 'assessmentmappingid'
@@ -196,12 +198,27 @@ class manager {
                     WHERE cg.modcode = :modcode AND cg.modocc = :modocc AND cg.academicyear = :academicyear
                     AND cg.periodslotcode = :periodslotcode";
 
-            $records = $DB->get_records_sql($sql,
-                array(
+            $params = array(
                 'modcode' => $occ->mod_code, 'modocc' => $occ->mod_occ_mav,
                 'academicyear' => $occ->mod_occ_year_code,
-                'periodslotcode' => $occ->mod_occ_psl_code)
-            );
+                'periodslotcode' => $occ->mod_occ_psl_code);
+
+            // Get AST codes.
+            if ($astcodes = self::get_moodle_ast_codes()) {
+                list($astcodessql, $astcodesparam) = $DB->get_in_or_equal($astcodes, SQL_PARAMS_NAMED, 'astcode');
+                $sql .= " AND astcode {$astcodessql}";
+                $params = array_merge($params, $astcodesparam);
+            }
+
+            // Get moodle exam room code.
+            $examroomcode = get_config('local_sitsgradepush', 'moodle_exam_room_code');
+            if (!empty($examroomcode)) {
+                list($examroomcodesql, $examroomcodeparam) = $DB->get_in_or_equal($examroomcode, SQL_PARAMS_NAMED, 'examroomcode');
+                $sql .= " AND examroomcode {$examroomcodesql}";
+                $params = array_merge($params, $examroomcodeparam);
+            }
+
+            $records = $DB->get_records_sql($sql, $params);
 
             // Merge results for multiple module occurrences.
             $componentgrades = array_merge($componentgrades, $records);
@@ -236,6 +253,7 @@ class manager {
                     $record->astcode = $componentgrade['AST_CODE'];
                     $record->mabperc = $componentgrade['MAB_PERC'];
                     $record->mabname = $componentgrade['MAB_NAME'];
+                    $record->examroomcode = $componentgrade['APA_ROMC'];
                     $record->timemodified = time();
 
                     $DB->update_record(self::TABLE_COMPONENT_GRADE, $record);
@@ -622,6 +640,23 @@ class manager {
         }
 
         return true;
+    }
+
+    /**
+     * Get moodle AST codes.
+     *
+     * @return array|false
+     * @throws \dml_exception
+     */
+    public function get_moodle_ast_codes() {
+        $codes = get_config('local_sitsgradepush', 'moodle_ast_codes');
+        if (!empty($codes)) {
+            if ($codes = explode(',', $codes)) {
+                return array_map('trim', $codes);
+            }
+        }
+
+        return false;
     }
 
     /**
