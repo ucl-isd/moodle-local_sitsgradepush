@@ -34,7 +34,7 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
 
-    if ($oldversion < 2022030902) {
+    if ($oldversion < 2023030902) {
 
         // Define field marks to be dropped from local_sitsgradepush_tfr_log.
         $table = new xmldb_table('local_sitsgradepush_tfr_log');
@@ -88,10 +88,10 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         }
 
         // Sitsgradepush savepoint reached.
-        upgrade_plugin_savepoint(true, 2022030902, 'local', 'sitsgradepush');
+        upgrade_plugin_savepoint(true, 2023030902, 'local', 'sitsgradepush');
     }
 
-    if ($oldversion < 2022032800) {
+    if ($oldversion < 2023032800) {
 
         // Define table local_sitsgradepush_err_log to be created.
         $table = new xmldb_table('local_sitsgradepush_err_log');
@@ -116,7 +116,31 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         }
 
         // Sitsgradepush savepoint reached.
-        upgrade_plugin_savepoint(true, 2022032800, 'local', 'sitsgradepush');
+        upgrade_plugin_savepoint(true, 2023032800, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2023041700) {
+
+        // Define field examroomcode to be added to local_sitsgradepush_mab.
+        $table = new xmldb_table('local_sitsgradepush_mab');
+        $field = new xmldb_field('examroomcode', XMLDB_TYPE_CHAR, '30', null, null, null, null, 'mabname');
+
+        // Conditionally launch add field examroomcode.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index type_idx (not unique) to be dropped form local_sitsgradepush_err_log.
+        $table = new xmldb_table('local_sitsgradepush_err_log');
+        $index = new xmldb_index('type_idx', XMLDB_INDEX_NOTUNIQUE, ['type']);
+
+        // Conditionally launch drop index type_idx.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023041700, 'local', 'sitsgradepush');
     }
 
     return true;

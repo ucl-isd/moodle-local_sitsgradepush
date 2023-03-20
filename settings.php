@@ -68,6 +68,27 @@ if ($hassiteconfig) {
             null,
             $options
         ));
+
+        // Set SITS moodle AST codes, separated by comma.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/moodle_ast_codes',
+            get_string('settings:moodleastcode', 'local_sitsgradepush'),
+            get_string('settings:moodleastcode:desc', 'local_sitsgradepush'),
+            ''
+        ));
+
+        // Set SITS moodle AST codes work with exam room code, separated by comma.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/moodle_ast_codes_exam_room',
+            get_string('settings:moodleastcodeexamroom', 'local_sitsgradepush'),
+            get_string('settings:moodleastcodeexamroom:desc', 'local_sitsgradepush'),
+            ''
+        ));
+
+        // Set SITS moodle exam room code.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/moodle_exam_room_code',
+            get_string('settings:moodleexamroomcode', 'local_sitsgradepush'),
+            get_string('settings:moodleexamroomcode:desc', 'local_sitsgradepush'),
+            'EXAMMDLE'
+        ));
     }
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
