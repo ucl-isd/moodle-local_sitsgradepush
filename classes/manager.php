@@ -428,8 +428,10 @@ class manager {
                     $request = $this->apiclient->build_request(self::PUSH_GRADE, $data);
                     $response = $this->apiclient->send_request($request);
 
-                    // Push submission log.
-                    $this->push_submission_log_to_sits($assessment, $userid, $data);
+                    if (get_config('local_sitsgradepush', 'sublogpush')) {
+                        // Push submission log.
+                        $this->push_submission_log_to_sits($assessment, $userid, $data);
+                    }
 
                     // Save transfer log.
                     $this->save_transfer_log(self::PUSH_GRADE, $data, $userid, $request, $response);
@@ -685,7 +687,7 @@ class manager {
             if (!empty($log->response)) {
                 $response = json_decode($log->response);
                 // Last push was succeeded. No need to push again.
-                if ($response->code === '0') {
+                if ($response->code == '0') {
                     return true;
                 }
             }

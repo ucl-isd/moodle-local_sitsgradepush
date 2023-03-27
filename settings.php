@@ -49,6 +49,14 @@ if ($hassiteconfig) {
             '1'
         ));
 
+        // Setting to enable/disable submission log push.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/sublogpush',
+            get_string('settings:enablesublogpush', 'local_sitsgradepush'),
+            get_string('settings:enablesublogpush:desc', 'local_sitsgradepush'),
+            '1'
+        ));
+
         // Setting to select API client.
         $manager = manager::get_manager();
         $options = ['' => get_string('settings:apiclientselect', 'local_sitsgradepush')] + $manager->get_api_client_list();

@@ -16,8 +16,6 @@
 
 namespace local_sitsgradepush\api;
 
-use sitsapiclient_stutalkdirect\requests\request;
-
 /**
  * Interface iclient
  *
@@ -31,10 +29,10 @@ interface iclient {
      * Send request.
      *
      * @package local_sitsgradepush
-     * @param request $request
+     * @param irequest $request
      * @return mixed
      */
-    public function send_request(request $request);
+    public function send_request(irequest $request);
 
     /**
      * Build request.
