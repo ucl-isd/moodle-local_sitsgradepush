@@ -95,6 +95,7 @@ class manager {
                 $this->apiclient = $apiclient;
             }
         } catch (\moodle_exception $e) {
+            logger::log($e->getMessage());
             $this->apierrors[] = $e->getMessage();
         }
     }
@@ -125,6 +126,10 @@ class manager {
                 foreach ($modocc as $occ) {
                     $request = $this->apiclient->build_request(self::GET_COMPONENT_GRADE, $occ);
                     $response = $this->apiclient->send_request($request);
+
+                    // Check response.
+                    $this->check_response($response, $request);
+
                     // Save component grades to DB.
                     $this->save_component_grades($response);
                 }
@@ -390,18 +395,27 @@ class manager {
      *
      * @param \stdClass $componentgrade
      * @param int $userid
-     * @return array
+     * @return array|false
      */
-    public function get_student_from_sits(\stdClass $componentgrade, int $userid): array {
-        $user = user_get_users_by_id([$userid]);
-        $data = new \stdClass();
-        $data->idnumber = $user[$userid]->idnumber;
-        $data->mapcode = $componentgrade->mapcode;
-        $data->mabseq = $componentgrade->mabseq;
+    public function get_student_from_sits(\stdClass $componentgrade, int $userid) {
+        try {
+            $user = user_get_users_by_id([$userid]);
+            $data = new \stdClass();
+            $data->idnumber = $user[$userid]->idnumber;
+            $data->mapcode = $componentgrade->mapcode;
+            $data->mabseq = $componentgrade->mabseq;
 
-        $request = $this->apiclient->build_request('getstudent', $data);
+            // Build and send request.
+            $request = $this->apiclient->build_request('getstudent', $data);
+            $response = $this->apiclient->send_request($request);
 
-        return $this->apiclient->send_request($request);
+            // Check response.
+            $this->check_response($response, $request);
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        return $response;
     }
 
     /**
@@ -428,13 +442,16 @@ class manager {
                     $request = $this->apiclient->build_request(self::PUSH_GRADE, $data);
                     $response = $this->apiclient->send_request($request);
 
+                    // Check response.
+                    $this->check_response($response, $request);
+
+                    // Save transfer log.
+                    $this->save_transfer_log(self::PUSH_GRADE, $data, $userid, $request, $response);
+
                     if (get_config('local_sitsgradepush', 'sublogpush')) {
                         // Push submission log.
                         $this->push_submission_log_to_sits($assessment, $userid, $data);
                     }
-
-                    // Save transfer log.
-                    $this->save_transfer_log(self::PUSH_GRADE, $data, $userid, $request, $response);
 
                     return $response;
                 }
@@ -465,6 +482,9 @@ class manager {
                 $request = $this->apiclient->build_request(self::PUSH_SUBMISSION_LOG, $data, $submission);
                 $response = $this->apiclient->send_request($request);
 
+                // Check response.
+                $this->check_response($response, $request);
+
                 // Save push log.
                 $this->save_transfer_log(self::PUSH_SUBMISSION_LOG, $data, $userid, $request, $response);
                 return $response;
@@ -487,15 +507,12 @@ class manager {
 
         // Check mapping.
         if (!$mapping = $this->get_assessment_mapping($assessment->get_course_module()->id)) {
-            // TODO: log it somewhere later.
-            $errormessage = 'No valid mapping or component grade. ' . $assessmentinfo;
+            logger::log(get_string('error:assessmentmapping', 'local_sitsgradepush', $assessmentinfo));
             return false;
         }
 
         // Get SPR_CODE from SITS.
         if (!$student = $this->get_student_from_sits($mapping, $userid)) {
-            // TODO: log it somewhere later.
-            $errormessage = 'Cannot get student from sits. ' . $assessmentinfo;
             return false;
         }
 
@@ -694,5 +711,31 @@ class manager {
         }
 
         return false;
+    }
+
+    /**
+     * Check response.
+     *
+     * @param mixed $response
+     * @param irequest $request
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    private function check_response($response, irequest $request) {
+        // Throw exception when response is empty.
+        if (empty($response)) {
+            logger::log(
+                get_string(
+                    'error:requestfailed', 'local_sitsgradepush',
+                    ['requestname' => $request->get_request_name(), 'debuginfo' => '']
+                ),
+                $request->get_endpoint_url_with_params(),
+                $request->get_request_body()
+            );
+
+            throw new \moodle_exception('error:requestfailedmsg', 'local_sitsgradepush');
+        }
     }
 }
