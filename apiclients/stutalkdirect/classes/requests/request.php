@@ -141,9 +141,9 @@ abstract class request implements irequest {
     /**
      * Return request body.
      *
-     * @return string
+     * @return string|null
      */
-    public function get_request_body(): string {
+    public function get_request_body(): ?string {
         return $this->body;
     }
 

@@ -14,55 +14,37 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace local_sitsgradepush\api;
+namespace local_sitsgradepush;
 
 /**
- * Interface irequest
+ * Logger.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-interface irequest {
+class logger {
     /**
-     * Get request body.
+     * Log error.
      *
-     * @package local_sitsgradepush
-     * @return string|null
+     * @param string $message
+     * @param string|null $requesturl
+     * @param string|null $data
+     * @return void
+     * @throws \dml_exception
      */
-    public function get_request_body(): ?string;
+    public static function log (string $message, string $requesturl = null, string $data = null) {
+        global $DB, $USER;
 
-    /**
-     * Get endpoint url with params.
-     *
-     * @package local_sitsgradepush
-     * @return string
-     */
-    public function get_endpoint_url_with_params(): string;
+        // Create the insert object.
+        $error = new \stdClass();
+        $error->message = $message;
+        $error->userid = $USER->id;
+        $error->requesturl = $requesturl;
+        $error->data = $data;
+        $error->timecreated = time();
 
-    /**
-     * Get request method.
-     *
-     * @package local_sitsgradepush
-     * @return string
-     */
-    public function get_method(): string;
-
-    /**
-     * Returns processed response.
-     *
-     * @package local_sitsgradepush
-     * @param mixed $response
-     * @return mixed
-     */
-    public function process_response($response);
-
-    /**
-     * Return target client id.
-     *
-     * @package local_sitsgradepush
-     * @return string
-     */
-    public function get_target_client_id(): string;
+        $DB->insert_record('local_sitsgradepush_err_log', $error);
+    }
 }

@@ -18,6 +18,7 @@ namespace sitsapiclient_stutalkdirect;
 
 use local_sitsgradepush\api\client;
 use local_sitsgradepush\api\irequest;
+use local_sitsgradepush\logger;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\submission\submission;
 use sitsapiclient_stutalkdirect\requests\getcomponentgrade;
@@ -107,24 +108,44 @@ class stutalkdirect extends client {
                 );
             }
 
+            // Execute request.
             $curlresponse = curl_exec($curlclient);
-            if ($curlresponse === false) {
-                $info = curl_getinfo($curlclient);
-                curl_close($curlclient);
 
+            // Get execute info.
+            $info = curl_getinfo($curlclient);
+
+            // CURL related errors.
+            if ($curlresponse === false) {
+                $error = curl_error($curlclient);
+                curl_close($curlclient);
                 throw new \moodle_exception(
-                    'An error occurred during curl exec  to get SITS data. Additional info: '
-                    . var_export($info, true)
+                    'error:curlfailed',
+                    'local_sitsgradepush',
+                    '',
+                    ['error' => $error, 'debuginfo' => var_export($info, true)]
                 );
             }
+
+            // Check response empty and http code >= 400.
+            if (empty($curlresponse) && $info['http_code'] >= 400) {
+                throw new \moodle_exception(
+                    'error:requestfailed',
+                    'local_sitsgradepush',
+                    '',
+                    ['requestname' => $request->get_request_name(), 'debuginfo' => var_export($info, true)]
+                );
+            }
+
+            // Close curl session.
             curl_close($curlclient);
 
             // Convert JSON to array.
             $data = $request->process_response(json_decode($curlresponse, true));
         } catch (\Exception $e) {
-            throw new \moodle_exception(
-                'Unable to get data from request: ' . $request->get_request_name() . '. ' . $e->getMessage()
-            );
+            // Log error.
+            logger::log($e->getMessage(), $request->get_endpoint_url_with_params(), $request->get_request_body());
+            // Throw exception.
+            throw new \moodle_exception('error:requestfailedmsg', 'local_sitsgradepush');
         }
 
         return $data;
