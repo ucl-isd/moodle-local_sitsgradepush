@@ -17,7 +17,7 @@
 /**
  * Plugin version and other meta-data are defined here.
  *
- * @package     local_sitsgradepush
+ * @package     sitsapiclient_easikit
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
@@ -25,12 +25,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_sitsgradepush';
+$plugin->component = 'sitsapiclient_easikit';
 $plugin->release = '0.1.0';
-$plugin->version = 2022032700;
+$plugin->version = 2023032300;
 $plugin->requires = 2021051708;
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->dependencies = array(
-    'block_portico_enrolments' => 2023012400,
-    'block_lifecycle' => 2022120800
+    'local_sitsgradepush' => 2022020101
 );

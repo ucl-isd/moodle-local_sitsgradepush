@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace sitsapiclient_stutalkdirect\requests;
+namespace sitsapiclient_easikit\requests;
 
 use local_sitsgradepush\api\irequest;
 
 /**
  * Parent class for requests.
  *
- * @package     sitsapiclient_stutalkdirect
+ * @package     sitsapiclient_easikit
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
@@ -45,11 +45,21 @@ abstract class request implements irequest {
     /** @var array Local data fields to SITS fields mapping */
     protected $mapping;
 
-    /** @var string request method, e.g. GET, PUT, etc. */
+    /** @var string Request method, e.g. GET, PUT, etc. */
     protected $method;
 
-    /** @var string request body */
+    /** @var string Request body */
     protected $body;
+
+    /** @var string Target client id for this endpoint */
+    protected $targetclientid;
+
+    /**
+     * Set the target client id for the request.
+     *
+     * @return void
+     */
+    abstract protected function set_target_client_id();
 
     /**
      * Constructor.
@@ -70,6 +80,7 @@ abstract class request implements irequest {
         $this->endpointparams = $endpointparams;
         $this->set_params_data($data);
         $this->method = $method;
+        $this->set_target_client_id();
     }
 
     /**
@@ -86,7 +97,7 @@ abstract class request implements irequest {
      *
      * @return \stdClass
      */
-    public function get_data() {
+    public function get_data(): \stdClass {
         return $this->data;
     }
 
@@ -154,7 +165,7 @@ abstract class request implements irequest {
      * @return mixed
      */
     public function process_response($response) {
-        return $response;
+        return json_decode($response, true);
     }
 
     /**
@@ -163,8 +174,7 @@ abstract class request implements irequest {
      * @return string
      */
     public function get_target_client_id(): string {
-        // Not applicable for stutalk direct.
-        return '';
+        return $this->targetclientid;
     }
 
     /**

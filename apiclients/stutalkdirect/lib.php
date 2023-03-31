@@ -17,13 +17,13 @@
 namespace sitsapiclient_stutalkdirect;
 
 use local_sitsgradepush\api\client;
+use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\submission\submission;
 use sitsapiclient_stutalkdirect\requests\getcomponentgrade;
 use sitsapiclient_stutalkdirect\requests\getstudent;
 use sitsapiclient_stutalkdirect\requests\pushgrade;
 use sitsapiclient_stutalkdirect\requests\pushsubmissionlog;
-use sitsapiclient_stutalkdirect\requests\request;
 
 /**
  * Global library class for sitsapiclient_stutalkdirect.
@@ -75,12 +75,12 @@ class stutalkdirect extends client {
     /**
      * Send request.
      *
-     * @param request $request
+     * @param irequest $request
      * @return mixed
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function send_request(request $request) {
+    public function send_request(irequest $request) {
         // Get username and password.
         $username = get_config('sitsapiclient_stutalkdirect', 'username');
         $password = get_config('sitsapiclient_stutalkdirect', 'password');
@@ -91,6 +91,7 @@ class stutalkdirect extends client {
 
         try {
             $curlclient = curl_init();
+            curl_setopt($curlclient, CURLOPT_CONNECTTIMEOUT, 30);
             curl_setopt($curlclient, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($curlclient, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curlclient, CURLOPT_URL, $request->get_endpoint_url_with_params());

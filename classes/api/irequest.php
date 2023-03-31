@@ -32,4 +32,37 @@ interface irequest {
      * @return string
      */
     public function get_request_body(): string;
+
+    /**
+     * Get endpoint url with params.
+     *
+     * @package local_sitsgradepush
+     * @return string
+     */
+    public function get_endpoint_url_with_params(): string;
+
+    /**
+     * Get request method.
+     *
+     * @package local_sitsgradepush
+     * @return string
+     */
+    public function get_method(): string;
+
+    /**
+     * Returns processed response.
+     *
+     * @package local_sitsgradepush
+     * @param mixed $response
+     * @return mixed
+     */
+    public function process_response($response);
+
+    /**
+     * Return target client id.
+     *
+     * @package local_sitsgradepush
+     * @return string
+     */
+    public function get_target_client_id(): string;
 }

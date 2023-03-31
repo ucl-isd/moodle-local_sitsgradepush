@@ -66,10 +66,10 @@ class getcomponentgrade extends request {
     /**
      * Process returned response.
      *
-     * @param array $response
+     * @param mixed $response
      * @return array
      */
-    public function process_response(array $response): array {
+    public function process_response($response): array {
         return $this->make_array_first_row_as_keys($response);
     }
 }
