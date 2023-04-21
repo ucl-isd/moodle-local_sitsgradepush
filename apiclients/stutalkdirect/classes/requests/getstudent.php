@@ -69,6 +69,6 @@ class getstudent extends request {
      * @return array
      */
     public function process_response($response): array {
-        return $this->make_array_first_row_as_keys($response);
+        return $this->make_array_first_row_as_keys(json_decode($response, true));
     }
 }

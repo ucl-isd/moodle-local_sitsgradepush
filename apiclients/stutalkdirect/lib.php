@@ -140,7 +140,7 @@ class stutalkdirect extends client {
             curl_close($curlclient);
 
             // Convert JSON to array.
-            $data = $request->process_response(json_decode($curlresponse, true));
+            $data = $request->process_response($curlresponse);
         } catch (\Exception $e) {
             // Log error.
             logger::log($e->getMessage(), $request->get_endpoint_url_with_params(), $request->get_request_body());

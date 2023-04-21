@@ -56,34 +56,35 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
         $mform->setType('gradepushassessmentselect', PARAM_INT);
         $mform->addHelpButton('gradepushassessmentselect', 'gradepushassessmentselect', 'local_sitsgradepush');
 
-        // Add re-assessment dropdown list.
-        $reassessment = $mform->addElement(
-            'select',
-            'reassessment',
-            get_string('label:reassessmentselect', 'local_sitsgradepush'),
-            ['0' => 'NO', '1' => 'YES']
-        );
-        $mform->setType('reassessment', PARAM_INT);
-        $mform->addHelpButton('reassessment', 'reassessmentselect', 'local_sitsgradepush');
-
         // Add component grades options to the dropdown list.
         $manager = manager::get_manager();
         if (empty($manager->get_api_errors())) {
             // Get component grade options.
             $options = $manager->get_component_grade_options($formwrapper->get_course()->id);
             if (empty($options)) {
-                $reassessment->updateAttributes(['disabled' => 'disabled']);
-                $mform->addElement('html', "<p class=\"alert-info alert\">No lookup records were found </p>");
+                $mform->addElement(
+                    'html',
+                    "<p class=\"alert-info alert\">". get_string('form:alert_no_mab_found', 'local_sitsgradepush') ."</p>"
+                );
             } else {
                 foreach ($options as $option) {
                     $select->addOption($option->text, $option->value, $option->disabled);
                 }
+
+                // If it's a Turnitin assignment and more than one part, disable the dropdown list.
+                if ($modulename === 'turnitintooltwo') {
+                    $mform->addElement(
+                        'html',
+                        "<p class=\"alert-info alert\">". get_string('form:info_turnitin_numparts', 'local_sitsgradepush') ."</p>"
+                    );
+                    $mform->disabledIf('gradepushassessmentselect', 'numparts', 'gt', 1);
+                }
+
                 if ($cm = $formwrapper->get_coursemodule()) {
-                    $disableselect = $disablereassessment = false;
+                    $disableselect = false;
                     // Disable the settings if this activity is already mapped.
                     if ($assessmentmapping = $manager->get_assessment_mapping($cm->id)) {
                         $select->setSelected($assessmentmapping->componentgradeid);
-                        $reassessment->setSelected($assessmentmapping->reassessment);
                         $disableselect = $disablereassessment = true;
                     } else {
                         if (!$manager->is_current_academic_year_activity($formwrapper->get_course()->id)) {
@@ -91,16 +92,12 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                                 'html',
                                 "<p class=\"alert-info alert\">" . get_string('error:pastactivity', 'local_sitsgradepush') . "</p>"
                             );
-                            $disableselect = $disablereassessment = true;
+                            $disableselect = true;
                         }
                     }
 
                     if ($disableselect) {
                         $select->updateAttributes(['disabled' => 'disabled']);
-                    }
-
-                    if ($disablereassessment) {
-                        $reassessment->updateAttributes(['disabled' => 'disabled']);
                     }
                 }
             }
@@ -151,6 +148,13 @@ function local_sitsgradepush_coursemodule_validation($fromform, $fields) {
             if ($manager->is_component_grade_mapped($fields['gradepushassessmentselect'])) {
                 return ['gradepushassessmentselect' => get_string('error:gradecomponentmapped', 'local_sitsgradepush')];
             }
+        }
+    }
+
+    // For Turnitin assignment, check if the number of parts is greater than 1.
+    if ($activitytype[1] === 'turnitintooltwo' && !empty($fields['gradepushassessmentselect'])) {
+        if ($fields['numparts'] > 1) {
+            return ['numparts' => get_string('error:turnitin_numparts', 'local_sitsgradepush')];
         }
     }
 }

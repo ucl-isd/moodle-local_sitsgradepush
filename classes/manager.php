@@ -68,7 +68,7 @@ class manager {
     ];
 
     /** @var string[] Allowed activity types */
-    const ALLOWED_ACTIVITIES = ['assign', 'quiz', 'workshop', 'turnitintooltwo'];
+    const ALLOWED_ACTIVITIES = ['assign', 'quiz', 'turnitintooltwo'];
 
     /** @var null Manager instance */
     private static $instance = null;
@@ -303,9 +303,6 @@ class manager {
             $record->coursemoduleid = $data->coursemodule;
             $record->moduletype = $data->modulename;
             $record->componentgradeid = $data->gradepushassessmentselect;
-            if ($data->reassessment == '1') {
-                $record->reassessment = '1';
-            }
             $record->timecreated = time();
             $record->timemodified = time();
 

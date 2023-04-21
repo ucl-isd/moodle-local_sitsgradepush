@@ -99,6 +99,21 @@ class pushgrade extends request {
     }
 
     /**
+     * Process response.
+     *
+     * @param mixed $response
+     * @return mixed
+     */
+    public function process_response($response) {
+        if (!empty($response) && is_string($response)) {
+            // Add curly brackets to response if missing.
+            $response = $this->check_missing_curly_brackets($response);
+        }
+
+        return json_decode($response, true);
+    }
+
+    /**
      * Set request body in JSON format.
      *
      * @param \stdClass $data
