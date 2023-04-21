@@ -17,31 +17,34 @@
 namespace local_sitsgradepush\assessment;
 
 /**
- * Factory class for assessment.
+ * Class for Turnitin assignment.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class assessmentfactory {
+class turnitintooltwo extends assessment {
     /**
-     * Return assessment object by a given mod name.
+     * Get all participants.
      *
-     * @param \stdClass $coursemodule
-     * @return assessment
-     * @throws \moodle_exception
+     * @return array
      */
-    public static function get_assessment(\stdClass $coursemodule) {
-        switch ($coursemodule->modname) {
-            case 'quiz':
-                return new quiz($coursemodule);
-            case 'assign':
-                return new assign($coursemodule);
-            case 'turnitintooltwo':
-                return new turnitintooltwo($coursemodule);
-        }
+    public function get_all_participants(): array {
+        $context = \context_module::instance($this->coursemodule->id);
+        return get_enrolled_users($context, 'mod/turnitintooltwo:submit');
+    }
 
-        throw new \moodle_exception('Mod name '. $coursemodule->modname .' not found.');
+    /**
+     * Set assessment name.
+     *
+     * @return void
+     * @throws \dml_exception
+     */
+    protected function set_assessment_name() {
+        global $DB;
+        if ($turnitinassign = $DB->get_record('turnitintooltwo', ['id' => $this->coursemodule->instance])) {
+            $this->assessmentname = $turnitinassign->name;
+        }
     }
 }

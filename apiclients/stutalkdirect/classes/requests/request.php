@@ -216,4 +216,20 @@ abstract class request implements irequest {
 
         return $processedresponse;
     }
+
+    /**
+     * Check missing curly brackets, add it back if missing.
+     *
+     * @param string $string
+     * @return string
+     */
+    protected function check_missing_curly_brackets(string $string): string {
+        // Check if the first character is '{' and last character is '}'.
+        if (substr($string, 0, 1) !== '{' && substr($string, -1) !== '}') {
+            // Add the missing '{' and '}'.
+            $string = '{' . $string . '}';
+        }
+
+        return $string;
+    }
 }

@@ -55,3 +55,6 @@ $string['error:gradecomponentmapped'] = 'This component grade had been mapped to
 $string['error:pastactivity'] = 'It looks like this course is from a previous academic year, mappings are not allowed.';
 $string['error:requestfailedmsg'] = 'Failed to perform request. Please try again later.';
 $string['error:requestfailed'] = 'Failed to perform {$a->requestname}. Debug Info: {$a->debuginfo}';
+$string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Grade Push.';
+$string['form:alert_no_mab_found'] = 'No assessment components were found';
+$string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Grade Push.';

@@ -41,6 +41,8 @@ class submissionfactory {
                 return new quiz($coursemodule, $userid);
             case 'assign':
                 return new assign($coursemodule, $userid);
+            case 'turnitintooltwo':
+                return new turnitintooltwo($coursemodule, $userid);
         }
 
         throw new \moodle_exception('Mod name '. $coursemodule->modulename .' not found.');

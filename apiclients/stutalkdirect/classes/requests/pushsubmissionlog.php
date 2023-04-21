@@ -77,6 +77,21 @@ class pushsubmissionlog extends request {
     }
 
     /**
+     * Process the response.
+     *
+     * @param mixed $response
+     * @return mixed
+     */
+    public function process_response($response) {
+        if (!empty($response) && is_string($response)) {
+            // Add curly brackets to response if missing.
+            $response = $this->check_missing_curly_brackets($response);
+        }
+
+        return json_decode($response, true);
+    }
+
+    /**
      * Set the request body.
      *
      * @return void
