@@ -126,15 +126,8 @@ class stutalkdirect extends client {
                 );
             }
 
-            // Check response empty and http code >= 400.
-            if (empty($curlresponse) && $info['http_code'] >= 400) {
-                throw new \moodle_exception(
-                    'error:requestfailed',
-                    'local_sitsgradepush',
-                    '',
-                    ['requestname' => $request->get_request_name(), 'debuginfo' => var_export($info, true)]
-                );
-            }
+            // Check response.
+            $this->check_response($request, $curlresponse, $info);
 
             // Close curl session.
             curl_close($curlclient);
@@ -149,5 +142,38 @@ class stutalkdirect extends client {
         }
 
         return $data;
+    }
+
+    /**
+     * Check response.
+     *
+     * @param irequest $request
+     * @param mixed $response
+     * @param mixed $curlinfo
+     * @return void
+     * @throws \moodle_exception
+     */
+    private function check_response(irequest $request, $response, $curlinfo) {
+        $debuginfo = '';
+
+        // Check empty response, should not happen for stutalk direct.
+        if (empty($response)) {
+            $debuginfo = 'Empty response';
+        }
+
+        // Check server response codes 400 and above.
+        if ($curlinfo['http_code'] >= 400) {
+            $debuginfo = 'HTTP code: ' . $curlinfo['http_code'] . '. Response: ' . $response;
+        }
+
+        // Throw exception if debug info is not empty.
+        if ($debuginfo) {
+            throw new \moodle_exception(
+                'error:requestfailed',
+                'local_sitsgradepush',
+                '',
+                ['requestname' => $request->get_request_name(), 'debuginfo' => $debuginfo]
+            );
+        }
     }
 }

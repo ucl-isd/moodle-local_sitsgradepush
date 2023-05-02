@@ -26,6 +26,14 @@ namespace local_sitsgradepush\api;
  */
 interface irequest {
     /**
+     * Get request name.
+     *
+     * @package local_sitsgradepush
+     * @return string
+     */
+    public function get_request_name(): string;
+
+    /**
      * Get request body.
      *
      * @package local_sitsgradepush
