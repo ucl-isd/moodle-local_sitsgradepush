@@ -48,6 +48,10 @@ if (!$coursemodule = get_coursemodule_from_id(null, $coursemoduleid)) {
 
 // Get course context.
 $context = context_course::instance($coursemodule->course);
+
+// Check user's capability.
+require_capability('local/sitsgradepush:pushgrade', $context);
+
 $course = get_course($coursemodule->course);
 
 // Set the required data into the PAGE object.
@@ -100,9 +104,15 @@ if (!empty($studentswithgrade)) {
 
     // Render assessment push status table.
     echo $renderer->render_assessment_push_status_table($studentswithgrade);
-    echo $renderer->render_button('local_sitsgradepush_finishbutton', $buttonlabel, $url->out(false));
+
+    // Render push button if the assessment is mapped.
+    if ($manager->is_activity_mapped($coursemoduleid)) {
+        echo $renderer->render_button('local_sitsgradepush_pushbutton', $buttonlabel, $url->out(false));
+    } else {
+        echo '<p class="alert alert-danger">' . get_string('error:assessmentisnotmapped', 'local_sitsgradepush') . '</p>';
+    }
 } else {
-    echo '<p>No Record Found.</p>';
+    echo '<p class="alert alert-info">' . get_string('error:nostudentgrades', 'local_sitsgradepush') . '</p>';
 }
 
 // And the page footer.

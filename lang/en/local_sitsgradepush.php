@@ -49,12 +49,21 @@ $string['gradepushassessmentselect_help'] = 'Select SITS assessment to link to t
 $string['reassessmentselect'] = 'Re-assessment';
 $string['reassessmentselect_help'] = 'Select YES if it is a re-assessment.';
 $string['subplugintype_sitsapiclient'] = 'API client used for data integration.';
+
+// Error strings.
 $string['error:assessmentmapping'] = 'No valid mapping or component grade. {$a}';
+$string['error:assessmentisnotmapped'] = 'This activity is not mapped to any assessment component.';
 $string['error:curlfailed'] = 'Error: {$a->error}. Debug Info: {$a->debuginfo}';
 $string['error:gradecomponentmapped'] = 'This component grade had been mapped to another activity.';
 $string['error:pastactivity'] = 'It looks like this course is from a previous academic year, mappings are not allowed.';
+$string['error:mapassessment'] = 'You do not have permission to map assessment.';
+$string['error:nostudentgrades'] = 'No student grades found.';
 $string['error:requestfailedmsg'] = 'Failed to perform request. Please try again later.';
 $string['error:requestfailed'] = 'Failed to perform {$a->requestname}. Debug Info: {$a->debuginfo}';
 $string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Grade Push.';
 $string['form:alert_no_mab_found'] = 'No assessment components were found';
 $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Grade Push.';
+
+// Capability strings.
+$string['sitsgradepush:mapassessment'] = 'Map assessment component to Moodle activity';
+$string['sitsgradepush:pushgrade'] = 'Push grades to SITS';

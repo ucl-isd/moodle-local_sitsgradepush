@@ -85,8 +85,9 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                     // Disable the settings if this activity is already mapped.
                     if ($assessmentmapping = $manager->get_assessment_mapping($cm->id)) {
                         $select->setSelected($assessmentmapping->componentgradeid);
-                        $disableselect = $disablereassessment = true;
+                        $disableselect = true;
                     } else {
+                        // Disable the settings if this activity is not in the current academic year.
                         if (!$manager->is_current_academic_year_activity($formwrapper->get_course()->id)) {
                             $mform->addElement(
                                 'html',
@@ -101,6 +102,19 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                     }
                 }
             }
+        }
+
+        // Disable the settings if this user does not have permission to map assessment.
+        if (!has_capability(
+            'local/sitsgradepush:mapassessment',
+            context_course::instance($formwrapper->get_course()->id))) {
+            $mform->addElement(
+                'html',
+                "<p class=\"alert-info alert\">" .
+                get_string('error:mapassessment', 'local_sitsgradepush') .
+                "</p>"
+            );
+            $select->updateAttributes(['disabled' => 'disabled']);
         }
 
         // Display any API error.
