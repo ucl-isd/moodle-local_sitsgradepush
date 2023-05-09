@@ -44,6 +44,9 @@ class manager {
     /** @var string Action identifier for pushing grades to SITS */
     const PUSH_SUBMISSION_LOG = 'pushsubmissionlog';
 
+    /** @var string Action identifier for getting marking scheme from SITS */
+    const GET_MARKING_SCHEMES = 'getmarkingschemes';
+
     /** @var string DB table for storing component grades from SITS */
     const TABLE_COMPONENT_GRADE = 'local_sitsgradepush_mab';
 
@@ -123,13 +126,16 @@ class manager {
     public function fetch_component_grades_from_sits(array $modocc): bool {
         try {
             if (!empty($modocc)) {
-                // Get component grades from SITS.
                 foreach ($modocc as $occ) {
+                    // Get component grades from SITS.
                     $request = $this->apiclient->build_request(self::GET_COMPONENT_GRADE, $occ);
                     $response = $this->apiclient->send_request($request);
 
                     // Check response.
                     $this->check_response($response, $request);
+
+                    // Filter out unwanted component grades.
+                    $response = $this->filter_out_invalid_component_grades($response);
 
                     // Save component grades to DB.
                     $this->save_component_grades($response);
@@ -142,6 +148,50 @@ class manager {
         }
 
         return false;
+    }
+
+    /**
+     * Fetch marking scheme data from SITS.
+     *
+     * @return array|void
+     */
+    public function fetch_marking_scheme_from_sits() {
+        try {
+            // Get marking scheme from SITS.
+            $request = $this->apiclient->build_request(self::GET_MARKING_SCHEMES, null);
+            $response = $this->apiclient->send_request($request);
+
+            // Check response.
+            $this->check_response($response, $request);
+
+            return $response;
+        } catch (\moodle_exception $e) {
+            $this->apierrors[] = $e->getMessage();
+        }
+    }
+
+    /**
+     * Filter out invalid component grades data (MAB) from SITS.
+     *
+     * @param array $componentgrades
+     * @return array
+     * @throws \dml_exception
+     */
+    public function filter_out_invalid_component_grades(array $componentgrades): array {
+        $filtered = [];
+
+        $makingschemes = $this->fetch_marking_scheme_from_sits();
+        if (!empty($makingschemes)) {
+            foreach ($componentgrades as $componentgrade) {
+                if ($makingschemes[$componentgrade['MKS_CODE']]['MKS_MARKS'] == 'Y' &&
+                    $makingschemes[$componentgrade['MKS_CODE']]['MKS_IUSE'] == 'Y' &&
+                    $makingschemes[$componentgrade['MKS_CODE']]['MKS_TYPE'] == 'A') {
+                    $filtered[] = $componentgrade;
+                }
+            }
+        }
+
+        return $filtered;
     }
 
     /**
@@ -785,14 +835,14 @@ class manager {
         if (empty($response)) {
             logger::log(
                 get_string(
-                    'error:requestfailed', 'local_sitsgradepush',
+                    'error:emptyresponse', 'local_sitsgradepush',
                     ['requestname' => $request->get_request_name(), 'debuginfo' => '']
                 ),
                 $request->get_endpoint_url_with_params(),
                 $request->get_request_body()
             );
 
-            throw new \moodle_exception('error:requestfailedmsg', 'local_sitsgradepush');
+            throw new \moodle_exception('error:emptyresponsemsg', 'local_sitsgradepush');
         }
     }
 }

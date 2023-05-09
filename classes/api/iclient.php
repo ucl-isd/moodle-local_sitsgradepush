@@ -39,8 +39,8 @@ interface iclient {
      *
      * @package local_sitsgradepush
      * @param string $action
-     * @param \stdClass $data
+     * @param \stdClass|null $data
      * @return mixed
      */
-    public function build_request(string $action, \stdClass $data);
+    public function build_request(string $action, \stdClass $data = null);
 }

@@ -51,27 +51,33 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configtext('sitsapiclient_stutalkdirect/endpoint_component_grade',
         get_string('settings:endpoint_component_grade', 'sitsapiclient_stutalkdirect'),
         get_string('settings:endpoint_component_grade:desc', 'sitsapiclient_stutalkdirect'),
-        'https://stutalk-dev.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDL_MAB_1'
+        'https://stutalk-dev-cloud.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDL_MAB_1'
     ));
 
     // Endpoint for getting student SPR_CODE by student's id number, assessment map code and sequence number.
     $settings->add(new admin_setting_configtext('sitsapiclient_stutalkdirect/endpoint_student',
         get_string('settings:endpoint_student', 'sitsapiclient_stutalkdirect'),
         get_string('settings:endpoint_student:desc', 'sitsapiclient_stutalkdirect'),
-        'https://stutalk-dev.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDL_GET_STD'
+        'https://stutalk-dev-cloud.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDL_GET_STD'
     ));
 
     // Endpoint for grade push.
     $settings->add(new admin_setting_configtext('sitsapiclient_stutalkdirect/endpoint_grade_push',
         get_string('settings:endpoint_push_grade', 'sitsapiclient_stutalkdirect'),
         get_string('settings:endpoint_push_grade:desc', 'sitsapiclient_stutalkdirect'),
-        'https://stutalk-dev.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDLGRADEPUSH'
+        'https://stutalk-dev-cloud.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDLGRADEPUSH'
     ));
 
     // Endpoint for push submission log.
     $settings->add(new admin_setting_configtext('sitsapiclient_stutalkdirect/endpoint_push_submission_log',
         get_string('settings:endpoint_push_submission_log', 'sitsapiclient_stutalkdirect'),
         get_string('settings:endpoint_push_submission_log:desc', 'sitsapiclient_stutalkdirect'),
-        'https://stutalk-dev.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDLSUBLOG'
+        'https://stutalk-dev-cloud.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDLSUBLOG'
+    ));
+
+    $settings->add(new admin_setting_configtext('sitsapiclient_stutalkdirect/endpoint_getmarkingschemes',
+        get_string('settings:endpoint_getmarkingschemes', 'sitsapiclient_stutalkdirect'),
+        get_string('settings:endpoint_getmarkingschemes:desc', 'sitsapiclient_stutalkdirect'),
+        'https://stutalk-dev-cloud.ucl.ac.uk/urd/sits.urd/run/SIW_RWS/MDL_CLC_MKS'
     ));
 }

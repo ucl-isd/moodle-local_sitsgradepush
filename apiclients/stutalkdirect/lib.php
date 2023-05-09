@@ -22,6 +22,7 @@ use local_sitsgradepush\logger;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\submission\submission;
 use sitsapiclient_stutalkdirect\requests\getcomponentgrade;
+use sitsapiclient_stutalkdirect\requests\getmarkingschemes;
 use sitsapiclient_stutalkdirect\requests\getstudent;
 use sitsapiclient_stutalkdirect\requests\pushgrade;
 use sitsapiclient_stutalkdirect\requests\pushsubmissionlog;
@@ -47,13 +48,13 @@ class stutalkdirect extends client {
      * Build the request object for a given action.
      *
      * @param string $action
-     * @param \stdClass $data
+     * @param \stdClass|null $data
      * @param submission|null $submission
      * @return getcomponentgrade|getstudent|pushgrade|pushsubmissionlog|null
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function build_request(string $action, \stdClass $data, submission $submission = null) {
+    public function build_request(string $action, \stdClass $data = null, submission $submission = null) {
         $request = null;
         switch ($action) {
             case manager::GET_COMPONENT_GRADE:
@@ -68,6 +69,8 @@ class stutalkdirect extends client {
             case manager::PUSH_SUBMISSION_LOG:
                 $request = new pushsubmissionlog($data, $submission);
                 break;
+            case manager::GET_MARKING_SCHEMES:
+                $request = new getmarkingschemes();
         }
 
         return $request;

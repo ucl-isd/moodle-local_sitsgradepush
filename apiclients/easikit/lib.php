@@ -44,13 +44,13 @@ class easikit extends client {
      * Build request.
      *
      * @param string $action
-     * @param \stdClass $data
+     * @param \stdClass|null $data
      * @param submission|null $submission
      * @return request|null
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function build_request(string $action, \stdClass $data, submission $submission = null) {
+    public function build_request(string $action, \stdClass $data = null, submission $submission = null) {
         $request = null;
         switch ($action) {
             case manager::PUSH_GRADE:
