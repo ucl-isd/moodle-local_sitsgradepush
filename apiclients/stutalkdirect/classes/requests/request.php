@@ -57,18 +57,20 @@ abstract class request implements irequest {
      * @param array $mapping
      * @param string $endpointurl
      * @param array $endpointparams
-     * @param \stdClass $data
+     * @param \stdClass|null $data
      * @param string $method
      * @throws \moodle_exception
      */
     protected function __construct(
-        array $mapping, string $endpointurl, array $endpointparams, \stdClass $data, string $method = 'GET'
+        array $mapping, string $endpointurl, array $endpointparams, \stdClass $data = null, string $method = 'GET'
     ) {
         $this->data = $data;
         $this->mapping = $mapping;
         $this->endpointurl = $endpointurl;
         $this->endpointparams = $endpointparams;
-        $this->set_params_data($data);
+        if (!empty($data)) {
+            $this->set_params_data($data);
+        }
         $this->method = $method;
     }
 
