@@ -15,6 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 namespace local_sitsgradepush;
 
+use cache;
 use core_course\customfield\course_handler;
 use DirectoryIterator;
 use local_sitsgradepush\api\client_factory;
@@ -468,11 +469,25 @@ class manager {
      *
      * @param \stdClass $componentgrade
      * @param int $userid
-     * @return array|false
+     * @return mixed
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
      */
     public function get_student_from_sits(\stdClass $componentgrade, int $userid) {
-        try {
-            $user = user_get_users_by_id([$userid]);
+        // Get user.
+        $user = user_get_users_by_id([$userid]);
+
+        // Try to get student spr from cache.
+        $cache = cache::make('local_sitsgradepush', 'studentspr');
+        $sprcodecachekey = 'studentspr_' . $componentgrade->mapcode . '_' . $user[$userid]->idnumber;
+        $expirescachekey = 'expires_' . $componentgrade->mapcode . '_' . $user[$userid]->idnumber;
+        $studentspr = $cache->get($sprcodecachekey);
+        $expires = $cache->get($expirescachekey);
+
+        // If cache is empty or expired, get student from SITS.
+        if (empty($studentspr) || empty($expires) || time() >= $expires) {
+            // Build required data.
             $data = new \stdClass();
             $data->idnumber = $user[$userid]->idnumber;
             $data->mapcode = $componentgrade->mapcode;
@@ -484,11 +499,17 @@ class manager {
 
             // Check response.
             $this->check_response($response, $request);
-        } catch (\Exception $e) {
-            return false;
-        }
 
-        return $response;
+            // Save response to cache.
+            $cache->set($sprcodecachekey, $response[0]['SPR_CODE']);
+
+            // Save expires to cache, expires in 30 days.
+            $cache->set($expirescachekey, time() + 2592000);
+
+            return $response[0]['SPR_CODE'];
+        } else {
+            return $studentspr;
+        }
     }
 
     /**
@@ -496,39 +517,41 @@ class manager {
      *
      * @param assessment $assessment
      * @param int $userid
-     * @return false|mixed
+     * @return bool
      * @throws \dml_exception
      * @throws \moodle_exception
      */
     public function push_grade_to_sits(assessment $assessment, int $userid) {
-        // Check if it is a valid push.
-        if ($data = $this->is_valid_for_pushing($assessment, $userid)) {
-            // Check if last push was succeeded. Proceed if not succeeded.
-            if (!$this->last_push_succeeded(self::PUSH_GRADE, $assessment->get_course_module()->id, $userid)) {
-                // Get grade.
-                $grade = $this->get_student_grade($assessment->get_course_module(), $userid);
-                // Push if grade is found.
-                if ($grade->grade) {
-                    $data->marks = $grade->grade;
-                    $data->grade = ''; // TODO: Where to get the grade?
-
-                    $request = $this->apiclient->build_request(self::PUSH_GRADE, $data);
-                    $response = $this->apiclient->send_request($request);
-
-                    // Check response.
-                    $this->check_response($response, $request);
-
-                    // Save transfer log.
-                    $this->save_transfer_log(self::PUSH_GRADE, $data, $userid, $request, $response);
-
-                    if (get_config('local_sitsgradepush', 'sublogpush')) {
-                        // Push submission log.
-                        $this->push_submission_log_to_sits($assessment, $userid, $data);
-                    }
-
-                    return $response;
-                }
+        try {
+            // Check if last push was succeeded, exit if succeeded.
+            if ($this->last_push_succeeded(self::PUSH_GRADE, $assessment->get_course_module()->id, $userid)) {
+                return false;
             }
+
+            // Get required data for pushing.
+            $data = $this->get_required_data_for_pushing($assessment, $userid);
+
+            // Get grade.
+            $grade = $this->get_student_grade($assessment->get_course_module(), $userid);
+
+            // Push if grade is found.
+            if ($grade->grade) {
+                $data->marks = $grade->grade;
+                $data->grade = ''; // TODO: Where to get the grade?
+
+                $request = $this->apiclient->build_request(self::PUSH_GRADE, $data);
+                $response = $this->apiclient->send_request($request);
+
+                // Check response.
+                $this->check_response($response, $request);
+
+                // Save transfer log.
+                $this->save_transfer_log(self::PUSH_GRADE, $assessment->get_course_module()->id, $userid, $request, $response);
+
+                return true;
+            }
+        } catch (\moodle_exception $e) {
+            $this->mark_push_as_failed(self::PUSH_GRADE, $assessment->get_course_module()->id, $userid, $e);
         }
 
         return false;
@@ -539,17 +562,27 @@ class manager {
      *
      * @param assessment $assessment
      * @param int $userid
-     * @param \stdClass $data
-     * @return false|mixed
-     * @throws \coding_exception
+     * @return bool
      * @throws \dml_exception
-     * @throws \moodle_exception
      */
-    public function push_submission_log_to_sits(assessment $assessment, int $userid, \stdClass $data) {
-        // Check if last push was succeeded. Proceed if not succeeded.
-        if (!$this->last_push_succeeded(self::PUSH_SUBMISSION_LOG, $assessment->get_course_module()->id, $userid)) {
+    public function push_submission_log_to_sits(assessment $assessment, int $userid): bool {
+        try {
+            // Check if submission log push is enabled.
+            if (!get_config('local_sitsgradepush', 'sublogpush')) {
+                return false;
+            }
+
+            // Check if last push was succeeded, exit if succeeded.
+            if ($this->last_push_succeeded(self::PUSH_SUBMISSION_LOG, $assessment->get_course_module()->id, $userid)) {
+                return false;
+            }
+
+            // Get required data for pushing.
+            $data = $this->get_required_data_for_pushing($assessment, $userid);
+
             // Create the submission object.
             $submission = submissionfactory::get_submission($assessment->get_course_module(), $userid);
+
             // Push if student has submission.
             if ($submission->get_submission_data()) {
                 $request = $this->apiclient->build_request(self::PUSH_SUBMISSION_LOG, $data, $submission);
@@ -559,44 +592,46 @@ class manager {
                 $this->check_response($response, $request);
 
                 // Save push log.
-                $this->save_transfer_log(self::PUSH_SUBMISSION_LOG, $data, $userid, $request, $response);
-                return $response;
+                $this->save_transfer_log(
+                    self::PUSH_SUBMISSION_LOG, $assessment->get_course_module()->id, $userid, $request, $response);
+
+                return true;
             }
+        } catch (\moodle_exception $e) {
+            $this->mark_push_as_failed(self::PUSH_SUBMISSION_LOG, $assessment->get_course_module()->id, $userid, $e);
         }
 
         return false;
     }
 
     /**
-     * Check if the push is valid.
+     * Get required data for pushing.
      *
      * @param assessment $assessment
      * @param int $userid
-     * @return false|\stdClass
+     * @return \stdClass
+     * @throws \coding_exception
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
-    public function is_valid_for_pushing(assessment $assessment, int $userid) {
+    public function get_required_data_for_pushing (assessment $assessment, int $userid): \stdClass {
+        // Get assessment mapping.
         $assessmentinfo = 'CMID: ' .$assessment->get_course_module()->id . ', USERID: ' . $userid;
 
         // Check mapping.
         if (!$mapping = $this->get_assessment_mapping($assessment->get_course_module()->id)) {
             logger::log(get_string('error:assessmentmapping', 'local_sitsgradepush', $assessmentinfo));
-            return false;
+            throw new \moodle_exception('error:assessmentisnotmapped', 'local_sitsgradepush', '', $assessmentinfo);
         }
 
         // Get SPR_CODE from SITS.
-        if (!$student = $this->get_student_from_sits($mapping, $userid)) {
-            return false;
-        }
+        $studentspr = $this->get_student_from_sits($mapping, $userid);
 
         // Build the required data.
         $data = new \stdClass();
-        $data->assessmentmappingid = $mapping->id;
-        $data->coursemoduleid = $mapping->coursemoduleid;
-        $data->componentgradeid = $mapping->componentgradeid;
         $data->mapcode = $mapping->mapcode;
         $data->mabseq = $mapping->mabseq;
-        $data->sprcode = $student[0]['SPR_CODE'];
+        $data->sprcode = $studentspr;
         $data->academicyear = $mapping->academicyear;
         $data->pslcode = $mapping->periodslotcode;
         $data->reassessment = $mapping->reassessment;
@@ -649,14 +684,18 @@ class manager {
                 $data->handin_status = '-';
                 $data->export_staff = '-';
                 $data->lastgradepushresult = '-';
+                $data->lastgradepushresultlabel = '';
                 $data->lastgradepushtime = '-';
                 $data->lastsublogpushresult = '-';
+                $data->lastsublogpushresultlabel = '';
                 $data->lastsublogpushtime = '-';
 
                 // Get grade push status.
                 if ($gradepushstatus = $this->get_transfer_log(self::PUSH_GRADE, $coursemodule->id, $student->id)) {
                     $response = json_decode($gradepushstatus->response);
                     $data->lastgradepushresult = $response->message;
+                    $data->lastgradepushresultlabel = $response->code == '0' ?
+                        '<span class="badge badge-success">Success</span> ' : '<span class="badge badge-danger">Failed</span> ';
                     $data->lastgradepushtime = date('Y-m-d H:i:s', $gradepushstatus->timecreated);
                 }
 
@@ -664,6 +703,8 @@ class manager {
                 if ($gradepushstatus = $this->get_transfer_log(self::PUSH_SUBMISSION_LOG, $coursemodule->id, $student->id)) {
                     $response = json_decode($gradepushstatus->response);
                     $data->lastsublogpushresult = $response->message;
+                    $data->lastsublogpushresultlabel = $response->code == '0' ?
+                        '<span class="badge badge-success">Success</span> ' : '<span class="badge badge-danger">Failed</span> ';
                     $data->lastsublogpushtime = date('Y-m-d H:i:s', $gradepushstatus->timecreated);
                 }
 
@@ -771,26 +812,27 @@ class manager {
     }
 
     /**
-     * Save grade push log.
+     * Save transfer log.
      *
      * @param string $type
-     * @param \stdClass $mapping
+     * @param int $coursemoduleid
      * @param int $userid
-     * @param irequest $request
+     * @param mixed $request
      * @param array $response
+     * @param int|null $errorlogid
      * @return void
      * @throws \dml_exception
      */
-    private function save_transfer_log(string $type, \stdClass $mapping, int $userid, irequest $request, array $response) {
+    private function save_transfer_log(
+        string $type, int $coursemoduleid, int $userid, $request, array $response, int $errorlogid = null) {
         global $USER, $DB;
         $insert = new \stdClass();
         $insert->type = $type;
         $insert->userid = $userid;
-        $insert->assessmentmappingid = $mapping->assessmentmappingid;
-        $insert->coursemoduleid = $mapping->coursemoduleid;
-        $insert->componentgradeid = $mapping->componentgradeid;
-        $insert->requestbody = $request->get_request_body();
+        $insert->coursemoduleid = $coursemoduleid;
+        $insert->requestbody = ($request instanceof irequest) ? $request->get_request_body() : null;
         $insert->response = json_encode($response);
+        $insert->errlogid = $errorlogid;
         $insert->usermodified = $USER->id;
         $insert->timecreated = time();
 
@@ -833,16 +875,46 @@ class manager {
     private function check_response($response, irequest $request) {
         // Throw exception when response is empty.
         if (empty($response)) {
-            logger::log(
+            $errorlogid = logger::log(
                 get_string(
                     'error:emptyresponse', 'local_sitsgradepush',
-                    ['requestname' => $request->get_request_name(), 'debuginfo' => '']
+                    $request->get_request_name()
                 ),
                 $request->get_endpoint_url_with_params(),
                 $request->get_request_body()
             );
 
-            throw new \moodle_exception('error:emptyresponsemsg', 'local_sitsgradepush');
+            // Add error log id to debug info.
+            $debuginfo = $errorlogid ?: null;
+
+            throw new \moodle_exception(
+                'error:emptyresponse', 'local_sitsgradepush', '', $request->get_request_name(), $debuginfo
+            );
         }
+    }
+
+    /**
+     * Add failed transfer log.
+     *
+     * @param string $requestidentifier
+     * @param int $coursemoduleid
+     * @param int $userid
+     * @param \moodle_exception $exception
+     * @return void
+     * @throws \dml_exception
+     */
+    private function mark_push_as_failed(
+        string $requestidentifier, int $coursemoduleid, int $userid, \moodle_exception $exception) {
+        // Failed response.
+        $response = [
+            "code" => "-1",
+            "message" => $exception->getMessage()
+        ];
+
+        // Get error log id if any.
+        $errorlogid = $exception->debuginfo ?: null;
+
+        // Add failed transfer log.
+        $this->save_transfer_log($requestidentifier, $coursemoduleid, $userid, null, $response, $errorlogid);
     }
 }

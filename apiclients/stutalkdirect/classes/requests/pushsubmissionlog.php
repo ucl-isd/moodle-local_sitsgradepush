@@ -92,6 +92,16 @@ class pushsubmissionlog extends request {
     }
 
     /**
+     * Replace invalid characters in parameter value.
+     *
+     * @param string $data
+     * @return array|string|string[]
+     */
+    protected function replace_invalid_characters(string $data) {
+        return str_replace('/', '_', $data);
+    }
+
+    /**
      * Set the request body.
      *
      * @return void

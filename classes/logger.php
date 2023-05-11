@@ -31,7 +31,7 @@ class logger {
      * @param string $message
      * @param string|null $requesturl
      * @param string|null $data
-     * @return void
+     * @return bool|int
      * @throws \dml_exception
      */
     public static function log (string $message, string $requesturl = null, string $data = null) {
@@ -45,6 +45,6 @@ class logger {
         $error->data = $data;
         $error->timecreated = time();
 
-        $DB->insert_record('local_sitsgradepush_err_log', $error);
+        return $DB->insert_record('local_sitsgradepush_err_log', $error);
     }
 }
