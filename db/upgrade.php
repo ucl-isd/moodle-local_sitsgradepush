@@ -143,5 +143,49 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023041700, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2023051200) {
+
+        // Define index assessmentmappingid_idx (not unique) to be dropped form local_sitsgradepush_tfr_log.
+        $table = new xmldb_table('local_sitsgradepush_tfr_log');
+        $index = new xmldb_index('assessmentmappingid_idx', XMLDB_INDEX_NOTUNIQUE, ['assessmentmappingid']);
+
+        // Conditionally launch drop index assessmentmappingid_idx.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        $field = new xmldb_field('assessmentmappingid');
+
+        // Conditionally launch drop field assessmentmappingid.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        $field = new xmldb_field('componentgradeid');
+
+        // Conditionally launch drop field componentgradeid.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023051200, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2023051201) {
+
+        // Define field errlogid to be added to local_sitsgradepush_tfr_log.
+        $table = new xmldb_table('local_sitsgradepush_tfr_log');
+        $field = new xmldb_field('errlogid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'usermodified');
+
+        // Conditionally launch add field errlogid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023051201, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

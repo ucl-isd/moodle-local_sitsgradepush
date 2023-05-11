@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - https://moodle.org/
+// This file is part of the Zoom plugin for Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,10 +12,10 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Cache definitions.
  *
  * @package     local_sitsgradepush
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
@@ -23,14 +23,12 @@
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 
-defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die;
 
-$plugin->component = 'local_sitsgradepush';
-$plugin->release = '0.1.0';
-$plugin->version = 2023051201;
-$plugin->requires = 2021051708;
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->dependencies = array(
-    'block_portico_enrolments' => 2023012400,
-    'block_lifecycle' => 2022120800
-);
+$definitions = [
+    'studentspr' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+    ],
+];

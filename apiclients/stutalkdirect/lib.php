@@ -93,6 +93,8 @@ class stutalkdirect extends client {
             throw new \moodle_exception('Stutalk username of password is not set on config!');
         }
 
+        $data = null;
+
         try {
             $curlclient = curl_init();
             curl_setopt($curlclient, CURLOPT_CONNECTTIMEOUT, 30);
@@ -135,13 +137,15 @@ class stutalkdirect extends client {
             // Close curl session.
             curl_close($curlclient);
 
-            // Convert JSON to array.
+            // Convert the response to the format we want.
             $data = $request->process_response($curlresponse);
         } catch (\Exception $e) {
             // Log error.
             logger::log($e->getMessage(), $request->get_endpoint_url_with_params(), $request->get_request_body());
-            // Throw exception.
-            throw new \moodle_exception('error:requestfailedmsg', 'local_sitsgradepush');
+            // If the response is not empty, try to process it.
+            if (!empty($curlresponse)) {
+                $data = $request->process_response($curlresponse);
+            }
         }
 
         return $data;

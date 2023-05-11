@@ -81,9 +81,9 @@ echo $OUTPUT->header();
 $renderer = $PAGE->get_renderer('local_sitsgradepush');
 $manager = manager::get_manager();
 
-// Assessment header.
-echo '<h1>SITS Grade Push - ' . $assessment->get_assessment_name() . '</h1>';
-
+echo '<div class="container py-5">';
+// Assessment name.
+echo '<h3 class="mb-4">Sits grade push - ' . $assessment->get_assessment_name() . '</h3>';
 // Get students with grades.
 $studentswithgrade = $manager->get_assessment_data($assessment);
 
@@ -93,17 +93,15 @@ if (!empty($studentswithgrade)) {
         // Push grades.
         foreach ($studentswithgrade as $student) {
             $manager->push_grade_to_sits($assessment, $student->userid);
+            $manager->push_submission_log_to_sits($assessment, $student->userid);
         }
         // Refresh data after completed all pushes.
         $studentswithgrade = $manager->get_assessment_data($assessment);
         $buttonlabel = 'OK';
     } else {
         $url->param('pushgrade', 1);
-        $buttonlabel = 'Push';
+        $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
     }
-
-    // Render assessment push status table.
-    echo $renderer->render_assessment_push_status_table($studentswithgrade);
 
     // Render push button if the assessment is mapped.
     if ($manager->is_activity_mapped($coursemoduleid)) {
@@ -111,9 +109,13 @@ if (!empty($studentswithgrade)) {
     } else {
         echo '<p class="alert alert-danger">' . get_string('error:assessmentisnotmapped', 'local_sitsgradepush') . '</p>';
     }
+
+    // Render assessment push status table.
+    echo $renderer->render_assessment_push_status_table($studentswithgrade);
 } else {
     echo '<p class="alert alert-info">' . get_string('error:nostudentgrades', 'local_sitsgradepush') . '</p>';
 }
+echo '</div>';
 
 // And the page footer.
 echo $OUTPUT->footer();

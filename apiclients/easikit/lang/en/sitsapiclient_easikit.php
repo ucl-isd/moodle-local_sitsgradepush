@@ -42,3 +42,4 @@ $string['error:setting_missing'] = '{$a} not found';
 $string['error:access_token'] = 'Cannot get access token';
 $string['error:no_target_client_id'] = 'No target client id set for {$a}';
 $string['error:webclient'] = 'Web client error: {$a}.';
+$string['cachedef_oauth'] = 'Store OAuth access token';

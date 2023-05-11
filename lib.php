@@ -196,6 +196,11 @@ function local_sitsgradepush_extend_settings_navigation(settings_navigation $set
         return null;
     }
 
+    // Must have permission to push grade.
+    if (!has_capability('local/sitsgradepush:pushgrade', $context)) {
+        return null;
+    }
+
     // Build the grade push page url.
     $url = new moodle_url('/local/sitsgradepush/index.php', array(
         'id' => $cm->id,
