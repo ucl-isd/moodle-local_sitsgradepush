@@ -27,9 +27,19 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'Easikit';
+$string['msg:submissionlogpushsuccess'] = 'Submission log successfully pushed to SITS via Easikit';
+$string['msg:gradepushsuccess'] = 'Grade successfully pushed to SITS via Easikit';
 $string['settings:generalsettingsheader'] = 'General Settings';
 $string['settings:endpoint_push_grade'] = 'Push grades endpoint';
 $string['settings:endpoint_push_grade:desc'] = 'Push grades endpoint';
+$string['settings:endpoint_submission_log'] = 'Push submission log endpoint';
+$string['settings:endpoint_submission_log:desc'] = 'Push submission log endpoint';
+$string['settings:endpoint_component_grade'] = 'Get component grade endpoint';
+$string['settings:endpoint_component_grade:desc'] = 'Get component grade endpoint';
+$string['settings:endpoint_get_student'] = 'Get student endpoint';
+$string['settings:endpoint_get_student:desc'] = 'Get student endpoint';
+$string['settings:endpoint_mark_schemes'] = 'Get mark schemes endpoint';
+$string['settings:endpoint_mark_schemes:desc'] = 'Get mark schemes endpoint';
 $string['settings:clientid'] = 'Client ID';
 $string['settings:clientid:desc'] = 'Client ID registered on Azure AD';
 $string['settings:clientsecret'] = 'Client Secret';
@@ -41,5 +51,5 @@ $string['settings:assessmenttargetclientid:desc'] = 'Assessment Target Client ID
 $string['error:setting_missing'] = '{$a} not found';
 $string['error:access_token'] = 'Cannot get access token';
 $string['error:no_target_client_id'] = 'No target client id set for {$a}';
-$string['error:webclient'] = 'Web client error: {$a}.';
+$string['error:webclient'] = 'Easikit web client error: {$a->requestname}. HTTP code: {$a->httpstatuscode}';
 $string['cachedef_oauth'] = 'Store OAuth access token';

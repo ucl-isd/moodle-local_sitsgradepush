@@ -187,5 +187,35 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023051201, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2023051700) {
+
+        // Define field response to be added to local_sitsgradepush_err_log.
+        $table = new xmldb_table('local_sitsgradepush_err_log');
+        $field = new xmldb_field('response', XMLDB_TYPE_TEXT, null, null, null, null, null, 'data');
+
+        // Conditionally launch add field response.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023051700, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2023051800) {
+
+        // Define field request to be added to local_sitsgradepush_tfr_log.
+        $table = new xmldb_table('local_sitsgradepush_tfr_log');
+        $field = new xmldb_field('request', XMLDB_TYPE_TEXT, null, null, null, null, null, 'coursemoduleid');
+
+        // Conditionally launch add field request.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023051800, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

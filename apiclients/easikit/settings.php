@@ -65,6 +65,34 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_grade_push',
         get_string('settings:endpoint_push_grade', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_push_grade:desc', 'sitsapiclient_easikit'),
-        'https://aais.integration-dev.ucl.ac.uk/assessment/v1/assessment-component'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1'
+    ));
+
+    // Submission log endpoint.
+    $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_submission_log',
+        get_string('settings:endpoint_submission_log', 'sitsapiclient_easikit'),
+        get_string('settings:endpoint_submission_log:desc', 'sitsapiclient_easikit'),
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1'
+    ));
+
+    // Get component grade endpoint.
+    $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_component_grade',
+        get_string('settings:endpoint_component_grade', 'sitsapiclient_easikit'),
+        get_string('settings:endpoint_component_grade:desc', 'sitsapiclient_easikit'),
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component'
+    ));
+
+    // Get student endpoint.
+    $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_get_student',
+        get_string('settings:endpoint_get_student', 'sitsapiclient_easikit'),
+        get_string('settings:endpoint_get_student:desc', 'sitsapiclient_easikit'),
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component'
+    ));
+
+    // Get mark schemes endpoint.
+    $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_get_mark_schemes',
+        get_string('settings:endpoint_mark_schemes', 'sitsapiclient_easikit'),
+        get_string('settings:endpoint_mark_schemes:desc', 'sitsapiclient_easikit'),
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component/mark-scheme'
     ));
 }

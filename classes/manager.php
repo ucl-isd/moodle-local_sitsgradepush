@@ -135,7 +135,7 @@ class manager {
                     // Check response.
                     $this->check_response($response, $request);
 
-                    // Filter out unwanted component grades.
+                    // Filter out unwanted component grades by marking scheme.
                     $response = $this->filter_out_invalid_component_grades($response);
 
                     // Save component grades to DB.
@@ -501,12 +501,12 @@ class manager {
             $this->check_response($response, $request);
 
             // Save response to cache.
-            $cache->set($sprcodecachekey, $response[0]['SPR_CODE']);
+            $cache->set($sprcodecachekey, $response['SPR_CODE']);
 
             // Save expires to cache, expires in 30 days.
             $cache->set($expirescachekey, time() + 2592000);
 
-            return $response[0]['SPR_CODE'];
+            return $response['SPR_CODE'];
         } else {
             return $studentspr;
         }
@@ -830,6 +830,7 @@ class manager {
         $insert->type = $type;
         $insert->userid = $userid;
         $insert->coursemoduleid = $coursemoduleid;
+        $insert->request = ($request instanceof irequest) ? $request->get_endpoint_url_with_params() : null;
         $insert->requestbody = ($request instanceof irequest) ? $request->get_request_body() : null;
         $insert->response = json_encode($response);
         $insert->errlogid = $errorlogid;

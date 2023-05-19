@@ -14,12 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace sitsapiclient_stutalkdirect\requests;
+namespace sitsapiclient_easikit\requests;
+
+use cache;
 
 /**
  * Class for getstudent request.
  *
- * @package     sitsapiclient_stutalkdirect
+ * @package     sitsapiclient_easikit
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
@@ -51,7 +53,7 @@ class getstudent extends request {
         $this->name = 'Get student';
 
         // Get request endpoint.
-        $endpointurl = get_config('sitsapiclient_stutalkdirect', 'endpoint_student');
+        $endpointurl = get_config('sitsapiclient_easikit', 'endpoint_get_student');
 
         // Check if endpoint is set.
         if (empty($endpointurl)) {
@@ -69,7 +71,47 @@ class getstudent extends request {
      * @return array
      */
     public function process_response($response): array {
-        $result = $this->make_array_first_row_as_keys(json_decode($response, true));
-        return $result[0] ?: [];
+        $result = [];
+        if (!empty($response)) {
+            // Convert response to suitable format.
+            $response = json_decode($response, true);
+
+            // Loop through all returned students and create cache for each student.
+            foreach ($response['response']['student_collection']['student'] as $student) {
+                // Build cache key.
+                $cache = cache::make('local_sitsgradepush', 'studentspr');
+                $sprcodecachekey = 'studentspr_' . $this->paramsdata['MAP_CODE'] . '_' . $student['code'];
+                $expirescachekey = 'expires_' . $this->paramsdata['MAP_CODE'] . '_' . $student['code'];
+
+                // Set cache.
+                $cache->set($sprcodecachekey, $student['spr_code']);
+
+                // Set cache expires in 30 days.
+                $cache->set($expirescachekey, time() + 2592000);
+
+                // Set result.
+                if ($student['code'] == $this->paramsdata['STU_CODE']) {
+                    $result = ['SPR_CODE' => $student['spr_code']];
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get endpoint url with params.
+     *
+     * @param bool $paramnameinurl
+     * @return string
+     */
+    public function get_endpoint_url_with_params($paramnameinurl = true): string {
+        // Return endpoint url.
+        return sprintf(
+            '%s/%s-%s/student',
+            $this->endpointurl,
+            $this->paramsdata['MAP_CODE'],
+            $this->paramsdata['MAB_SEQ']
+        );
     }
 }

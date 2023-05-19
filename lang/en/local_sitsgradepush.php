@@ -55,13 +55,10 @@ $string['cachedef_studentspr'] = 'Student\'s SPR code per SITS assessment patter
 // Error strings.
 $string['error:assessmentmapping'] = 'No valid mapping or component grade. {$a}';
 $string['error:assessmentisnotmapped'] = 'This activity is not mapped to any assessment component.';
-$string['error:curlfailed'] = 'Error: {$a->error}. Debug Info: {$a->debuginfo}';
 $string['error:gradecomponentmapped'] = 'This component grade had been mapped to another activity.';
 $string['error:pastactivity'] = 'It looks like this course is from a previous academic year, mappings are not allowed.';
 $string['error:mapassessment'] = 'You do not have permission to map assessment.';
 $string['error:nostudentgrades'] = 'No student grades found.';
-$string['error:requestfailedmsg'] = 'Failed to perform request. Please try again later.';
-$string['error:requestfailed'] = 'Failed to perform {$a->requestname}. Debug Info: {$a->debuginfo}';
 $string['error:emptyresponse'] = 'Empty response received when calling {$a}.';
 $string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Grade Push.';
 $string['form:alert_no_mab_found'] = 'No assessment components found';

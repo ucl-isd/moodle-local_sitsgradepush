@@ -14,44 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace sitsapiclient_stutalkdirect\requests;
+namespace sitsapiclient_easikit\requests;
 
 /**
- * Class for getstudent request.
+ * Class for get marking schemes request.
  *
- * @package     sitsapiclient_stutalkdirect
+ * @package     sitsapiclient_easikit
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class getstudent extends request {
-
-    /** @var string[] Fields mapping - Local data fields to SITS' fields */
-    const FIELDS_MAPPING = [
-        'idnumber' => 'STU_CODE',
-        'mapcode' => 'MAP_CODE',
-        'mabseq' => 'MAB_SEQ'
-    ];
-
-    /** @var string[] Endpoint params */
-    const ENDPOINT_PARAMS = ['STU_CODE', 'MAP_CODE', 'MAB_SEQ'];
-
+class getmarkingschemes extends request {
     /** @var string request method */
     const METHOD = 'GET';
 
     /**
      * Constructor.
      *
-     * @param \stdClass $data
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function __construct(\stdClass $data) {
+    public function __construct() {
         // Set request name.
-        $this->name = 'Get student';
+        $this->name = 'Get marking schemes';
 
         // Get request endpoint.
-        $endpointurl = get_config('sitsapiclient_stutalkdirect', 'endpoint_student');
+        $endpointurl = get_config('sitsapiclient_easikit', 'endpoint_get_mark_schemes');
 
         // Check if endpoint is set.
         if (empty($endpointurl)) {
@@ -59,7 +47,7 @@ class getstudent extends request {
         }
 
         // Set the fields mapping, params fields and data.
-        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data);
+        parent::__construct([], $endpointurl, []);
     }
 
     /**
@@ -69,7 +57,20 @@ class getstudent extends request {
      * @return array
      */
     public function process_response($response): array {
-        $result = $this->make_array_first_row_as_keys(json_decode($response, true));
-        return $result[0] ?: [];
+        $result = [];
+        if (!empty($response)) {
+            $response = json_decode($response, true);
+            // Make MKS_CODE the key.
+            foreach ($response['response']['mark_scheme_collection']['mark_scheme'] as $markingscheme) {
+                $result[$markingscheme['identifier']] = [
+                    'MKS_CODE' => $markingscheme['identifier'],
+                    'MKS_MARKS' => $markingscheme['usage_indicator']['code'],
+                    'MKS_TYPE' => $markingscheme['type']['code'],
+                    'MKS_IUSE' => $markingscheme['in_use_indicator']
+                ];
+            }
+        }
+
+        return $result;
     }
 }
