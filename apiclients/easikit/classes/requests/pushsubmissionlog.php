@@ -16,76 +16,64 @@
 
 namespace sitsapiclient_easikit\requests;
 
+use local_sitsgradepush\submission\submission;
+
 /**
- * Class for pushgrade request.
+ * Class for pushsubmissionlog request.
  *
  * @package     sitsapiclient_easikit
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class pushgrade extends request {
+class pushsubmissionlog extends request {
 
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'assessmentcomponent' => 'assessment-component',
-        'student' => 'student',
+        'student' => 'student-log',
     ];
 
     /** @var string[] Endpoint params */
-    const ENDPOINT_PARAMS = ['assessment-component', 'student'];
+    const ENDPOINT_PARAMS = ['assessment-component', 'student-log'];
 
     /** @var string request method. */
     const METHOD = 'PATCH';
+
+    /** @var submission assessment submission */
+    protected $submission;
 
     /**
      * Constructor.
      *
      * @param \stdClass $data
+     * @param submission $submission
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function __construct(\stdClass $data) {
+    public function __construct(\stdClass $data, submission $submission) {
         // Set request name.
-        $this->name = 'Push Grade';
+        $this->name = 'Push submission log';
 
         // Get request endpoint.
-        $endpointurl = get_config('sitsapiclient_easikit', 'endpoint_grade_push');
+        $endpointurl = get_config('sitsapiclient_easikit', 'endpoint_submission_log');
 
         // Check if endpoint is set.
         if (empty($endpointurl)) {
             throw new \moodle_exception('Endpoint URL for ' . $this->name . '  is not set');
         }
 
-        // Set the request body.
-        $this->set_body($data);
+        // Set submission.
+        $this->submission = $submission;
+
+        // Set request body.
+        $this->set_body();
 
         // Transform data.
-        $data = self::transform_data($data);
+        $data = pushgrade::transform_data($data);
 
         // Set the fields mapping, params fields and data.
         parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS, $data, self::METHOD);
-    }
-
-    /**
-     * Transform data for this request.
-     *
-     * @param \stdClass $data
-     * @return \stdClass
-     */
-    public static function transform_data(\stdClass $data): \stdClass {
-        $transformeddata = new \stdClass();
-        $rseq = empty($data->reassessment) ? '0' : $data->srarseq;
-        $transformeddata->assessmentcomponent = sprintf('%s-%s', $data->mapcode, $data->mabseq);
-        $transformeddata->student = sprintf(
-            '%s-%s-%s-%s',
-            $data->sprcode,
-            $data->academicyear,
-            $data->pslcode,
-            $rseq
-        );
-
-        return $transformeddata;
     }
 
     /**
@@ -99,7 +87,7 @@ class pushgrade extends request {
         // Empty Easikit response for grade push means that the request was successful.
         // Http code >= 400 response was captured by the exception handler.
         if (empty($response)) {
-            return ["code" => 0, "message" => get_string('msg:gradepushsuccess', 'sitsapiclient_easikit')];
+            return ["code" => 0, "message" => get_string('msg:submissionlogpushsuccess', 'sitsapiclient_easikit')];
         }
     }
 
@@ -114,13 +102,22 @@ class pushgrade extends request {
     }
 
     /**
-     * Set request body in JSON format.
+     * Set the request body.
      *
-     * @param \stdClass $data
      * @return void
      */
-    private function set_body(\stdClass $data) {
-        // Set request body.
-        $this->body = json_encode(['actual_mark' => $data->marks, 'actual_grade' => $data->grade]);
+    protected function set_body() {
+        $body = [];
+        $body['original_due_datetime'] = $this->submission->get_original_due_datetime();
+        $body['current_due_datetime'] = $this->submission->get_current_due_datetime();
+        $body['handin_datetime'] = $this->submission->get_handin_datetime();
+        $body['handin_status'] = $this->submission->get_handin_status();
+        $body['handed_in'] = $this->submission->get_handed_in();
+        $body['handed_in_blank'] = $this->submission->get_handed_in_blank();
+        $body['permitted_submission_period'] = $this->submission->get_permitted_submission_period();
+        $body['export_timestamp'] = $this->submission->get_export_timestamp();
+        $body['export_flow_id'] = $this->submission->get_export_flow_id();
+        $body['no_of_items'] = $this->submission->get_no_of_items();
+        $this->body = json_encode($body);
     }
 }

@@ -19,6 +19,7 @@ namespace sitsapiclient_easikit;
 use cache;
 use curl;
 use local_sitsgradepush\api\irequest;
+use local_sitsgradepush\logger;
 use moodle_exception;
 
 /**
@@ -111,12 +112,28 @@ class webclient {
         // Get HTTP status code.
         $httpcode = $curl->get_info()['http_code'];
 
-        // Hardcoded response as no response message returned if request completed successfully.
-        if ($httpcode >= 200 && $httpcode <= 299) {
-            $response = '{"code":0,"message":"Request completed successfully."}';
+        if ($httpcode >= 400) {
+            // Log error.
+            $errorlogid = logger::log(
+                get_string(
+                    'error:webclient',
+                    'sitsapiclient_easikit',
+                    ['requestname' => $request->get_request_name(), 'httpstatuscode' => $httpcode]
+                ),
+                $request->get_endpoint_url_with_params(),
+                $request->get_request_body(),
+                $response
+            );
+            // Throw exception.
+            throw new moodle_exception(
+                'error:webclient',
+                'sitsapiclient_easikit',
+                '',
+                ['requestname' => $request->get_request_name(), 'httpstatuscode' => $httpcode],
+                $errorlogid
+            );
         }
 
-        // Return processed response.
         return $request->process_response($response);
     }
 

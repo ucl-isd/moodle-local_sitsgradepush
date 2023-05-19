@@ -21,6 +21,7 @@ use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\logger;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\submission\submission;
+use moodle_exception;
 use sitsapiclient_stutalkdirect\requests\getcomponentgrade;
 use sitsapiclient_stutalkdirect\requests\getmarkingschemes;
 use sitsapiclient_stutalkdirect\requests\getstudent;
@@ -93,62 +94,52 @@ class stutalkdirect extends client {
             throw new \moodle_exception('Stutalk username of password is not set on config!');
         }
 
-        $data = null;
-
-        try {
-            $curlclient = curl_init();
-            curl_setopt($curlclient, CURLOPT_CONNECTTIMEOUT, 30);
-            curl_setopt($curlclient, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($curlclient, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curlclient, CURLOPT_URL, $request->get_endpoint_url_with_params());
-            curl_setopt($curlclient, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curlclient, CURLOPT_USERPWD, $username . ":" . $password);
-            curl_setopt($curlclient, CURLOPT_CUSTOMREQUEST, $request->get_method());
-            if (in_array($request->get_method(), ['PUT', 'POST'])) {
-                curl_setopt($curlclient, CURLOPT_POSTFIELDS, $request->get_request_body());
-                curl_setopt(
-                    $curlclient,
-                    CURLOPT_HTTPHEADER,
-                    array('Content-Type: application/json')
-                );
-            }
-
-            // Execute request.
-            $curlresponse = curl_exec($curlclient);
-
-            // Get execute info.
-            $info = curl_getinfo($curlclient);
-
-            // CURL related errors.
-            if ($curlresponse === false) {
-                $error = curl_error($curlclient);
-                curl_close($curlclient);
-                throw new \moodle_exception(
-                    'error:curlfailed',
-                    'local_sitsgradepush',
-                    '',
-                    ['error' => $error, 'debuginfo' => var_export($info, true)]
-                );
-            }
-
-            // Check response.
-            $this->check_response($request, $curlresponse, $info);
-
-            // Close curl session.
-            curl_close($curlclient);
-
-            // Convert the response to the format we want.
-            $data = $request->process_response($curlresponse);
-        } catch (\Exception $e) {
-            // Log error.
-            logger::log($e->getMessage(), $request->get_endpoint_url_with_params(), $request->get_request_body());
-            // If the response is not empty, try to process it.
-            if (!empty($curlresponse)) {
-                $data = $request->process_response($curlresponse);
-            }
+        $curlclient = curl_init();
+        curl_setopt($curlclient, CURLOPT_CONNECTTIMEOUT, 30);
+        curl_setopt($curlclient, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($curlclient, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($curlclient, CURLOPT_URL, $request->get_endpoint_url_with_params());
+        curl_setopt($curlclient, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curlclient, CURLOPT_USERPWD, $username . ":" . $password);
+        curl_setopt($curlclient, CURLOPT_CUSTOMREQUEST, $request->get_method());
+        if (in_array($request->get_method(), ['PUT', 'POST'])) {
+            curl_setopt($curlclient, CURLOPT_POSTFIELDS, $request->get_request_body());
+            curl_setopt(
+                $curlclient,
+                CURLOPT_HTTPHEADER,
+                array('Content-Type: application/json')
+            );
         }
 
-        return $data;
+        // Execute request.
+        $curlresponse = curl_exec($curlclient);
+
+        // Get execute info.
+        $info = curl_getinfo($curlclient);
+
+        // CURL related errors.
+        if ($curlresponse === false) {
+            $error = curl_error($curlclient);
+            curl_close($curlclient);
+            $errormessage = get_string('error:stutalkdirectcurl', 'sitsapiclient_stutalkdirect', $error);
+            $errorlogid = logger::log_request_error($errormessage, $request);
+
+            throw new \moodle_exception(
+                'error:stutalkdirectcurl',
+                'sitsapiclient_stutalkdirect',
+                '',
+                $error,
+                $errorlogid
+            );
+        }
+
+        // Check response.
+        $this->check_response($request, $curlresponse, $info);
+
+        // Close curl session.
+        curl_close($curlclient);
+
+        return $request->process_response($curlresponse);
     }
 
     /**
@@ -161,25 +152,26 @@ class stutalkdirect extends client {
      * @throws \moodle_exception
      */
     private function check_response(irequest $request, $response, $curlinfo) {
-        $debuginfo = '';
-
-        // Check empty response, should not happen for stutalk direct.
-        if (empty($response)) {
-            $debuginfo = 'Empty response';
-        }
-
         // Check server response codes 400 and above.
         if ($curlinfo['http_code'] >= 400) {
-            $debuginfo = 'HTTP code: ' . $curlinfo['http_code'] . '. Response: ' . $response;
-        }
+            // Log error.
+            $errorlogid = logger::log_request_error(
+                get_string(
+                    'error:stutalkdirect',
+                    'sitsapiclient_stutalkdirect',
+                    ['requestname' => $request->get_request_name(), 'httpstatuscode' => $curlinfo['http_code']]
+                ),
+                $request,
+                $response
+            );
 
-        // Throw exception if debug info is not empty.
-        if ($debuginfo) {
-            throw new \moodle_exception(
-                'error:requestfailed',
-                'local_sitsgradepush',
+            // Throw exception.
+            throw new moodle_exception(
+                'error:stutalkdirect',
+                'sitsapiclient_stutalkdirect',
                 '',
-                ['requestname' => $request->get_request_name(), 'debuginfo' => $debuginfo]
+                ['requestname' => $request->get_request_name(), 'httpstatuscode' => $curlinfo['http_code']],
+                $errorlogid
             );
         }
     }

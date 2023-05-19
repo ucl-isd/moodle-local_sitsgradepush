@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush;
 
+use local_sitsgradepush\api\irequest;
+
 /**
  * Logger.
  *
@@ -31,10 +33,11 @@ class logger {
      * @param string $message
      * @param string|null $requesturl
      * @param string|null $data
+     * @param string|null $response
      * @return bool|int
      * @throws \dml_exception
      */
-    public static function log (string $message, string $requesturl = null, string $data = null) {
+    public static function log (string $message, string $requesturl = null, string $data = null, string $response = null) {
         global $DB, $USER;
 
         // Create the insert object.
@@ -43,8 +46,33 @@ class logger {
         $error->userid = $USER->id;
         $error->requesturl = $requesturl;
         $error->data = $data;
+        $error->response = $response;
         $error->timecreated = time();
 
         return $DB->insert_record('local_sitsgradepush_err_log', $error);
+    }
+
+    /**
+     * Log request error.
+     *
+     * @param string $message
+     * @param irequest $request
+     * @param string|null $response
+     * @return bool|int
+     * @throws \dml_exception
+     */
+    public static function log_request_error (string $message, irequest $request, string $response = null) {
+        global $DB, $USER;
+
+        // Create the insert object.
+        $error = new \stdClass();
+        $error->message = $message;
+        $error->userid = $USER->id;
+        $error->requesturl = $request->get_endpoint_url_with_params();
+        $error->data = $request->get_request_body();
+        $error->response = $response;
+        $error->timecreated = time();
+
+        return $DB->insert_record('local_sitsgradepush_request_err_log', $error);
     }
 }

@@ -42,3 +42,5 @@ $string['settings:username'] = 'SITS Username';
 $string['settings:username:desc'] = 'Username used to connect to SITS';
 $string['settings:password'] = 'SITS Password';
 $string['settings:password:desc'] = 'Password used to connect to SITS';
+$string['error:stutalkdirect'] = 'Stutalk direct error: {$a->requestname}. HTTP code: {$a->httpstatuscode}';
+$string['error:stutalkdirectcurl'] = 'Stutalk CURL error: {$a}.';

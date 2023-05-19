@@ -55,30 +55,25 @@ abstract class request implements irequest {
     protected $targetclientid;
 
     /**
-     * Set the target client id for the request.
-     *
-     * @return void
-     */
-    abstract protected function set_target_client_id();
-
-    /**
      * Constructor.
      *
      * @param array $mapping
      * @param string $endpointurl
      * @param array $endpointparams
-     * @param \stdClass $data
+     * @param \stdClass|null $data
      * @param string $method
      * @throws \moodle_exception
      */
     protected function __construct(
-        array $mapping, string $endpointurl, array $endpointparams, \stdClass $data, string $method = 'GET'
+        array $mapping, string $endpointurl, array $endpointparams, \stdClass $data = null, string $method = 'GET'
     ) {
         $this->data = $data;
         $this->mapping = $mapping;
         $this->endpointurl = $endpointurl;
         $this->endpointparams = $endpointparams;
-        $this->set_params_data($data);
+        if (!empty($data)) {
+            $this->set_params_data($data);
+        }
         $this->method = $method;
         $this->set_target_client_id();
     }
@@ -122,10 +117,11 @@ abstract class request implements irequest {
     /**
      * Returns the endpoint's URL with required parameters.
      *
+     * @param bool $paramnameinurl
      * @return string
      * @throws \moodle_exception
      */
-    public function get_endpoint_url_with_params(): string {
+    public function get_endpoint_url_with_params($paramnameinurl = true): string {
         $url = $this->endpointurl;
         // Construct the final URL if endpoint parameters are defined.
         if (is_array($this->endpointparams) && count($this->endpointparams) > 0) {
@@ -133,7 +129,12 @@ abstract class request implements irequest {
                 if (empty($this->paramsdata[$param])) {
                     throw new \moodle_exception('Mandatory field ' . $param . ' cannot be empty.');
                 }
-                $url .= '/' . $param . '/' . $this->replace_invalid_characters($this->paramsdata[$param]);
+                // If param name need to be specified in the URL, then use the param name, otherwise only use the param value.
+                if ($paramnameinurl) {
+                    $url .= '/' . $param . '/' . $this->replace_invalid_characters($this->paramsdata[$param]);
+                } else {
+                    $url .= '/' . $this->replace_invalid_characters($this->paramsdata[$param]);
+                }
             }
         }
 
@@ -152,9 +153,9 @@ abstract class request implements irequest {
     /**
      * Return request body.
      *
-     * @return string
+     * @return string|null
      */
-    public function get_request_body(): string {
+    public function get_request_body(): ?string {
         return $this->body;
     }
 
@@ -175,6 +176,16 @@ abstract class request implements irequest {
      */
     public function get_target_client_id(): string {
         return $this->targetclientid;
+    }
+
+    /**
+     * Set target client ID for this request.
+     *
+     * @return void
+     * @throws \dml_exception
+     */
+    protected function set_target_client_id() {
+        $this->targetclientid = get_config('sitsapiclient_easikit', 'assessmenttargetclientid');
     }
 
     /**
