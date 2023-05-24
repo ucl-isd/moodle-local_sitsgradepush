@@ -1,0 +1,5 @@
+/* Styles for the SITS Grade Push plugin */
+/* Change background color of disabled button */
+#local_sitsgradepush_pushbutton[disabled] {
+    background-color: #868686;
+}

@@ -42,9 +42,12 @@ $string['settings:moodleastcodeexamroom'] = 'Moodle AST Codes work with Exam Roo
 $string['settings:moodleastcodeexamroom:desc'] = 'These AST codes work only when exam room code has been specified (Separated by comma)';
 $string['settings:moodleexamroomcode'] = 'Moodle Exam Room Code';
 $string['settings:moodleexamroomcode:desc'] = 'Moodle Exam Room Code on SITS';
+$string['settings:concurrenttasks'] = 'Number of concurrent tasks allowed';
+$string['settings:concurrenttasks:desc'] = 'Number of concurrent ad-hoc tasks allowed';
 $string['label:gradepushassessmentselect'] = 'Select SITS assessment to link to';
 $string['label:reassessmentselect'] = 'Re-assessment';
 $string['label:pushgrade'] = 'Push grades';
+$string['label:lastpushtext'] = 'Last push {$a->statustext} {$a->date} at {$a->time}';
 $string['gradepushassessmentselect'] = 'Select SITS assessment';
 $string['gradepushassessmentselect_help'] = 'Select SITS assessment to link to this activity.';
 $string['reassessmentselect'] = 'Re-assessment';
@@ -61,9 +64,22 @@ $string['error:mapassessment'] = 'You do not have permission to map assessment.'
 $string['error:nostudentgrades'] = 'No student grades found.';
 $string['error:emptyresponse'] = 'Empty response received when calling {$a}.';
 $string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Grade Push.';
+$string['error:duplicatedtask'] = 'There is already a push task in queue / processing for this course module.';
+$string['error:coursemodulenotfound'] = 'Course module not found.';
+$string['error:tasknotfound'] = 'Push task not found.';
 $string['form:alert_no_mab_found'] = 'No assessment components found';
 $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Grade Push.';
 
 // Capability strings.
 $string['sitsgradepush:mapassessment'] = 'Map assessment component to Moodle activity';
 $string['sitsgradepush:pushgrade'] = 'Push grades to SITS';
+
+// Task strings.
+$string['task:pushtask:name'] = 'Schedule Push Task';
+$string['task:adhoctask'] = 'Adhoc Task';
+$string['task:status:requested'] = 'Push task requested';
+$string['task:requested:success'] = 'Push task requested successfully';
+$string['task:status:queued'] = 'Push task queued';
+$string['task:status:processing'] = 'Push task processing';
+$string['task:status:completed'] = 'completed';
+$string['task:status:failed'] = 'failed';

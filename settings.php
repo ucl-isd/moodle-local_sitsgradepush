@@ -89,6 +89,15 @@ if ($hassiteconfig) {
             get_string('settings:moodleexamroomcode:desc', 'local_sitsgradepush'),
             'EXAMMDLE'
         ));
+
+        // Set the concurrent running ad-hoc tasks.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/concurrent_running_tasks',
+            get_string('settings:concurrenttasks', 'local_sitsgradepush'),
+            get_string('settings:concurrenttasks:desc', 'local_sitsgradepush'),
+            10,
+            PARAM_INT,
+            5
+        ));
     }
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');

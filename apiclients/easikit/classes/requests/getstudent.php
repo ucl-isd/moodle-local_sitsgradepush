@@ -73,18 +73,26 @@ class getstudent extends request {
             // Convert response to suitable format.
             $response = json_decode($response, true);
 
+            // Build cache.
+            $cache = cache::make('local_sitsgradepush', 'studentspr');
+
             // Loop through all returned students and create cache for each student.
             foreach ($response['response']['student_collection']['student'] as $student) {
-                // Build cache key.
-                $cache = cache::make('local_sitsgradepush', 'studentspr');
                 $sprcodecachekey = 'studentspr_' . $this->paramsdata['MAP_CODE'] . '_' . $student['code'];
                 $expirescachekey = 'expires_' . $this->paramsdata['MAP_CODE'] . '_' . $student['code'];
 
-                // Set cache.
-                $cache->set($sprcodecachekey, $student['spr_code']);
+                // Get cache.
+                $sprcache = $cache->get($sprcodecachekey);
+                $expires = $cache->get($expirescachekey);
 
-                // Set cache expires in 30 days.
-                $cache->set($expirescachekey, time() + 2592000);
+                // Check if cache is empty or expired.
+                if (empty($sprcache) || empty($expires) || time() >= $expires) {
+                    // Set cache.
+                    $cache->set($sprcodecachekey, $student['spr_code']);
+
+                    // Set cache expires in 30 days.
+                    $cache->set($expirescachekey, time() + 2592000);
+                }
 
                 // Set result.
                 if ($student['code'] == $this->paramsdata['STU_CODE']) {

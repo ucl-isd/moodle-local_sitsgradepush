@@ -24,6 +24,11 @@ use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\submission\submissionfactory;
 
+defined('MOODLE_INTERNAL') || die;
+
+require_once("$CFG->libdir/gradelib.php");
+require_once("$CFG->dirroot/user/lib.php");
+
 /**
  * Manager class which handles SITS grade push.
  *
@@ -73,6 +78,21 @@ class manager {
 
     /** @var string[] Allowed activity types */
     const ALLOWED_ACTIVITIES = ['assign', 'quiz', 'turnitintooltwo'];
+
+    /** @var int Push task status - requested*/
+    const PUSH_TASK_STATUS_REQUESTED = 0;
+
+    /** @var int Push task status - queued*/
+    const PUSH_TASK_STATUS_QUEUED = 1;
+
+    /** @var int Push task status - processing*/
+    const PUSH_TASK_STATUS_PROCESSING = 2;
+
+    /** @var int Push task status - completed*/
+    const PUSH_TASK_STATUS_COMPLETED = 3;
+
+    /** @var int Push task status - failed*/
+    const PUSH_TASK_STATUS_FAILED = -1;
 
     /** @var null Manager instance */
     private static $instance = null;
@@ -789,6 +809,159 @@ class manager {
         }
 
         return false;
+    }
+
+    /**
+     * Schedule push task.
+     *
+     * @param int $coursemoduleid
+     * @return bool|int
+     * @throws \dml_exception
+     */
+    public function schedule_push_task(int $coursemoduleid) {
+        global $DB, $USER;
+
+        // Check course module exists.
+        if (!$DB->record_exists('course_modules', ['id' => $coursemoduleid])) {
+            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush');
+        }
+
+        // Check if course module has been mapped to an assessment component.
+        if (!$DB->record_exists('local_sitsgradepush_mapping', ['coursemoduleid' => $coursemoduleid])) {
+            throw new \moodle_exception('error:assessmentisnotmapped', 'local_sitsgradepush');
+        }
+
+        // Check if there is already in one of the following status: added, queued, processing.
+        if (self::get_pending_task_in_queue($coursemoduleid)) {
+            throw new \moodle_exception('error:duplicatedtask', 'local_sitsgradepush');
+        }
+
+        $task = new \stdClass();
+        $task->userid = $USER->id;
+        $task->timescheduled = time();
+        $task->coursemoduleid = $coursemoduleid;
+
+        return $DB->insert_record('local_sitsgradepush_tasks', $task);
+    }
+
+    /**
+     * Get push task in status requested, queued or processing for a course module.
+     *
+     * @param int $coursemoduleid
+     * @return \stdClass|bool
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function get_pending_task_in_queue(int $coursemoduleid) {
+        global $DB;
+        $sql = 'SELECT *
+                FROM {local_sitsgradepush_tasks}
+                WHERE coursemoduleid = :coursemoduleid AND status IN (:status1, :status2, :status3)
+                ORDER BY id DESC';
+        $params = [
+            'coursemoduleid' => $coursemoduleid,
+            'status1' => self::PUSH_TASK_STATUS_REQUESTED,
+            'status2' => self::PUSH_TASK_STATUS_QUEUED,
+            'status3' => self::PUSH_TASK_STATUS_PROCESSING,
+        ];
+
+        if ($result = $DB->get_record_sql($sql, $params)) {
+            switch ($result->status) {
+                case self::PUSH_TASK_STATUS_REQUESTED:
+                    $result->buttonlabel = get_string('task:status:requested', 'local_sitsgradepush');
+                    break;
+                case self::PUSH_TASK_STATUS_QUEUED:
+                    $result->buttonlabel = get_string('task:status:queued', 'local_sitsgradepush');
+                    break;
+                case self::PUSH_TASK_STATUS_PROCESSING:
+                    $result->buttonlabel = get_string('task:status:processing', 'local_sitsgradepush');
+                    break;
+            }
+
+            return $result;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Get last finished push task for a course module.
+     *
+     * @param int $coursemoduleid
+     * @return false|mixed
+     * @throws \dml_exception
+     */
+    public function get_last_finished_push_task(int $coursemoduleid) {
+        global $DB;
+        // Get the last task for the course module.
+        $sql = 'SELECT *
+                FROM {local_sitsgradepush_tasks}
+                WHERE coursemoduleid = :coursemoduleid AND status IN (:status1, :status2)
+                ORDER BY id DESC
+                LIMIT 1';
+
+        $params = [
+            'coursemoduleid' => $coursemoduleid,
+            'status1' => self::PUSH_TASK_STATUS_COMPLETED,
+            'status2' => self::PUSH_TASK_STATUS_FAILED,
+        ];
+
+        if ($task = $DB->get_record_sql($sql, $params)) {
+            switch ($task->status) {
+                case self::PUSH_TASK_STATUS_COMPLETED:
+                    $task->statustext = get_string('task:status:completed', 'local_sitsgradepush');
+                    break;
+                case self::PUSH_TASK_STATUS_FAILED:
+                    $task->statustext = get_string('task:status:failed', 'local_sitsgradepush');
+                    break;
+            }
+
+            return $task;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Returns number of running tasks.
+     *
+     * @return int
+     * @throws \dml_exception
+     */
+    public function get_number_of_running_tasks() {
+        global $DB;
+        return $DB->count_records('local_sitsgradepush_tasks', ['status' => self::PUSH_TASK_STATUS_PROCESSING]);
+    }
+
+    /**
+     * Returns number of pending tasks.
+     *
+     * @param int $status
+     * @param int $limit
+     * @return array
+     * @throws \dml_exception
+     */
+    public function get_push_tasks(int $status, int $limit) {
+        global $DB;
+        return $DB->get_records('local_sitsgradepush_tasks', ['status' => $status], 'timescheduled ASC', '*', 0, $limit);
+    }
+
+    /**
+     * Update push task status.
+     *
+     * @param int $id
+     * @param int $status
+     * @param int|null $errlogid
+     * @return void
+     * @throws \dml_exception
+     */
+    public function update_push_task_status(int $id, int $status, int $errlogid = null) {
+        global $DB;
+        $task = $DB->get_record('local_sitsgradepush_tasks', ['id' => $id]);
+        $task->status = $status;
+        $task->timeupdated = time();
+        $task->errlogid = $errlogid;
+        $DB->update_record('local_sitsgradepush_tasks', $task);
     }
 
     /**
