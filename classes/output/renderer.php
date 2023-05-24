@@ -34,12 +34,15 @@ class renderer extends plugin_renderer_base {
      *
      * @param string $id
      * @param string $name
-     * @param string $url
+     * @param string $disabled
      * @return string
      * @throws \moodle_exception
      */
-    public function render_button(string $id, string $name, string $url) : string {
-        return $this->output->render_from_template('local_sitsgradepush/button', ['id' => $id, 'name' => $name, 'url' => $url]);
+    public function render_button(string $id, string $name, string $disabled = '') : string {
+        return $this->output->render_from_template(
+            'local_sitsgradepush/button',
+            ['id' => $id, 'name' => $name, 'disabled' => $disabled]
+        );
     }
 
     /**

@@ -88,24 +88,28 @@ echo '<h3 class="mb-4">Sits grade push - ' . $assessment->get_assessment_name() 
 $studentswithgrade = $manager->get_assessment_data($assessment);
 
 if (!empty($studentswithgrade)) {
-    // Push grade and submission log.
-    if ($pushgrade == 1) {
-        // Push grades.
-        foreach ($studentswithgrade as $student) {
-            $manager->push_grade_to_sits($assessment, $student->userid);
-            $manager->push_submission_log_to_sits($assessment, $student->userid);
-        }
-        // Refresh data after completed all pushes.
-        $studentswithgrade = $manager->get_assessment_data($assessment);
-        $buttonlabel = 'OK';
-    } else {
-        $url->param('pushgrade', 1);
-        $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
+    // Get push button label.
+    $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
+    $disabled = '';
+
+    // Check if this course module has pending task.
+    if ($task = $manager->get_pending_task_in_queue($coursemoduleid)) {
+        $buttonlabel = $task->buttonlabel;
+        $disabled = 'disabled';
     }
 
     // Render push button if the assessment is mapped.
     if ($manager->is_activity_mapped($coursemoduleid)) {
-        echo $renderer->render_button('local_sitsgradepush_pushbutton', $buttonlabel, $url->out(false));
+        echo $renderer->render_button('local_sitsgradepush_pushbutton', $buttonlabel, $disabled);
+        if ($lastfinishedtask = $manager->get_last_finished_push_task($coursemoduleid)) {
+            echo '<p>'. get_string(
+                'label:lastpushtext',
+                'local_sitsgradepush', [
+                    'statustext' => $lastfinishedtask->statustext,
+                    'date' => date('d/m/Y', $lastfinishedtask->timeupdated),
+                    'time' => date('g:i:s a', $lastfinishedtask->timeupdated)]) .
+                '</p>';
+        }
     } else {
         echo '<p class="alert alert-danger">' . get_string('error:assessmentisnotmapped', 'local_sitsgradepush') . '</p>';
     }
@@ -116,6 +120,8 @@ if (!empty($studentswithgrade)) {
     echo '<p class="alert alert-info">' . get_string('error:nostudentgrades', 'local_sitsgradepush') . '</p>';
 }
 echo '</div>';
+
+$PAGE->requires->js_call_amd('local_sitsgradepush/sitsgradepush', 'init', [$coursemoduleid]);
 
 // And the page footer.
 echo $OUTPUT->footer();

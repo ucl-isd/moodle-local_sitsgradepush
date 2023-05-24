@@ -217,5 +217,35 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023051800, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2023052300) {
+
+        // Define table local_sitsgradepush_tasks to be created.
+        $table = new xmldb_table('local_sitsgradepush_tasks');
+
+        // Adding fields to table local_sitsgradepush_tasks.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timescheduled', XMLDB_TYPE_INTEGER, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timeupdated', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('status', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('coursemoduleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('info', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('errlogid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+
+        // Adding keys to table local_sitsgradepush_tasks.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_sitsgradepush_tasks.
+        $table->add_index('idx_coursemoduleid', XMLDB_INDEX_NOTUNIQUE, ['coursemoduleid']);
+
+        // Conditionally launch create table for local_sitsgradepush_tasks.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023052300, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
