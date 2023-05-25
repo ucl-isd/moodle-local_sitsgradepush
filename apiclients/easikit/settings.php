@@ -65,21 +65,21 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_grade_push',
         get_string('settings:endpoint_push_grade', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_push_grade:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle'
     ));
 
     // Submission log endpoint.
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_submission_log',
         get_string('settings:endpoint_submission_log', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_submission_log:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle'
     ));
 
     // Get component grade endpoint.
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_component_grade',
         get_string('settings:endpoint_component_grade', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_component_grade:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle/assessment-component'
     ));
 
     // Get student endpoint.

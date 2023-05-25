@@ -35,9 +35,6 @@ class getstudent extends request {
         'mabseq' => 'MAB_SEQ'
     ];
 
-    /** @var string[] Endpoint params */
-    const ENDPOINT_PARAMS = ['STU_CODE', 'MAP_CODE', 'MAB_SEQ'];
-
     /** @var string request method */
     const METHOD = 'GET';
 
@@ -61,7 +58,7 @@ class getstudent extends request {
         }
 
         // Set the fields mapping, params fields and data.
-        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data);
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, $data);
     }
 
     /**
@@ -102,11 +99,10 @@ class getstudent extends request {
     /**
      * Get endpoint url with params.
      *
-     * @param bool $paramnameinurl
      * @return string
      */
-    public function get_endpoint_url_with_params($paramnameinurl = true): string {
-        // Return endpoint url.
+    public function get_endpoint_url_with_params(): string {
+        // Return endpoint url with params.
         return sprintf(
             '%s/%s-%s/student',
             $this->endpointurl,

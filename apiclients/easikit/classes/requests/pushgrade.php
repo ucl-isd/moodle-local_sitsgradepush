@@ -32,9 +32,6 @@ class pushgrade extends request {
         'student' => 'student',
     ];
 
-    /** @var string[] Endpoint params */
-    const ENDPOINT_PARAMS = ['assessment-component', 'student'];
-
     /** @var string request method. */
     const METHOD = 'PATCH';
 
@@ -64,7 +61,7 @@ class pushgrade extends request {
         $data = self::transform_data($data);
 
         // Set the fields mapping, params fields and data.
-        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS, $data, self::METHOD);
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, $data, self::METHOD);
     }
 
     /**
@@ -104,13 +101,17 @@ class pushgrade extends request {
     }
 
     /**
-     * Replace invalid characters in parameter value.
+     * Get endpoint url with params.
      *
-     * @param string $data
-     * @return array|string|string[]
+     * @return string
      */
-    protected function replace_invalid_characters(string $data) {
-        return str_replace('/', '_', $data);
+    public function get_endpoint_url_with_params(): string {
+        return sprintf(
+            '%s/%s/student/%s/marks',
+            $this->endpointurl,
+            $this->paramsdata['assessment-component'],
+            $this->paramsdata['student']
+        );
     }
 
     /**

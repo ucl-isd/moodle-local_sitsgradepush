@@ -59,18 +59,16 @@ abstract class request implements irequest {
      *
      * @param array $mapping
      * @param string $endpointurl
-     * @param array $endpointparams
      * @param \stdClass|null $data
      * @param string $method
      * @throws \moodle_exception
      */
     protected function __construct(
-        array $mapping, string $endpointurl, array $endpointparams, \stdClass $data = null, string $method = 'GET'
+        array $mapping, string $endpointurl, \stdClass $data = null, string $method = 'GET'
     ) {
         $this->data = $data;
         $this->mapping = $mapping;
         $this->endpointurl = $endpointurl;
-        $this->endpointparams = $endpointparams;
         if (!empty($data)) {
             $this->set_params_data($data);
         }
@@ -112,33 +110,6 @@ abstract class request implements irequest {
      */
     public function get_request_name(): string {
         return $this->name;
-    }
-
-    /**
-     * Returns the endpoint's URL with required parameters.
-     *
-     * @param bool $paramnameinurl
-     * @return string
-     * @throws \moodle_exception
-     */
-    public function get_endpoint_url_with_params($paramnameinurl = true): string {
-        $url = $this->endpointurl;
-        // Construct the final URL if endpoint parameters are defined.
-        if (is_array($this->endpointparams) && count($this->endpointparams) > 0) {
-            foreach ($this->endpointparams as $param) {
-                if (empty($this->paramsdata[$param])) {
-                    throw new \moodle_exception('Mandatory field ' . $param . ' cannot be empty.');
-                }
-                // If param name need to be specified in the URL, then use the param name, otherwise only use the param value.
-                if ($paramnameinurl) {
-                    $url .= '/' . $param . '/' . $this->replace_invalid_characters($this->paramsdata[$param]);
-                } else {
-                    $url .= '/' . $this->replace_invalid_characters($this->paramsdata[$param]);
-                }
-            }
-        }
-
-        return $url;
     }
 
     /**
@@ -195,7 +166,7 @@ abstract class request implements irequest {
      * @return array|string|string[]
      */
     protected function replace_invalid_characters(string $data) {
-        return str_replace('/', '&&', $data);
+        return str_replace('/', '_', $data);
     }
 
     /**
@@ -209,32 +180,11 @@ abstract class request implements irequest {
         $paramsdata = [];
         foreach ($this->mapping as $k => $v) {
             if (!empty($data->$k)) {
-                $paramsdata[$v] = $data->$k;
+                $paramsdata[$v] = $this->replace_invalid_characters($data->$k);
             } else {
                 throw new \moodle_exception('Missing mandatory data ' . $k);
             }
         }
         $this->paramsdata = $paramsdata;
-    }
-
-    /**
-     * Return array using the first rows value as keys.
-     *
-     * @param array $response
-     * @return array
-     */
-    protected function make_array_first_row_as_keys(array $response): array {
-        $processedresponse = [];
-
-        // Use the first element as keys of the remaining elements.
-        if (!empty($response[0])) {
-            $keys = array_shift($response);
-
-            foreach ($response as $v) {
-                $processedresponse[] = array_combine($keys, $v);
-            }
-        }
-
-        return $processedresponse;
     }
 }
