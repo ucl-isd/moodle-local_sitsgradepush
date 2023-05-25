@@ -47,7 +47,7 @@ class getmarkingschemes extends request {
         }
 
         // Set the fields mapping, params fields and data.
-        parent::__construct([], $endpointurl, []);
+        parent::__construct([], $endpointurl);
     }
 
     /**
@@ -72,5 +72,14 @@ class getmarkingschemes extends request {
         }
 
         return $result;
+    }
+
+    /**
+     * Returns the endpoint's URL with required parameters.
+     *
+     * @return string
+     */
+    public function get_endpoint_url_with_params(): string {
+        return $this->endpointurl;
     }
 }

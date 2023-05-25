@@ -34,9 +34,6 @@ class getcomponentgrade extends request {
         'mod_occ_mav' => 'MAV_OCCUR'
     ];
 
-    /** @var string[] Endpoint params */
-    const ENDPOINT_PARAMS = ['MOD_CODE', 'AYR_CODE', 'PSL_CODE', 'MAV_OCCUR'];
-
     /** @var string request method */
     const METHOD = 'GET';
 
@@ -60,7 +57,7 @@ class getcomponentgrade extends request {
         }
 
         // Set the fields mapping, params fields and data.
-        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data);
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, $data);
     }
 
     /**
@@ -99,11 +96,16 @@ class getcomponentgrade extends request {
     /**
      * Get endpoint url with params.
      *
-     * @param bool $paramnameinurl
      * @return string
-     * @throws \moodle_exception
      */
-    public function get_endpoint_url_with_params($paramnameinurl = true): string {
-        return parent::get_endpoint_url_with_params(false);
+    public function get_endpoint_url_with_params(): string {
+        return sprintf(
+            '%s/%s-%s-%s-%s',
+            $this->endpointurl,
+            $this->paramsdata['MOD_CODE'],
+            $this->paramsdata['MAV_OCCUR'],
+            $this->paramsdata['PSL_CODE'],
+            $this->paramsdata['AYR_CODE'],
+        );
     }
 }

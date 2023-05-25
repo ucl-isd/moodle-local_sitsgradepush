@@ -31,11 +31,8 @@ class pushsubmissionlog extends request {
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'assessmentcomponent' => 'assessment-component',
-        'student' => 'student-log',
+        'student' => 'student',
     ];
-
-    /** @var string[] Endpoint params */
-    const ENDPOINT_PARAMS = ['assessment-component', 'student-log'];
 
     /** @var string request method. */
     const METHOD = 'PATCH';
@@ -73,7 +70,7 @@ class pushsubmissionlog extends request {
         $data = pushgrade::transform_data($data);
 
         // Set the fields mapping, params fields and data.
-        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS, $data, self::METHOD);
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, $data, self::METHOD);
     }
 
     /**
@@ -92,13 +89,17 @@ class pushsubmissionlog extends request {
     }
 
     /**
-     * Replace invalid characters in parameter value.
+     * Get endpoint url with params.
      *
-     * @param string $data
-     * @return array|string|string[]
+     * @return string
      */
-    protected function replace_invalid_characters(string $data) {
-        return str_replace('/', '_', $data);
+    public function get_endpoint_url_with_params(): string {
+        return sprintf(
+            '%s/%s/student/%s/marks-log',
+            $this->endpointurl,
+            $this->paramsdata['assessment-component'],
+            $this->paramsdata['student']
+        );
     }
 
     /**
