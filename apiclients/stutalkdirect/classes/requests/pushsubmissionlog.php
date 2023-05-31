@@ -66,14 +66,14 @@ class pushsubmissionlog extends request {
         // Set submission.
         $this->submission = $submission;
 
-        // Set request body.
-        $this->set_body();
-
         // Transform data.
-        $data = pushgrade::transform_data($data);
+        pushgrade::transform_data($data);
 
         // Set the fields mapping, params fields and data.
         parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS, $data, self::METHOD);
+
+        // Set request body.
+        $this->set_body();
     }
 
     /**
@@ -116,6 +116,7 @@ class pushsubmissionlog extends request {
         $body['handed_in_blank'] = $this->submission->get_handed_in_blank();
         $body['permitted_submission_period'] = $this->submission->get_permitted_submission_period();
         $body['export_staff'] = $this->submission->get_export_staff();
+        $body['source'] = $this->get_source();
         $body['export_timestamp'] = $this->submission->get_export_timestamp();
         $body['export_flow_id'] = $this->submission->get_export_flow_id();
         $body['no_of_items'] = $this->submission->get_no_of_items();

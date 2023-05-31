@@ -98,6 +98,23 @@ if ($hassiteconfig) {
             PARAM_INT,
             5
         ));
+
+        // Set the user profile field for export staff's source.
+        $options = array();
+        $manager = manager::get_manager();
+        $fields = $manager->get_user_profile_fields();
+        if (!empty($fields)) {
+            foreach ($fields as $field) {
+                $options[$field->id] = $field->name;
+            }
+        }
+        $settings->add(new admin_setting_configselect(
+            'local_sitsgradepush/user_profile_field',
+            get_string('settings:userprofilefield', 'local_sitsgradepush'),
+            get_string('settings:userprofilefield:desc', 'local_sitsgradepush'),
+            '',
+            $options)
+        );
     }
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
