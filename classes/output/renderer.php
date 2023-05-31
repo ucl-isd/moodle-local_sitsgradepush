@@ -46,6 +46,19 @@ class renderer extends plugin_renderer_base {
     }
 
     /**
+     * Render a simple link.
+     *
+     * @param string $id
+     * @param string $name
+     * @param string $url
+     * @return string
+     * @throws \moodle_exception
+     */
+    public function render_link(string $id, string $name, string $url) : string {
+        return $this->output->render_from_template('local_sitsgradepush/link', ['id' => $id, 'name' => $name, 'url' => $url]);
+    }
+
+    /**
      * Render the assessment push status table.
      *
      * @param array $assessmentdata

@@ -49,6 +49,14 @@ if ($hassiteconfig) {
             '1'
         ));
 
+        // Setting to enable/disable the async push.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/async',
+            get_string('settings:enableasync', 'local_sitsgradepush'),
+            get_string('settings:enableasync:desc', 'local_sitsgradepush'),
+            0
+        ));
+
         // Setting to enable/disable submission log push.
         $settings->add(new admin_setting_configcheckbox(
             'local_sitsgradepush/sublogpush',

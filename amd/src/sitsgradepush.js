@@ -2,9 +2,17 @@ import Ajax from 'core/ajax';
 import notification from 'core/notification';
 
 export const init = (coursemoduleid) => {
-    document.getElementById('local_sitsgradepush_pushbutton').addEventListener('click', (e) => {
+    // Get the push button.
+    let pushbuton = document.getElementById('local_sitsgradepush_pushbutton_async');
+
+    // Exit if the push button is not found.
+    if (pushbuton === null) {
+        return;
+    }
+
+    // Add an event listener to the push button.
+    pushbuton.addEventListener('click', (e) => {
         e.preventDefault();
-        window.console.log('Pushing grades for course module id ' + coursemoduleid + '...');
         // Schedule a task to push grades to SITS.
         schedulePushTask(coursemoduleid);
     });
@@ -27,7 +35,7 @@ function schedulePushTask(coursemoduleid) {
         });
         if (response.success) {
             // Get the push button.
-            let pushbuton = document.getElementById('local_sitsgradepush_pushbutton');
+            let pushbuton = document.getElementById('local_sitsgradepush_pushbutton_async');
 
             // Update the button text.
             pushbuton.innerHTML = response.status;
