@@ -658,7 +658,7 @@ class manager {
         $data->pslcode = $mapping->periodslotcode;
         $data->reassessment = $mapping->reassessment;
         $data->source = sprintf(
-            'moodle-%s-%s-%s',
+            'moodle-course%s-activity%s-user%s',
             $assessment->get_course_module()->course,
             $assessment->get_course_module()->id,
             $USER->id

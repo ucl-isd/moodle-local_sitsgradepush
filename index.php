@@ -88,19 +88,43 @@ echo '<h3 class="mb-4">Sits grade push - ' . $assessment->get_assessment_name() 
 $studentswithgrade = $manager->get_assessment_data($assessment);
 
 if (!empty($studentswithgrade)) {
-    // Get push button label.
-    $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
-    $disabled = '';
+    // Check if asynchronous grade push is enabled.
+    $async = get_config('local_sitsgradepush', 'async');
+    if ($async) {
+        // Get push button label.
+        $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
+        $disabled = '';
 
-    // Check if this course module has pending task.
-    if ($task = $manager->get_pending_task_in_queue($coursemoduleid)) {
-        $buttonlabel = $task->buttonlabel;
-        $disabled = 'disabled';
+        // Check if this course module has pending task.
+        if ($task = $manager->get_pending_task_in_queue($coursemoduleid)) {
+            $buttonlabel = $task->buttonlabel;
+            $disabled = 'disabled';
+        }
+    } else {
+        // Push grade and submission log.
+        if ($pushgrade == 1) {
+            // Push grades.
+            foreach ($studentswithgrade as $student) {
+                $manager->push_grade_to_sits($assessment, $student->userid);
+                $manager->push_submission_log_to_sits($assessment, $student->userid);
+            }
+            // Refresh data after completed all pushes.
+            $studentswithgrade = $manager->get_assessment_data($assessment);
+            $buttonlabel = get_string('label:ok', 'local_sitsgradepush');;
+        } else {
+            $url->param('pushgrade', 1);
+            $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
+        }
     }
 
     // Render push button if the assessment is mapped.
     if ($manager->is_activity_mapped($coursemoduleid)) {
-        echo $renderer->render_button('local_sitsgradepush_pushbutton', $buttonlabel, $disabled);
+        if ($async) {
+            echo $renderer->render_button('local_sitsgradepush_pushbutton_async', $buttonlabel, $disabled);
+        } else {
+            echo $renderer->render_link('local_sitsgradepush_pushbutton', $buttonlabel, $url->out(false));
+        }
+
         if ($lastfinishedtask = $manager->get_last_finished_push_task($coursemoduleid)) {
             echo '<p>'. get_string(
                 'label:lastpushtext',
