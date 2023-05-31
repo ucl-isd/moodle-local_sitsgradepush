@@ -150,6 +150,15 @@ abstract class request implements irequest {
     }
 
     /**
+     * Return request source.
+     *
+     * @return string
+     */
+    public function get_source(): string {
+        return (!empty($this->data->source)) ? $this->data->source : '';
+    }
+
+    /**
      * Set target client ID for this request.
      *
      * @return void

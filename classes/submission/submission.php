@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\submission;
 
+use local_sitsgradepush\manager;
+
 /**
  * Parent class for submission classes.
  *
@@ -121,9 +123,11 @@ abstract class submission implements isubmission {
      * Get export staff.
      *
      * @return string
+     * @throws \dml_exception
      */
     public function get_export_staff(): string {
-        return $this->updateuser;
+        $manager = manager::get_manager();
+        return $manager->get_export_staff();
     }
 
     /**

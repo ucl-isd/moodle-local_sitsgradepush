@@ -635,6 +635,8 @@ class manager {
      * @throws \moodle_exception
      */
     public function get_required_data_for_pushing (assessment $assessment, int $userid): \stdClass {
+        global $USER;
+
         // Get assessment mapping.
         $assessmentinfo = 'CMID: ' .$assessment->get_course_module()->id . ', USERID: ' . $userid;
 
@@ -655,6 +657,12 @@ class manager {
         $data->academicyear = $mapping->academicyear;
         $data->pslcode = $mapping->periodslotcode;
         $data->reassessment = $mapping->reassessment;
+        $data->source = sprintf(
+            'moodle-%s-%s-%s',
+            $assessment->get_course_module()->course,
+            $assessment->get_course_module()->id,
+            $USER->id
+        );
         $data->srarseq = '001'; // Just a dummy reassessment sequence number for now.
 
         return $data;
@@ -962,6 +970,41 @@ class manager {
         $task->timeupdated = time();
         $task->errlogid = $errlogid;
         $DB->update_record('local_sitsgradepush_tasks', $task);
+    }
+
+    /**
+     * Get user profile fields.
+     *
+     * @return array
+     * @throws \dml_exception
+     */
+    public function get_user_profile_fields(): array {
+        global $DB;
+
+        // Get user profile fields from the database.
+        return $DB->get_records('user_info_field', ['datatype' => 'text'], 'sortorder', 'id, shortname, name, description');
+    }
+
+    /**
+     * Get export staff for requests.
+     *
+     * @return mixed|\stdClass|string
+     * @throws \dml_exception
+     */
+    public function get_export_staff() {
+        global $USER, $DB;
+
+        // Get the source field from config.
+        $userprofilefield = get_config('local_sitsgradepush', 'user_profile_field');
+
+        // Find the field value.
+        if (!empty($userprofilefield)) {
+            if ($exportstaff = $DB->get_record('user_info_data', ['userid' => $USER->id, 'fieldid' => $userprofilefield], 'data')) {
+                return $exportstaff->data;
+            }
+        }
+
+        return '';
     }
 
     /**

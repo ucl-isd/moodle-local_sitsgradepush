@@ -57,14 +57,14 @@ class pushgrade extends request {
             throw new \moodle_exception('Endpoint URL for ' . $this->name . '  is not set');
         }
 
-        // Set the request body.
-        $this->set_body($data);
-
         // Transform data.
-        $data = self::transform_data($data);
+        self::transform_data($data);
 
         // Set the fields mapping, params fields and data.
         parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data, self::METHOD);
+
+        // Set the request body.
+        $this->set_body($data);
     }
 
     /**
@@ -81,21 +81,17 @@ class pushgrade extends request {
      * Transform data for this request.
      *
      * @param \stdClass $data
-     * @return \stdClass
      */
-    public static function transform_data(\stdClass $data): \stdClass {
-        $transformeddata = new \stdClass();
+    public static function transform_data(\stdClass &$data) {
         $rseq = empty($data->reassessment) ? '0' : $data->srarseq;
-        $transformeddata->assessmentcomponent = sprintf('%s-%s', $data->mapcode, $data->mabseq);
-        $transformeddata->student = sprintf(
+        $data->assessmentcomponent = sprintf('%s-%s', $data->mapcode, $data->mabseq);
+        $data->student = sprintf(
             '%s-%s-%s-%s',
             $data->sprcode,
             $data->academicyear,
             $data->pslcode,
             $rseq
         );
-
-        return $transformeddata;
     }
 
     /**
@@ -121,6 +117,6 @@ class pushgrade extends request {
      */
     private function set_body(\stdClass $data) {
         // Set request body.
-        $this->body = json_encode(['actual_mark' => $data->marks, 'actual_grade' => $data->grade]);
+        $this->body = json_encode(['actual_mark' => $data->marks, 'actual_grade' => $data->grade, 'source' => $this->get_source()]);
     }
 }

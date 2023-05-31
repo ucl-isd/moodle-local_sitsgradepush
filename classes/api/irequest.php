@@ -73,4 +73,12 @@ interface irequest {
      * @return string
      */
     public function get_target_client_id(): string;
+
+    /**
+     * Return source.
+     *
+     * @package local_sitsgradepush
+     * @return string
+     */
+    public function get_source(): string;
 }
