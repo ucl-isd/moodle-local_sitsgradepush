@@ -27,6 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'Stutalk Direct';
+$string['privacy:metadata'] = 'This plugin does not store any personal data.';
 $string['settings:generalsettingsheader'] = 'General Settings';
 $string['settings:endpoint_component_grade'] = 'SITS endpoint for component grades';
 $string['settings:endpoint_component_grade:desc'] = 'SITS endpoint for component grades';

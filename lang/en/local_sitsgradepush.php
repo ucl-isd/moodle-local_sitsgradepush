@@ -27,6 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'SITS Grade Push';
+$string['privacy:metadata'] = 'This plugin does not store any personal data.';
 $string['settings:apiclientselect'] = 'Select API client';
 $string['settings:apiclient'] = 'API client';
 $string['settings:apiclient:desc'] = 'Choose which API client to use';

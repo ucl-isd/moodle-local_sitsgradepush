@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['pluginname'] = 'Easikit';
 $string['msg:submissionlogpushsuccess'] = 'Submission log successfully pushed to SITS via Easikit';
 $string['msg:gradepushsuccess'] = 'Grade successfully pushed to SITS via Easikit';
+$string['privacy:metadata'] = 'This plugin does not store any personal data.';
 $string['settings:generalsettingsheader'] = 'General Settings';
 $string['settings:endpoint_push_grade'] = 'Push grades endpoint';
 $string['settings:endpoint_push_grade:desc'] = 'Push grades endpoint';
