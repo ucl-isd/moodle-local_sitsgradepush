@@ -86,93 +86,73 @@ class stutalkdirect extends client {
      * @throws \moodle_exception
      */
     public function send_request(irequest $request) {
-        // Get username and password.
-        $username = get_config('sitsapiclient_stutalkdirect', 'username');
-        $password = get_config('sitsapiclient_stutalkdirect', 'password');
+        try {
+            // Get username and password.
+            $username = get_config('sitsapiclient_stutalkdirect', 'username');
+            $password = get_config('sitsapiclient_stutalkdirect', 'password');
 
-        if (!$username || !$password) {
-            throw new \moodle_exception('Stutalk username of password is not set on config!');
-        }
+            if (!$username || !$password) {
+                throw new \moodle_exception('error:stutalkdirect:accountinfo', 'sitsapiclient_stutalkdirect');
+            }
 
-        $curlclient = curl_init();
-        curl_setopt($curlclient, CURLOPT_CONNECTTIMEOUT, 30);
-        curl_setopt($curlclient, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($curlclient, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curlclient, CURLOPT_URL, $request->get_endpoint_url_with_params());
-        curl_setopt($curlclient, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curlclient, CURLOPT_USERPWD, $username . ":" . $password);
-        curl_setopt($curlclient, CURLOPT_CUSTOMREQUEST, $request->get_method());
-        if (in_array($request->get_method(), ['PUT', 'POST'])) {
-            curl_setopt($curlclient, CURLOPT_POSTFIELDS, $request->get_request_body());
-            curl_setopt(
-                $curlclient,
-                CURLOPT_HTTPHEADER,
-                array('Content-Type: application/json')
-            );
-        }
+            $curlclient = curl_init();
+            curl_setopt($curlclient, CURLOPT_CONNECTTIMEOUT, 30);
+            curl_setopt($curlclient, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($curlclient, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($curlclient, CURLOPT_URL, $request->get_endpoint_url_with_params());
+            curl_setopt($curlclient, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curlclient, CURLOPT_USERPWD, $username . ":" . $password);
+            curl_setopt($curlclient, CURLOPT_CUSTOMREQUEST, $request->get_method());
+            if (in_array($request->get_method(), ['PUT', 'POST'])) {
+                curl_setopt($curlclient, CURLOPT_POSTFIELDS, $request->get_request_body());
+                curl_setopt(
+                    $curlclient,
+                    CURLOPT_HTTPHEADER,
+                    array('Content-Type: application/json')
+                );
+            }
 
-        // Execute request.
-        $curlresponse = curl_exec($curlclient);
+            // Execute request.
+            $curlresponse = curl_exec($curlclient);
 
-        // Get execute info.
-        $info = curl_getinfo($curlclient);
+            // Get execute info.
+            $info = curl_getinfo($curlclient);
 
-        // CURL related errors.
-        if ($curlresponse === false) {
-            $error = curl_error($curlclient);
-            curl_close($curlclient);
-            $errormessage = get_string('error:stutalkdirectcurl', 'sitsapiclient_stutalkdirect', $error);
-            $errorlogid = logger::log_request_error($errormessage, $request);
+            // CURL related errors.
+            if ($curlresponse === false) {
+                $error = curl_error($curlclient);
+                curl_close($curlclient);
+                throw new \moodle_exception(
+                    'error:stutalkdirectcurl',
+                    'sitsapiclient_stutalkdirect',
+                    '',
+                    $error
+                );
+            }
 
-            throw new \moodle_exception(
-                'error:stutalkdirectcurl',
-                'sitsapiclient_stutalkdirect',
-                '',
-                $error,
-                $errorlogid
-            );
-        }
-
-        // Check response.
-        $this->check_response($request, $curlresponse, $info);
-
-        // Close curl session.
-        curl_close($curlclient);
-
-        return $request->process_response($curlresponse);
-    }
-
-    /**
-     * Check response.
-     *
-     * @param irequest $request
-     * @param mixed $response
-     * @param mixed $curlinfo
-     * @return void
-     * @throws \moodle_exception
-     */
-    private function check_response(irequest $request, $response, $curlinfo) {
-        // Check server response codes 400 and above.
-        if ($curlinfo['http_code'] >= 400) {
-            // Log error.
-            $errorlogid = logger::log_request_error(
-                get_string(
+            // Check server response codes 400 and above.
+            if ($info['http_code'] >= 400) {
+                curl_close($curlclient);
+                // Throw exception.
+                throw new moodle_exception(
                     'error:stutalkdirect',
                     'sitsapiclient_stutalkdirect',
-                    ['requestname' => $request->get_request_name(), 'httpstatuscode' => $curlinfo['http_code']]
-                ),
-                $request,
-                $response
-            );
+                    '',
+                    ['requestname' => $request->get_request_name(), 'httpstatuscode' => $info['http_code']]
+                );
+            }
 
+            // Close curl session.
+            curl_close($curlclient);
+
+            return $request->process_response($curlresponse);
+        } catch (\moodle_exception $e) {
+            // Log error.
+            $errorlogid = logger::log_request_error($e->getMessage(), $request, $curlresponse ?? null);
+            // Add error log id to exception.
+            $e->debuginfo = $errorlogid;
             // Throw exception.
-            throw new moodle_exception(
-                'error:stutalkdirect',
-                'sitsapiclient_stutalkdirect',
-                '',
-                ['requestname' => $request->get_request_name(), 'httpstatuscode' => $curlinfo['http_code']],
-                $errorlogid
-            );
+            throw $e;
         }
     }
 }

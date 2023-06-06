@@ -247,5 +247,20 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023052300, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2023060500) {
+
+        // Define field errortype to be added to local_sitsgradepush_err_log.
+        $table = new xmldb_table('local_sitsgradepush_err_log');
+        $field = new xmldb_field('errortype', XMLDB_TYPE_INTEGER, '3', null, null, null, null, 'message');
+
+        // Conditionally launch add field errortype.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023060500, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
