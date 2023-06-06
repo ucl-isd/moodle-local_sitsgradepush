@@ -45,3 +45,4 @@ $string['settings:password'] = 'SITS Password';
 $string['settings:password:desc'] = 'Password used to connect to SITS';
 $string['error:stutalkdirect'] = 'Stutalk direct error: {$a->requestname}. HTTP code: {$a->httpstatuscode}';
 $string['error:stutalkdirectcurl'] = 'Stutalk CURL error: {$a}.';
+$string['error:stutalkdirect:accountinfo'] = 'Stutalk username of password is not set on config!';

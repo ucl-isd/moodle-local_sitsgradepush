@@ -62,6 +62,9 @@ class manager {
     /** @var string DB table for storing grade transfer log */
     const TABLE_TRANSFER_LOG = 'local_sitsgradepush_tfr_log';
 
+    /** @var string DB table for storing error log */
+    const TABLE_ERROR_LOG = 'local_sitsgradepush_err_log';
+
     /** @var string[] Fields mapping - Local DB component grades table fields to returning SITS fields */
     const MAPPING_COMPONENT_GRADE = [
         'modcode' => 'MOD_CODE',
@@ -679,9 +682,10 @@ class manager {
      */
     public function get_transfer_log (string $type, int $coursemoduleid, int $userid) {
         global $DB;
-        $sql = "SELECT *
-                FROM {" . self::TABLE_TRANSFER_LOG . "}
-                WHERE type = :type AND userid = :userid AND coursemoduleid = :coursemoduleid
+        $sql = "SELECT trflog.id, trflog.response, trflog.timecreated, errlog.errortype, errlog.message
+                FROM {" . self::TABLE_TRANSFER_LOG . "} trflog LEFT JOIN
+                {" . self::TABLE_ERROR_LOG . "} errlog  ON trflog.errlogid = errlog.id
+                WHERE type = :type AND trflog.userid = :userid AND coursemoduleid = :coursemoduleid
                 ORDER BY timecreated DESC LIMIT 1";
         return $DB->get_record_sql($sql, ['type' => $type, 'coursemoduleid' => $coursemoduleid, 'userid' => $userid]);
     }
@@ -711,28 +715,28 @@ class manager {
                 $data->handin_datetime = '-';
                 $data->handin_status = '-';
                 $data->export_staff = '-';
-                $data->lastgradepushresult = '-';
-                $data->lastgradepushresultlabel = '';
+                $data->lastgradepushresult = null;
+                $data->lastgradepusherrortype = null;
                 $data->lastgradepushtime = '-';
-                $data->lastsublogpushresult = '-';
-                $data->lastsublogpushresultlabel = '';
+                $data->lastsublogpushresult = null;
+                $data->lastsublogpusherrortype = null;
                 $data->lastsublogpushtime = '-';
 
                 // Get grade push status.
                 if ($gradepushstatus = $this->get_transfer_log(self::PUSH_GRADE, $coursemodule->id, $student->id)) {
                     $response = json_decode($gradepushstatus->response);
-                    $data->lastgradepushresult = $response->message;
-                    $data->lastgradepushresultlabel = $response->code == '0' ?
-                        '<span class="badge badge-success">Success</span> ' : '<span class="badge badge-danger">Failed</span> ';
+                    $errortype = $gradepushstatus->errortype ?: errormanager::ERROR_UNKNOWN;
+                    $data->lastgradepushresult = ($response->code == '0') ? 'success' : 'failed';
+                    $data->lastgradepusherrortype = ($response->code == '0') ? 0 : $errortype;
                     $data->lastgradepushtime = date('Y-m-d H:i:s', $gradepushstatus->timecreated);
                 }
 
                 // Get submission log push status.
                 if ($gradepushstatus = $this->get_transfer_log(self::PUSH_SUBMISSION_LOG, $coursemodule->id, $student->id)) {
                     $response = json_decode($gradepushstatus->response);
-                    $data->lastsublogpushresult = $response->message;
-                    $data->lastsublogpushresultlabel = $response->code == '0' ?
-                        '<span class="badge badge-success">Success</span> ' : '<span class="badge badge-danger">Failed</span> ';
+                    $errortype = $gradepushstatus->errortype ?: errormanager::ERROR_UNKNOWN;
+                    $data->lastsublogpushresult = ($response->code == '0') ? 'success' : 'failed';
+                    $data->lastsublogpusherrortype = ($response->code == '0') ? 0 : $errortype;
                     $data->lastsublogpushtime = date('Y-m-d H:i:s', $gradepushstatus->timecreated);
                 }
 
@@ -748,7 +752,44 @@ class manager {
             }
         }
 
-        return $assessmentdata;
+        // Sort data.
+        return $this->sort_grade_push_history_table($assessmentdata);
+    }
+
+    /**
+     * Sort the data for grade push history table.
+     *
+     * @param array $data
+     * @return mixed
+     */
+    private function sort_grade_push_history_table(array $data) {
+        $tempdataarray = [];
+
+        // Filter out different types of records.
+        foreach ($data as $record) {
+            if ($record->lastgradepushresult == 'failed' || $record->lastsublogpushresult == 'failed') {
+                // Failed records.
+                $tempdataarray['error'][] = $record;
+            } else if (is_null($record->lastgradepushresult) && is_null($record->lastsublogpushresult)) {
+                // Records that have not been pushed.
+                $tempdataarray['uppush'][] = $record;
+            } else {
+                // All other records.
+                $tempdataarray['other'][] = $record;
+            }
+        }
+
+        // Sort error records by lastgradepusherrortype and then by lastsublogpusherrortype.
+        // As 'student SPR not found' error type has the highest negative number, this error type will be at the top.
+        usort($tempdataarray['error'], function ($a, $b) {
+            if ($b->lastgradepusherrortype == $a->lastgradepusherrortype) {
+                return $b->lastsublogpusherrortype <=> $a->lastsublogpusherrortype;
+            }
+            return $b->lastgradepusherrortype <=> $a->lastgradepusherrortype;
+        });
+
+        // Merge all arrays.
+        return array_merge($tempdataarray['error'] ?? [], $tempdataarray['other'] ?? [], $tempdataarray['uppush'] ?? []);
     }
 
     /**
@@ -1092,13 +1133,19 @@ class manager {
     private function check_response($response, irequest $request) {
         // Throw exception when response is empty.
         if (empty($response)) {
-            $errorlogid = logger::log(
+            // If request is get student, return a student not found message for the logger to identify the error.
+            if ($request->get_request_name() == 'Get student') {
+                $response = json_encode(['message' => 'student not found']);
+            }
+
+            // Log error.
+            $errorlogid = logger::log_request_error(
                 get_string(
                     'error:emptyresponse', 'local_sitsgradepush',
                     $request->get_request_name()
                 ),
-                $request->get_endpoint_url_with_params(),
-                $request->get_request_body()
+                $request,
+                $response ?? null
             );
 
             // Add error log id to debug info.

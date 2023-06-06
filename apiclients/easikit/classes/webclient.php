@@ -88,53 +88,57 @@ class webclient {
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws moodle_exception
+     * @throws \Exception
      */
     public function make_api_call(irequest $request) {
-        // Get the access token for sending request.
-        $token = $this->get_access_token($request);
-        $curl = new curl();
-        $curl->setHeader('Authorization: Bearer ' . $token);
-        $curl->setHeader('Accept: application/json');
-        // Set timeout in 30 seconds.
-        $curl->setopt(['CURLOPT_CONNECTTIMEOUT'  => 30]);
-        if ($request->get_method() !== 'GET') {
-            // Set content type in header.
-            $curl->setHeader('Content-Type: application/json');
-        }
-        $requestmethod = strtolower($request->get_method());
+        try {
+            // Get the access token for sending request.
+            $token = $this->get_access_token($request);
+            $curl = new curl();
+            $curl->setHeader('Authorization: Bearer ' . $token);
+            $curl->setHeader('Accept: application/json');
+            // Set timeout in 30 seconds.
+            $curl->setopt(['CURLOPT_CONNECTTIMEOUT'  => 30]);
+            if ($request->get_method() !== 'GET') {
+                // Set content type in header.
+                $curl->setHeader('Content-Type: application/json');
+            }
+            $requestmethod = strtolower($request->get_method());
 
-        // Make call.
-        $response = $curl->$requestmethod($request->get_endpoint_url_with_params(), $request->get_request_body());
-        if ($curl->get_errno()) {
-            throw new moodle_exception('error:webclient', 'sitsapiclient_easikit', '', $curl->error);
-        }
+            // Make call.
+            $response = $curl->$requestmethod($request->get_endpoint_url_with_params(), $request->get_request_body());
+            if ($curl->get_errno()) {
+                // Curl error.
+                throw new \moodle_exception(
+                    'error:curl',
+                    'sitsapiclient_easikit',
+                    '',
+                    ['requestname' => $request->get_request_name(), 'error' => $curl->error]);
+            }
 
-        // Get HTTP status code.
-        $httpcode = $curl->get_info()['http_code'];
+            // Get HTTP status code.
+            $httpcode = $curl->get_info()['http_code'];
 
-        if ($httpcode >= 400) {
-            // Log error.
-            $errorlogid = logger::log(
-                get_string(
+            // Server response error.
+            if ($httpcode >= 400) {
+                throw new moodle_exception(
                     'error:webclient',
                     'sitsapiclient_easikit',
+                    '',
                     ['requestname' => $request->get_request_name(), 'httpstatuscode' => $httpcode]
-                ),
-                $request->get_endpoint_url_with_params(),
-                $request->get_request_body(),
-                $response
-            );
-            // Throw exception.
-            throw new moodle_exception(
-                'error:webclient',
-                'sitsapiclient_easikit',
-                '',
-                ['requestname' => $request->get_request_name(), 'httpstatuscode' => $httpcode],
-                $errorlogid
-            );
-        }
+                );
+            }
 
-        return $request->process_response($response);
+            // Process response.
+            return $request->process_response($response);
+        } catch (\moodle_exception $e) {
+            // Log error.
+            $errorlogid = logger::log_request_error($e->getMessage(), $request, $response ?? null);
+            // Add error log id to exception.
+            $e->debuginfo = $errorlogid;
+            // Throw exception.
+            throw $e;
+        }
     }
 
     /**
@@ -150,10 +154,11 @@ class webclient {
         $targetclientid = $request->get_target_client_id();
         if (empty($targetclientid)) {
             throw new moodle_exception(
-                'error:webclient',
+                'error:no_target_client_id',
                 'sitsapiclient_easikit',
                 '',
-                get_string('error:no_target_client_id', 'sitsapiclient_easikit', $request->get_request_name()));
+                $request->get_request_name()
+            );
         }
 
         // For constructing cache key.
@@ -177,7 +182,12 @@ class webclient {
             $response = $curl->post($this->mstokenendpoint, $authform);
             // Error occured.
             if ($curl->get_errno()) {
-                throw new moodle_exception('error:webclient', 'sitsapiclient_easikit', '', $curl->error);
+                throw new moodle_exception(
+                    'error:curl',
+                    'sitsapiclient_easikit',
+                    '',
+                    ['requestname' => $request->get_request_name(), 'error' => $curl->error]
+                );
             }
             // Decompose the response.
             $response = json_decode($response);
@@ -196,9 +206,7 @@ class webclient {
 
                 return $token;
             } else {
-                throw new moodle_exception(
-                    'error:webclient', 'sitsapiclient_easikit', '', get_string('error:access_token', 'sitsapiclient_easikit')
-                );
+                throw new moodle_exception('error:access_token', 'sitsapiclient_easikit', '', $request->get_request_name());
             }
         } else {
             return $token;

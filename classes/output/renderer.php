@@ -16,8 +16,7 @@
 
 namespace local_sitsgradepush\output;
 
-use local_sitsgradepush\assessment\assessment;
-use local_sitsgradepush\manager;
+use local_sitsgradepush\errormanager;
 use plugin_renderer_base;
 
 /**
@@ -66,13 +65,46 @@ class renderer extends plugin_renderer_base {
      * @throws \moodle_exception
      */
     public function render_assessment_push_status_table(array $assessmentdata) : string {
-        // Remove the T character in the timestamp.
+        // Modify the timestamp format and add the label for the last push result.
         foreach ($assessmentdata as &$data) {
+            // Remove the T character in the timestamp.
             $data->handin_datetime = str_replace('T', ' ', $data->handin_datetime);
+            // Add the label for the last push result.
+            $data->lastgradepushresultlabel =
+                is_null($data->lastgradepushresult) ? '' : $this->get_label_html($data->lastgradepusherrortype);
+            // Add the label for the last submission log push result.
+            $data->lastsublogpushresultlabel =
+                is_null($data->lastsublogpushresult) ? '' : $this->get_label_html($data->lastsublogpusherrortype);
         }
 
         return $this->output->render_from_template('local_sitsgradepush/assessmentgrades', [
             'assessmentdata' => $assessmentdata,
         ]);
+    }
+
+    /**
+     * Get the last push result label.
+     *
+     * @param int|null $errortype
+     * @return string
+     */
+    private function get_label_html(int $errortype = null) : string {
+        // This is for old data that does not have the error type.
+        if (is_null($errortype)) {
+            return '<span class="badge badge-danger">'.errormanager::get_error_label(errormanager::ERROR_UNKNOWN).'</span> ';
+        }
+
+        // Return different label based on the error type.
+        switch ($errortype) {
+            case 0:
+                // Success result will have the error type 0.
+                return '<span class="badge badge-success">Success</span> ';
+            case errormanager::ERROR_STUDENT_NOT_ENROLLED:
+                // Student not enrolled error will have a warning label.
+                return '<span class="badge badge-warning">'.errormanager::get_error_label($errortype).'</span> ';
+            default:
+                // Other errors will have a danger label.
+                return '<span class="badge badge-danger">'.errormanager::get_error_label($errortype).'</span> ';
+        }
     }
 }

@@ -73,6 +73,16 @@ class logger {
         $error->response = $response;
         $error->timecreated = time();
 
-        return $DB->insert_record('local_sitsgradepush_request_err_log', $error);
+        // Check if response is JSON.
+        if ($decodedresponse = json_decode($response, true)) {
+            // Try to identify the error type.
+            if (!empty($decodedresponse['message'])) {
+                $error->errortype = errormanager::identify_error($decodedresponse['message']);
+            } else {
+                $error->errortype = errormanager::ERROR_UNKNOWN;
+            }
+        }
+
+        return $DB->insert_record('local_sitsgradepush_err_log', $error);
     }
 }
