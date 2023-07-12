@@ -772,7 +772,7 @@ class manager {
                 $tempdataarray['error'][] = $record;
             } else if (is_null($record->lastgradepushresult) && is_null($record->lastsublogpushresult)) {
                 // Records that have not been pushed.
-                $tempdataarray['uppush'][] = $record;
+                $tempdataarray['notyetpushed'][] = $record;
             } else {
                 // All other records.
                 $tempdataarray['other'][] = $record;
@@ -781,15 +781,17 @@ class manager {
 
         // Sort error records by lastgradepusherrortype and then by lastsublogpusherrortype.
         // As 'student SPR not found' error type has the highest negative number, this error type will be at the top.
-        usort($tempdataarray['error'], function ($a, $b) {
-            if ($b->lastgradepusherrortype == $a->lastgradepusherrortype) {
-                return $b->lastsublogpusherrortype <=> $a->lastsublogpusherrortype;
-            }
-            return $b->lastgradepusherrortype <=> $a->lastgradepusherrortype;
-        });
+        if (!empty($tempdataarray['error'])) {
+            usort($tempdataarray['error'], function ($a, $b) {
+                if ($b->lastgradepusherrortype == $a->lastgradepusherrortype) {
+                    return $b->lastsublogpusherrortype <=> $a->lastsublogpusherrortype;
+                }
+                return $b->lastgradepusherrortype <=> $a->lastgradepusherrortype;
+            });
+        }
 
         // Merge all arrays.
-        return array_merge($tempdataarray['error'] ?? [], $tempdataarray['other'] ?? [], $tempdataarray['uppush'] ?? []);
+        return array_merge($tempdataarray['error'] ?? [], $tempdataarray['other'] ?? [], $tempdataarray['notyetpushed'] ?? []);
     }
 
     /**
