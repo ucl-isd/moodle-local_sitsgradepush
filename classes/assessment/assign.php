@@ -32,7 +32,7 @@ class assign extends assessment {
      */
     public function get_all_participants(): array {
         $context = \context_module::instance($this->coursemodule->id);
-        return get_enrolled_users($context, 'mod/assignment:submit');
+        return get_enrolled_users($context, 'mod/assign:submit');
     }
 
     /**

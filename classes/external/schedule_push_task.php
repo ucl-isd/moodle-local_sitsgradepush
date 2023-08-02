@@ -15,9 +15,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 namespace local_sitsgradepush\external;
 
-use external_api;
-use external_function_parameters;
-use external_value;
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_value;
 use local_sitsgradepush\manager;
 
 /**
@@ -46,7 +47,7 @@ class schedule_push_task extends external_api {
      * @return \external_single_structure
      */
     public static function execute_returns() {
-        return new \external_single_structure([
+        return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Result of request', VALUE_REQUIRED),
             'status' => new external_value(PARAM_TEXT, 'Status', VALUE_OPTIONAL),
             'message' => new external_value(PARAM_TEXT, 'Error message', VALUE_OPTIONAL),
