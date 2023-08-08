@@ -26,6 +26,7 @@
 namespace local_sitsgradepush;
 
 use context_course;
+use context_module;
 use local_sitsgradepush\assessment\assessmentfactory;
 use moodle_exception;
 use moodle_url;
@@ -57,20 +58,17 @@ $course = get_course($coursemodule->course);
 // Set the required data into the PAGE object.
 $param = ['id' => $coursemoduleid];
 $url = new moodle_url('/local/sitsgradepush/index.php', $param);
-$PAGE->set_context($context);
+$modulecontext = context_module::instance($coursemoduleid);
+$PAGE->set_cm($coursemodule);
+$PAGE->set_context($modulecontext);
 $PAGE->set_url($url);
 $PAGE->set_title('SITS Grade Push');
+$PAGE->activityheader->disable();
 
 // Get assessment.
 $assessment = assessmentfactory::get_assessment($coursemodule);
 
 // Set the breadcrumbs.
-$PAGE->navbar->add(get_string('courses'), new moodle_url('/course/index.php'));
-$PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php', ['id' => $coursemodule->course]));
-$PAGE->navbar->add(
-    $assessment->get_assessment_name(),
-    new moodle_url('/mod/'.$coursemodule->modname.'/view.php', ['id' => $coursemodule->id])
-);
 $PAGE->navbar->add('SITS Grade Push',
     new moodle_url('/local/sitsgradepush/index.php', $param));
 
@@ -83,7 +81,7 @@ $manager = manager::get_manager();
 
 echo '<div class="container py-5">';
 // Assessment name.
-echo '<h3 class="mb-4">Sits grade push - ' . $assessment->get_assessment_name() . '</h3>';
+echo '<h3 class="mb-4">Sits grade push</h3>';
 // Get students with grades.
 $studentswithgrade = $manager->get_assessment_data($assessment);
 
