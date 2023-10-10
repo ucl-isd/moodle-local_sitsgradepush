@@ -35,10 +35,13 @@ use local_sitsgradepush\manager;
  * @throws dml_exception
  */
 function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform) {
+    global $PAGE;
+
     // Do not add settings if the plugin is disabled.
     if (get_config('local_sitsgradepush', 'enabled') !== '1') {
         return;
     }
+
     $manager = manager::get_manager();
     // Display settings for certain type of activities only.
     $modulename = $formwrapper->get_current()->modulename;
@@ -46,12 +49,22 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
         // Add setting header.
         $mform->addElement('header', 'gradepushheader', 'Grade Push');
 
+        // Add MAP dropdown list.
+        $mapselect = $mform->addElement(
+            'select',
+            'gradepushmapselect',
+            get_string('gradepushmapselect', 'local_sitsgradepush'),
+            ['0' => get_string('options:all', 'local_sitsgradepush')]
+        );
+        $mform->setType('gradepushmapselect', PARAM_INT);
+        $mform->addHelpButton('gradepushmapselect', 'gradepushmapselect', 'local_sitsgradepush');
+
         // Add component grade dropdown list.
-        $select = $mform->addElement(
+        $mabselect = $mform->addElement(
             'select',
             'gradepushassessmentselect',
             get_string('label:gradepushassessmentselect', 'local_sitsgradepush'),
-            ['0' => 'NONE']
+            ['0' => get_string('options:none', 'local_sitsgradepush')]
         );
         $mform->setType('gradepushassessmentselect', PARAM_INT);
         $mform->addHelpButton('gradepushassessmentselect', 'gradepushassessmentselect', 'local_sitsgradepush');
@@ -64,19 +77,35 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
             if (empty($options)) {
                 $mform->addElement(
                     'html',
-                    "<p class=\"alert-info alert\">". get_string('form:alert_no_mab_found', 'local_sitsgradepush') ."</p>"
+                    "<p class=\"alert-info alert\">" . get_string('form:alert_no_mab_found', 'local_sitsgradepush') . "</p>"
                 );
             } else {
+                // Javascript required to filter MAB options.
+                $PAGE->requires->js_call_amd('local_sitsgradepush/mab_options_updater', 'init', [$options]);
+
+                // Get unique MAPs.
+                $maps = [];
                 foreach ($options as $option) {
-                    $select->addOption($option->text, $option->value, $option->disabled);
+                    // Add options to MAB dropdown list.
+                    $mabselect->addOption($option->text, $option->value, $option->disabled);
+                    $maps[] = $option->mapcode;
                 }
 
-                // If it's a Turnitin assignment and more than one part, disable the dropdown list.
+                // Remove duplicate MAPs.
+                $maps = array_unique($maps);
+
+                // Add options to MAP dropdown list.
+                foreach ($maps as $map) {
+                    $mapselect->addOption($map, $map);
+                }
+
+                // If it's a Turnitin assignment and more than one part, disable the dropdown lists.
                 if ($modulename === 'turnitintooltwo') {
                     $mform->addElement(
                         'html',
-                        "<p class=\"alert-info alert\">". get_string('form:info_turnitin_numparts', 'local_sitsgradepush') ."</p>"
+                        "<p class=\"alert-info alert\">" . get_string('form:info_turnitin_numparts', 'local_sitsgradepush') . "</p>"
                     );
+                    $mform->disabledIf('gradepushmapselect', 'numparts', 'gt', 1);
                     $mform->disabledIf('gradepushassessmentselect', 'numparts', 'gt', 1);
                 }
 
@@ -84,7 +113,7 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                     $disableselect = false;
                     // Disable the settings if this activity is already mapped.
                     if ($assessmentmapping = $manager->get_assessment_mapping($cm->id)) {
-                        $select->setSelected($assessmentmapping->componentgradeid);
+                        $mabselect->setSelected($assessmentmapping->componentgradeid);
                         $disableselect = true;
                     } else {
                         // Disable the settings if this activity is not in the current academic year.
@@ -98,7 +127,8 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                     }
 
                     if ($disableselect) {
-                        $select->updateAttributes(['disabled' => 'disabled']);
+                        $mapselect->updateAttributes(['disabled' => 'disabled']);
+                        $mabselect->updateAttributes(['disabled' => 'disabled']);
                     }
                 }
             }
@@ -114,7 +144,8 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                 get_string('error:mapassessment', 'local_sitsgradepush') .
                 "</p>"
             );
-            $select->updateAttributes(['disabled' => 'disabled']);
+            $mapselect->updateAttributes(['disabled' => 'disabled']);
+            $mabselect->updateAttributes(['disabled' => 'disabled']);
         }
 
         // Display any API error.
@@ -202,10 +233,10 @@ function local_sitsgradepush_extend_settings_navigation(settings_navigation $set
     }
 
     // Build the grade push page url.
-    $url = new moodle_url('/local/sitsgradepush/index.php', array(
+    $url = new moodle_url('/local/sitsgradepush/index.php', [
         'id' => $cm->id,
-        'modname' => $cm->modname
-    ));
+        'modname' => $cm->modname,
+    ]);
 
     // Create the node.
     $node = navigation_node::create(
@@ -223,3 +254,4 @@ function local_sitsgradepush_extend_settings_navigation(settings_navigation $set
         $modulesettings->add_node($node);
     }
 }
+

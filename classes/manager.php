@@ -38,6 +38,7 @@ require_once("$CFG->dirroot/user/lib.php");
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class manager {
+
     /** @var string Action identifier for get component grades */
     const GET_COMPONENT_GRADE = 'getcomponentgrade';
 
@@ -76,25 +77,25 @@ class manager {
         'astcode' => 'AST_CODE',
         'mabperc' => 'MAB_PERC',
         'mabname' => 'MAB_NAME',
-        'examroomcode' => 'APA_ROMC'
+        'examroomcode' => 'APA_ROMC',
     ];
 
     /** @var string[] Allowed activity types */
     const ALLOWED_ACTIVITIES = ['assign', 'quiz', 'turnitintooltwo'];
 
-    /** @var int Push task status - requested*/
+    /** @var int Push task status - requested */
     const PUSH_TASK_STATUS_REQUESTED = 0;
 
-    /** @var int Push task status - queued*/
+    /** @var int Push task status - queued */
     const PUSH_TASK_STATUS_QUEUED = 1;
 
-    /** @var int Push task status - processing*/
+    /** @var int Push task status - processing */
     const PUSH_TASK_STATUS_PROCESSING = 2;
 
-    /** @var int Push task status - completed*/
+    /** @var int Push task status - completed */
     const PUSH_TASK_STATUS_COMPLETED = 3;
 
-    /** @var int Push task status - failed*/
+    /** @var int Push task status - failed */
     const PUSH_TASK_STATUS_FAILED = -1;
 
     /** @var null Manager instance */
@@ -237,6 +238,7 @@ class manager {
             if (!empty($records)) {
                 foreach ($records as $record) {
                     $option = new \stdClass();
+                    $option->mapcode = $record->mapcode;
                     $option->disabled = '';
                     $option->text = sprintf(
                         '%s-%s-%s-%s-%s %s',
@@ -277,10 +279,10 @@ class manager {
                     WHERE cg.modcode = :modcode AND cg.modocc = :modocc AND cg.academicyear = :academicyear
                     AND cg.periodslotcode = :periodslotcode";
 
-            $params = array(
+            $params = [
                 'modcode' => $occ->mod_code, 'modocc' => $occ->mod_occ_mav,
                 'academicyear' => $occ->mod_occ_year_code,
-                'periodslotcode' => $occ->mod_occ_psl_code);
+                'periodslotcode' => $occ->mod_occ_psl_code, ];
 
             // Get AST codes.
             if ($astcodes = self::get_moodle_ast_codes()) {
@@ -637,11 +639,11 @@ class manager {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_required_data_for_pushing (assessment $assessment, int $userid): \stdClass {
+    public function get_required_data_for_pushing(assessment $assessment, int $userid): \stdClass {
         global $USER;
 
         // Get assessment mapping.
-        $assessmentinfo = 'CMID: ' .$assessment->get_course_module()->id . ', USERID: ' . $userid;
+        $assessmentinfo = 'CMID: ' . $assessment->get_course_module()->id . ', USERID: ' . $userid;
 
         // Check mapping.
         if (!$mapping = $this->get_assessment_mapping($assessment->get_course_module()->id)) {
@@ -680,7 +682,7 @@ class manager {
      * @return false|mixed
      * @throws \dml_exception
      */
-    public function get_transfer_log (string $type, int $coursemoduleid, int $userid) {
+    public function get_transfer_log(string $type, int $coursemoduleid, int $userid) {
         global $DB;
         $sql = "SELECT trflog.id, trflog.response, trflog.timecreated, errlog.errortype, errlog.message
                 FROM {" . self::TABLE_TRANSFER_LOG . "} trflog LEFT JOIN
@@ -1174,7 +1176,7 @@ class manager {
         // Failed response.
         $response = [
             "code" => "-1",
-            "message" => $exception->getMessage()
+            "message" => $exception->getMessage(),
         ];
 
         // Get error log id if any.

@@ -124,12 +124,12 @@ if (!empty($studentswithgrade)) {
         }
 
         if ($lastfinishedtask = $manager->get_last_finished_push_task($coursemoduleid)) {
-            echo '<p>'. get_string(
-                'label:lastpushtext',
-                'local_sitsgradepush', [
+            echo '<p>' . get_string(
+                    'label:lastpushtext',
+                    'local_sitsgradepush', [
                     'statustext' => $lastfinishedtask->statustext,
                     'date' => date('d/m/Y', $lastfinishedtask->timeupdated),
-                    'time' => date('g:i:s a', $lastfinishedtask->timeupdated)]) .
+                    'time' => date('g:i:s a', $lastfinishedtask->timeupdated), ]) .
                 '</p>';
         }
     } else {

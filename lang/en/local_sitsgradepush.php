@@ -27,6 +27,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'SITS Grade Push';
+$string['options:all'] = 'All';
+$string['options:none'] = 'None';
 $string['privacy:metadata'] = 'This plugin does not store any personal data.';
 $string['settings:apiclientselect'] = 'Select API client';
 $string['settings:apiclient'] = 'API client';
@@ -55,6 +57,8 @@ $string['label:pushgrade'] = 'Push grades';
 $string['label:ok'] = 'OK';
 $string['label:lastpushtext'] = 'Last scheduled push task {$a->statustext} {$a->date} at {$a->time}';
 $string['gradepushassessmentselect'] = 'Select SITS assessment';
+$string['gradepushmapselect'] = 'Filter SITS assessments by MAP';
+$string['gradepushmapselect_help'] = 'Filter the SITS assessments by MAP.';
 $string['gradepushassessmentselect_help'] = 'Select SITS assessment to link to this activity.';
 $string['reassessmentselect'] = 'Re-assessment';
 $string['reassessmentselect_help'] = 'Select YES if it is a re-assessment.';

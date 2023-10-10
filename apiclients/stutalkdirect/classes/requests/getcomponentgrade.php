@@ -26,12 +26,13 @@ namespace sitsapiclient_stutalkdirect\requests;
  */
 class getcomponentgrade extends request {
 
+
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'mod_code' => 'MOD_CODE',
         'mod_occ_year_code' => 'AYR_CODE',
         'mod_occ_psl_code' => 'PSL_CODE',
-        'mod_occ_mav' => 'MAV_OCCUR'
+        'mod_occ_mav' => 'MAV_OCCUR',
     ];
 
     /** @var string[] Endpoint params */
@@ -60,7 +61,7 @@ class getcomponentgrade extends request {
         }
 
         // Set the fields mapping, params fields and data.
-        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data);
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS, $data);
     }
 
     /**

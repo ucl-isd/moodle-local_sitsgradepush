@@ -24,25 +24,25 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-$observers = array(
-    array(
+$observers = [
+    [
         'eventname' => '\mod_assign\event\submission_graded',
         'callback' => 'local_sitsgradepush_observer::submission_graded',
         'priority' => 200,
-    ),
-    array(
+    ],
+    [
         'eventname' => '\mod_quiz\event\attempt_submitted',
         'callback' => 'local_sitsgradepush_observer::quiz_attempt_submitted',
         'priority' => 200,
-    ),
-    array(
+    ],
+    [
         'eventname' => '\core\event\user_graded',
         'callback' => 'local_sitsgradepush_observer::user_graded',
         'priority' => 200,
-    ),
-    array(
+    ],
+    [
         'eventname' => '\mod_quiz\event\attempt_regraded',
         'callback' => 'local_sitsgradepush_observer::quiz_attempt_regraded',
         'priority' => 200,
-    ),
-);
+    ],
+];

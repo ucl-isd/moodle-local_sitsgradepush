@@ -28,11 +28,12 @@ use cache;
  */
 class getstudent extends request {
 
+
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'idnumber' => 'STU_CODE',
         'mapcode' => 'MAP_CODE',
-        'mabseq' => 'MAB_SEQ'
+        'mabseq' => 'MAB_SEQ',
     ];
 
     /** @var string request method */

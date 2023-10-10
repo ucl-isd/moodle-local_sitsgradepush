@@ -25,6 +25,7 @@ namespace local_sitsgradepush;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class errormanager {
+
     /** @var int error type cannot be determined */
     const ERROR_UNKNOWN = -99;
 
@@ -66,7 +67,7 @@ class errormanager {
         self::ERROR_ATTEMPT_NUMBER_BLANK => 'Attempt number blank',
         self::ERROR_OVERWRITE_EXISTING_RECORD => 'Overwrite not allowed',
         self::ERROR_INVALID_MARKS => 'Invalid marks',
-        self::ERROR_INVALID_HAND_IN_STATUS => 'Invalid hand in status'
+        self::ERROR_INVALID_HAND_IN_STATUS => 'Invalid hand in status',
     ];
 
     /** @var array error types and their match error strings */
@@ -82,7 +83,7 @@ class errormanager {
             'no further update allowed',
         ],
         self::ERROR_INVALID_MARKS => ['Mark and/or Grade not valid'],
-        self::ERROR_INVALID_HAND_IN_STATUS => ['handin_status provided is not in SUS table']
+        self::ERROR_INVALID_HAND_IN_STATUS => ['handin_status provided is not in SUS table'],
     ];
 
     /**
@@ -91,7 +92,7 @@ class errormanager {
      * @param int|null $errorcode error code
      * @return string error label
      */
-    public static function get_error_label(int $errorcode = null) : string {
+    public static function get_error_label(int $errorcode = null): string {
         // If no error code provided, return unknown error.
         if (!isset($errorcode)) {
             return self::ERROR_TYPES_LABEL[self::ERROR_UNKNOWN];
@@ -106,7 +107,7 @@ class errormanager {
      * @param string|null $errorstring
      * @return int
      */
-    public static function identify_error(string $errorstring = null) : int {
+    public static function identify_error(string $errorstring = null): int {
         // If no error string provided, return unknown error.
         if (!isset($errorstring)) {
             return self::ERROR_UNKNOWN;

@@ -26,12 +26,13 @@ namespace sitsapiclient_easikit\requests;
  */
 class getcomponentgrade extends request {
 
+
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'mod_code' => 'MOD_CODE',
         'mod_occ_year_code' => 'AYR_CODE',
         'mod_occ_psl_code' => 'PSL_CODE',
-        'mod_occ_mav' => 'MAV_OCCUR'
+        'mod_occ_mav' => 'MAV_OCCUR',
     ];
 
     /** @var string request method */
@@ -85,7 +86,7 @@ class getcomponentgrade extends request {
                     'MAB_PERC' => $matches[1],
                     'MAB_NAME' => $value['name'],
                     'MKS_CODE' => $value['mark_scheme']['code'],
-                    'APA_ROMC' => $value['schedule']['location']['room']['identifier']
+                    'APA_ROMC' => $value['schedule']['location']['room']['identifier'],
                 ];
             }
         }
