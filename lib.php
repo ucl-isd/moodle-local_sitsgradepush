@@ -41,8 +41,8 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
     }
     // Do not show settings if user does not have the capability.
     if (!has_capability(
-        'local/sitsgradepush:mapassessment', 
-        context_course::instance($formwrapper->get_course()->id))) {
+        'local/sitsgradepush:mapassessment',
+        context_course::instance($formwrapper->get_course()->id),)) {
         return;
     }
     $manager = manager::get_manager();
