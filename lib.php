@@ -39,8 +39,9 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
     if (get_config('local_sitsgradepush', 'enabled') !== '1') {
         return;
     }
-    //Do not show settings if user does not the capability
-    If (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($formwrapper->get_course()->id))) {
+    // Do not show settings if user does not have the capability.
+    if (!has_capability('local/sitsgradepush:mapassessment', 
+        context_course::instance($formwrapper->get_course()->id))) {
         return;
     }
     $manager = manager::get_manager();
