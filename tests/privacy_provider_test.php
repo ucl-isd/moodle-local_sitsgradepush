@@ -27,6 +27,7 @@ use local_sitsgradepush\privacy\provider;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class privacy_provider_test extends \advanced_testcase {
+
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
@@ -39,7 +40,7 @@ class privacy_provider_test extends \advanced_testcase {
      * @return void
      * @throws \coding_exception
      */
-    public function test_get_reason() {
+    public function test_get_reason(): void {
         $reason = get_string(provider::get_reason(), 'local_sitsgradepush');
         $this->assertEquals('This plugin does not store any personal data.', $reason);
     }

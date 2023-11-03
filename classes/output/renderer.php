@@ -60,25 +60,30 @@ class renderer extends plugin_renderer_base {
     /**
      * Render the assessment push status table.
      *
-     * @param array $assessmentdata
+     * @param \stdClass $mapping
      * @return string
      * @throws \moodle_exception
      */
-    public function render_assessment_push_status_table(array $assessmentdata) : string {
+    public function render_assessment_push_status_table(\stdClass $mapping) : string {
+        $students = null;
         // Modify the timestamp format and add the label for the last push result.
-        foreach ($assessmentdata as &$data) {
-            // Remove the T character in the timestamp.
-            $data->handin_datetime = str_replace('T', ' ', $data->handin_datetime);
-            // Add the label for the last push result.
-            $data->lastgradepushresultlabel =
-                is_null($data->lastgradepushresult) ? '' : $this->get_label_html($data->lastgradepusherrortype);
-            // Add the label for the last submission log push result.
-            $data->lastsublogpushresultlabel =
-                is_null($data->lastsublogpushresult) ? '' : $this->get_label_html($data->lastsublogpusherrortype);
+        if (!empty($mapping->students)) {
+            foreach ($mapping->students as &$data) {
+                // Remove the T character in the timestamp.
+                $data->handindatetime = str_replace('T', ' ', $data->handindatetime);
+                // Add the label for the last push result.
+                $data->lastgradepushresultlabel =
+                    is_null($data->lastgradepushresult) ? '' : $this->get_label_html($data->lastgradepusherrortype);
+                // Add the label for the last submission log push result.
+                $data->lastsublogpushresultlabel =
+                    is_null($data->lastsublogpushresult) ? '' : $this->get_label_html($data->lastsublogpusherrortype);
+            }
+            $students = $mapping->students;
         }
 
         return $this->output->render_from_template('local_sitsgradepush/assessmentgrades', [
-            'assessmentdata' => $assessmentdata,
+            'tabletitle' => $mapping->formattedname,
+            'students' => $students,
         ]);
     }
 

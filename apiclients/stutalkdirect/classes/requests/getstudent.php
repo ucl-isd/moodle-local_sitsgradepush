@@ -30,7 +30,7 @@ class getstudent extends request {
     const FIELDS_MAPPING = [
         'idnumber' => 'STU_CODE',
         'mapcode' => 'MAP_CODE',
-        'mabseq' => 'MAB_SEQ'
+        'mabseq' => 'MAB_SEQ',
     ];
 
     /** @var string[] Endpoint params */
@@ -59,7 +59,7 @@ class getstudent extends request {
         }
 
         // Set the fields mapping, params fields and data.
-        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data);
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS, $data);
     }
 
     /**

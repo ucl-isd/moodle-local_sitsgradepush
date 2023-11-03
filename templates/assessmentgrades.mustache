@@ -25,14 +25,14 @@
     * none
 
     Context variables required for this template:
-    * assessmentname - The assessment name
-    * assessmentdata - Array variable, array of assessment data
+    * tabletitle - The assessment name
+    * students - Array variable, array of students
 
     Example context (json):
-    {"assessmentname":"","assessmentdata":[]}
+    {"tabletitle":"","students":[]}
 }}
 <table class="table table-hover my-4">
-    <caption>Grade push history table</caption>
+    <caption>{{tabletitle}}</caption>
     <thead class="thead-light">
     <tr>
         <th scope="col">Student</th>
@@ -44,17 +44,19 @@
     </tr>
     </thead>
     <tbody>
-    {{#assessmentdata}}
+    {{#students}}
         <tr>
             <th scope="row">{{firstname}} {{lastname}}</th>
             <td>{{idnumber}}</td>
             <td>{{marks}}</td>
-            <td>{{handin_datetime}}</td>
+            <td>{{handindatetime}}</td>
             <td>{{{lastgradepushresultlabel}}}{{lastgradepushtime}}</td>
             <td>{{{lastsublogpushresultlabel}}}{{lastsublogpushtime}}
             </td>
         </tr>
-    {{/assessmentdata}}
+    {{/students}}
     </tbody>
 </table>
-
+{{^students}}
+    <p class="alert alert-info">{{#str}} error:nostudentfoundformapping, local_sitsgradepush {{/str}}</p>
+{{/students}}

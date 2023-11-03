@@ -27,13 +27,13 @@ defined('MOODLE_INTERNAL') || die();
 
 // We defined the web service functions to install.
 $functions = [
-    'local_sitsgradepush_schedule_push_task' => array(
+    'local_sitsgradepush_schedule_push_task' => [
         'classname' => 'local_sitsgradepush\external\schedule_push_task',
         'description' => 'Schedule a push task',
         'ajax' => true,
         'type' => 'write',
-        'loginrequired' => true
-    ),
+        'loginrequired' => true,
+    ],
 ];
 
 

@@ -28,14 +28,22 @@ class submissionfactory {
     /**
      * Return submission object.
      *
-     * @param \stdClass $coursemodule course module
+     * @param \int $coursemoduleid course module
      * @param int $userid user id
      * @return submission
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function get_submission(\stdClass $coursemodule, int $userid) {
+    public static function get_submission(int $coursemoduleid, int $userid) {
+        // Get course module.
+        $coursemodule = get_coursemodule_from_id(null, $coursemoduleid);
+
+        // Throw exception if the course module is not found.
+        if (empty($coursemodule)) {
+            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $coursemoduleid);
+        }
+
         switch ($coursemodule->modname) {
             case 'quiz':
                 return new quiz($coursemodule, $userid);

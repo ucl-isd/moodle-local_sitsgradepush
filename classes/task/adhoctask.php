@@ -71,10 +71,17 @@ class adhoctask extends adhoc_task {
 
             // Get assessment.
             $assessment = assessmentfactory::get_assessment($coursemodule);
-            if ($studentswithgrade = $manager->get_assessment_data($assessment)) {
-                foreach ($studentswithgrade as $student) {
-                    $manager->push_grade_to_sits($assessment, $student->userid);
-                    $manager->push_submission_log_to_sits($assessment, $student->userid);
+            if ($assessmentdata = $manager->get_assessment_data($assessment)) {
+                foreach ($assessmentdata['mappings'] as $mapping) {
+                    // Skip if there is no student in the mapping.
+                    if (empty($mapping->students)) {
+                        continue;
+                    }
+                    // Push grades for each student in the mapping.
+                    foreach ($mapping->students as $student) {
+                        $manager->push_grade_to_sits($mapping, $student->userid);
+                        $manager->push_submission_log_to_sits($mapping, $student->userid);
+                    }
                 }
             }
 
@@ -85,7 +92,7 @@ class adhoctask extends adhoc_task {
             $manager->update_push_task_status($task->id, manager::PUSH_TASK_STATUS_COMPLETED);
         } catch (\Exception $e) {
             // Log error.
-            $errlogid = logger::log($e->getMessage());
+            $errlogid = logger::log('Push task failed: ' . $e->getMessage());
 
             // Update task status.
             $manager->update_push_task_status($task->id, manager::PUSH_TASK_STATUS_FAILED, $errlogid);

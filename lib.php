@@ -39,12 +39,14 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
     if (get_config('local_sitsgradepush', 'enabled') !== '1') {
         return;
     }
+
     // Do not show settings if user does not have the capability.
     if (!has_capability(
         'local/sitsgradepush:mapassessment',
         context_course::instance($formwrapper->get_course()->id))) {
         return;
     }
+
     $manager = manager::get_manager();
     // Display settings for certain type of activities only.
     $modulename = $formwrapper->get_current()->modulename;
@@ -52,21 +54,29 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
         // Add setting header.
         $mform->addElement('header', 'gradepushheader', 'Grade Push');
 
-        // Add component grade dropdown list.
+        // Autocomplete options.
+        $options = [
+            'multiple' => true,
+            'noselectionstring' => get_string('option:none', 'local_sitsgradepush'),
+        ];
+
+        // Add autocomplete element to form.
         $select = $mform->addElement(
-            'select',
+            'autocomplete',
             'gradepushassessmentselect',
             get_string('label:gradepushassessmentselect', 'local_sitsgradepush'),
-            ['0' => 'NONE']
+            [],
+            $options
         );
-        $mform->setType('gradepushassessmentselect', PARAM_INT);
-        $mform->addHelpButton('gradepushassessmentselect', 'gradepushassessmentselect', 'local_sitsgradepush');
 
         // Add component grades options to the dropdown list.
-        $manager = manager::get_manager();
         if (empty($manager->get_api_errors())) {
             // Get component grade options.
-            $options = $manager->get_component_grade_options($formwrapper->get_course()->id);
+            $options = $manager->get_component_grade_options(
+                $formwrapper->get_course()->id,
+                $formwrapper->get_current()->coursemodule
+            );
+
             if (empty($options)) {
                 $mform->addElement(
                     'html',
@@ -74,38 +84,23 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                 );
             } else {
                 foreach ($options as $option) {
-                    $select->addOption($option->text, $option->value, $option->disabled);
+                    $select->addOption($option->text, $option->value, [$option->selected]);
                 }
 
-                // If it's a Turnitin assignment and more than one part, disable the dropdown list.
+                // Notify user multiple parts Turnitin assignment is not supported by Grade Push.
                 if ($modulename === 'turnitintooltwo') {
                     $mform->addElement(
                         'html',
                         "<p class=\"alert-info alert\">". get_string('form:info_turnitin_numparts', 'local_sitsgradepush') ."</p>"
                     );
-                    $mform->disabledIf('gradepushassessmentselect', 'numparts', 'gt', 1);
                 }
 
-                if ($cm = $formwrapper->get_coursemodule()) {
-                    $disableselect = false;
-                    // Disable the settings if this activity is already mapped.
-                    if ($assessmentmapping = $manager->get_assessment_mapping($cm->id)) {
-                        $select->setSelected($assessmentmapping->componentgradeid);
-                        $disableselect = true;
-                    } else {
-                        // Disable the settings if this activity is not in the current academic year.
-                        if (!$manager->is_current_academic_year_activity($formwrapper->get_course()->id)) {
-                            $mform->addElement(
-                                'html',
-                                "<p class=\"alert-info alert\">" . get_string('error:pastactivity', 'local_sitsgradepush') . "</p>"
-                            );
-                            $disableselect = true;
-                        }
-                    }
-
-                    if ($disableselect) {
-                        $select->updateAttributes(['disabled' => 'disabled']);
-                    }
+                // Notify user this activity is not in the current academic year.
+                if (!$manager->is_current_academic_year_activity($formwrapper->get_course()->id)) {
+                    $mform->addElement(
+                        'html',
+                        "<p class=\"alert-info alert\">" . get_string('error:pastactivity', 'local_sitsgradepush') . "</p>"
+                    );
                 }
             }
         }
@@ -140,9 +135,9 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
  */
 function local_sitsgradepush_coursemodule_edit_post_actions($data, $course) {
     $manager = manager::get_manager();
-    // Save assessment mapping.
-    if (!empty($data->gradepushassessmentselect)) {
-        $manager->save_assessment_mapping($data);
+    // Save grade push settings if 'gradepushassessmentselect' is set.
+    if (isset($data->gradepushassessmentselect) && is_array($data->gradepushassessmentselect)) {
+        $manager->save_assessment_mappings($data);
     }
 
     return $data;
@@ -161,18 +156,29 @@ function local_sitsgradepush_coursemodule_validation($fromform, $fields) {
     // Extract activity type from form class name e.g. assign, quiz etc.
     $activitytype = explode('_', get_class($fromform));
 
-    // Run check for component grade for unmapped activity only.
-    if (!$manager->is_activity_mapped($fields['coursemodule'])) {
-        // Check if the component grade has been mapped to another activity.
-        if (in_array($activitytype[1], $manager->get_allowed_activities()) && !empty($fields['gradepushassessmentselect'])) {
-            if ($manager->is_component_grade_mapped($fields['gradepushassessmentselect'])) {
-                return ['gradepushassessmentselect' => get_string('error:gradecomponentmapped', 'local_sitsgradepush')];
-            }
-        }
+    // Exit if the activity type is not allowed.
+    if (!in_array($activitytype[1], $manager->get_allowed_activities())) {
+        return;
+    }
+
+    // This field should be set if grade push is enabled and settings loaded.
+    if (!isset($fields['gradepushassessmentselect']) || !is_array($fields['gradepushassessmentselect'])) {
+        return;
+    }
+
+    // Remove any empty values.
+    $componentgrades = array_filter($fields['gradepushassessmentselect']);
+
+    // Validate component grades and return any error message.
+    // Course module id is empty if this is a new activity.
+    $coursemoduleid = $fields['coursemodule'] ?? null;
+    $result = $manager->validate_component_grades($componentgrades, $coursemoduleid);
+    if ($result->errormessages) {
+        return ['gradepushassessmentselect' => implode('<br>', $result->errormessages)];
     }
 
     // For Turnitin assignment, check if the number of parts is greater than 1.
-    if ($activitytype[1] === 'turnitintooltwo' && !empty($fields['gradepushassessmentselect'])) {
+    if ($activitytype[1] === 'turnitintooltwo' && !empty($componentgrades)) {
         if ($fields['numparts'] > 1) {
             return ['numparts' => get_string('error:turnitin_numparts', 'local_sitsgradepush')];
         }
@@ -208,10 +214,10 @@ function local_sitsgradepush_extend_settings_navigation(settings_navigation $set
     }
 
     // Build the grade push page url.
-    $url = new moodle_url('/local/sitsgradepush/index.php', array(
+    $url = new moodle_url('/local/sitsgradepush/index.php', [
         'id' => $cm->id,
-        'modname' => $cm->modname
-    ));
+        'modname' => $cm->modname,
+    ]);
 
     // Create the node.
     $node = navigation_node::create(

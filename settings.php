@@ -108,7 +108,7 @@ if ($hassiteconfig) {
         ));
 
         // Set the user profile field for export staff's source.
-        $options = array();
+        $options = [];
         $manager = manager::get_manager();
         $fields = $manager->get_user_profile_fields();
         if (!empty($fields)) {
@@ -117,11 +117,11 @@ if ($hassiteconfig) {
             }
         }
         $settings->add(new admin_setting_configselect(
-            'local_sitsgradepush/user_profile_field',
-            get_string('settings:userprofilefield', 'local_sitsgradepush'),
-            get_string('settings:userprofilefield:desc', 'local_sitsgradepush'),
-            '',
-            $options)
+                'local_sitsgradepush/user_profile_field',
+                get_string('settings:userprofilefield', 'local_sitsgradepush'),
+                get_string('settings:userprofilefield:desc', 'local_sitsgradepush'),
+                '',
+                $options)
         );
     }
 
