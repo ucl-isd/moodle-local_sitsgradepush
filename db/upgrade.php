@@ -262,5 +262,45 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023060500, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2023103100) {
+
+        // Define field assessmentmappingid to be added to local_sitsgradepush_tfr_log.
+        $table = new xmldb_table('local_sitsgradepush_tfr_log');
+        $field = new xmldb_field(
+            'assessmentmappingid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'coursemoduleid');
+
+        // Conditionally launch add field assessmentmappingid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Patch transfer log.
+        $DB->execute('
+            UPDATE {local_sitsgradepush_tfr_log} t
+            SET t.assessmentmappingid =
+            (SELECT m.id FROM {local_sitsgradepush_mapping} m WHERE m.coursemoduleid = t.coursemoduleid)');
+
+        // Launch change of nullability for field assessmentmappingid.
+        $dbman->change_field_notnull($table, $field);
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023103100, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2023110600) {
+
+        // Define field coursemoduleid to be dropped from local_sitsgradepush_tfr_log.
+        $table = new xmldb_table('local_sitsgradepush_tfr_log');
+        $field = new xmldb_field('coursemoduleid');
+
+        // Conditionally launch drop field coursemoduleid.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023110600, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

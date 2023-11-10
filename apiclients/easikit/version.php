@@ -30,6 +30,6 @@ $plugin->release = '0.1.0';
 $plugin->version = 2023051900;
 $plugin->requires = 2021051708;
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->dependencies = array(
-    'local_sitsgradepush' => 2022020101
-);
+$plugin->dependencies = [
+    'local_sitsgradepush' => 2022020101,
+];

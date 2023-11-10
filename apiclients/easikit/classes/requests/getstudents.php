@@ -16,22 +16,22 @@
 
 namespace sitsapiclient_easikit\requests;
 
-use cache;
+use local_sitsgradepush\cachemanager;
 
 /**
- * Class for getstudent request.
+ * Class for getstudents request.
  *
  * @package     sitsapiclient_easikit
  * @copyright   2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class getstudent extends request {
+class getstudents extends request {
+
 
 
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
-        'idnumber' => 'STU_CODE',
         'mapcode' => 'MAP_CODE',
         'mabseq' => 'MAB_SEQ',
     ];
@@ -48,7 +48,7 @@ class getstudent extends request {
      */
     public function __construct(\stdClass $data) {
         // Set request name.
-        $this->name = 'Get student';
+        $this->name = 'Get students';
 
         // Get request endpoint.
         $endpointurl = get_config('sitsapiclient_easikit', 'endpoint_get_student');
@@ -73,33 +73,7 @@ class getstudent extends request {
         if (!empty($response)) {
             // Convert response to suitable format.
             $response = json_decode($response, true);
-
-            // Build cache.
-            $cache = cache::make('local_sitsgradepush', 'studentspr');
-
-            // Loop through all returned students and create cache for each student.
-            foreach ($response['response']['student_collection']['student'] as $student) {
-                $sprcodecachekey = 'studentspr_' . $this->paramsdata['MAP_CODE'] . '_' . $student['code'];
-                $expirescachekey = 'expires_' . $this->paramsdata['MAP_CODE'] . '_' . $student['code'];
-
-                // Get cache.
-                $sprcache = $cache->get($sprcodecachekey);
-                $expires = $cache->get($expirescachekey);
-
-                // Check if cache is empty or expired.
-                if (empty($sprcache) || empty($expires) || time() >= $expires) {
-                    // Set cache.
-                    $cache->set($sprcodecachekey, $student['spr_code']);
-
-                    // Set cache expires in 30 days.
-                    $cache->set($expirescachekey, time() + 2592000);
-                }
-
-                // Set result.
-                if ($student['code'] == $this->paramsdata['STU_CODE']) {
-                    $result = ['SPR_CODE' => $student['spr_code']];
-                }
-            }
+            $result = $response['response']['student_collection']['student'] ?? [];
         }
 
         return $result;

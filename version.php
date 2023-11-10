@@ -27,10 +27,10 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_sitsgradepush';
 $plugin->release = '0.1.0';
-$plugin->version = 2023060500;
+$plugin->version = 2023110600;
 $plugin->requires = 2021051708;
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->dependencies = array(
+$plugin->dependencies = [
     'block_portico_enrolments' => 2023012400,
-    'block_lifecycle' => 2022120800
-);
+    'block_lifecycle' => 2022120800,
+];

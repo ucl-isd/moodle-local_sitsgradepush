@@ -15,13 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 namespace local_sitsgradepush;
 
-use cache;
 use core_course\customfield\course_handler;
 use DirectoryIterator;
 use local_sitsgradepush\api\client_factory;
 use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
+use local_sitsgradepush\output\pushrecord;
 use local_sitsgradepush\submission\submissionfactory;
 
 defined('MOODLE_INTERNAL') || die;
@@ -43,6 +43,9 @@ class manager {
 
     /** @var string Action identifier for get student from SITS */
     const GET_STUDENT = 'getstudent';
+
+    /** @var string Action identifier for get students from SITS */
+    const GET_STUDENTS = 'getstudents';
 
     /** @var string Action identifier for pushing grades to SITS */
     const PUSH_GRADE = 'pushgrade';
@@ -76,7 +79,7 @@ class manager {
         'astcode' => 'AST_CODE',
         'mabperc' => 'MAB_PERC',
         'mabname' => 'MAB_NAME',
-        'examroomcode' => 'APA_ROMC'
+        'examroomcode' => 'APA_ROMC',
     ];
 
     /** @var string[] Allowed activity types */
@@ -101,10 +104,10 @@ class manager {
     private static $instance = null;
 
     /** @var iclient|null API client for performing api calls */
-    private $apiclient = null;
+    private ?iclient $apiclient = null;
 
     /** @var array Store any api errors */
-    private $apierrors = [];
+    private array $apierrors = [];
 
     /**
      * Constructor.
@@ -222,38 +225,44 @@ class manager {
      * Get options for component grade dropdown list in activity's settings page.
      *
      * @param int $courseid
+     * @param mixed $coursemoduleid
      * @return array
      * @throws \dml_exception
      */
-    public function get_component_grade_options(int $courseid): array {
+    public function get_component_grade_options(int $courseid, mixed $coursemoduleid): array {
         $options = [];
+
         // Get module occurrences from portico enrolments block.
         $modocc = \block_portico_enrolments\manager::get_modocc_mappings($courseid);
 
+        // Get local component grades records.
+        $records = $this->get_local_component_grades($modocc);
+
         // Fetch component grades from SITS.
-        if ($this->fetch_component_grades_from_sits($modocc)) {
-            // Get the updated records from local component grades table.
-            $records = $this->get_local_component_grades($modocc);
-            if (!empty($records)) {
-                foreach ($records as $record) {
-                    $option = new \stdClass();
-                    $option->disabled = '';
-                    $option->text = sprintf(
-                        '%s-%s-%s-%s-%s %s',
-                        $record->modcode,
-                        $record->academicyear,
-                        $record->periodslotcode,
-                        $record->modocc,
-                        $record->mabseq,
-                        $record->mabname
-                    );
-                    $option->value = $record->id;
-                    if (!empty($record->assessmentmappingid)) {
-                        $option->disabled = 'disabled';
-                    }
-                    $options[] = $option;
-                }
+        // TODO: Could do some caching here.
+        $this->fetch_component_grades_from_sits($modocc);
+        $records = $this->get_local_component_grades($modocc);
+
+        // Loop through records and build options.
+        foreach ($records as $record) {
+            $option = new \stdClass();
+            $option->selected = '';
+
+            // This component grade is mapped to this activity, so set selected.
+            if (!empty($record->coursemoduleid) && $record->coursemoduleid == $coursemoduleid) {
+                $option->selected = 'selected';
             }
+            $option->text = sprintf(
+                '%s-%s-%s-%s-%s %s',
+                $record->modcode,
+                $record->academicyear,
+                $record->periodslotcode,
+                $record->modocc,
+                $record->mabseq,
+                $record->mabname
+            );
+            $option->value = $record->id;
+            $options[] = $option;
         }
 
         return $options;
@@ -271,16 +280,16 @@ class manager {
 
         $componentgrades = [];
         foreach ($modocc as $occ) {
-            $sql = "SELECT cg.*, am.id AS 'assessmentmappingid'
+            $sql = "SELECT cg.*, am.coursemoduleid AS 'coursemoduleid'
                     FROM {" . self::TABLE_COMPONENT_GRADE . "} cg LEFT JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                     ON cg.id = am.componentgradeid
                     WHERE cg.modcode = :modcode AND cg.modocc = :modocc AND cg.academicyear = :academicyear
                     AND cg.periodslotcode = :periodslotcode";
 
-            $params = array(
+            $params = [
                 'modcode' => $occ->mod_code, 'modocc' => $occ->mod_occ_mav,
                 'academicyear' => $occ->mod_occ_year_code,
-                'periodslotcode' => $occ->mod_occ_psl_code);
+                'periodslotcode' => $occ->mod_occ_psl_code, ];
 
             // Get AST codes.
             if ($astcodes = self::get_moodle_ast_codes()) {
@@ -362,44 +371,66 @@ class manager {
     }
 
     /**
-     * Save assessment mapping to database.
-     *
+     * Save assessment mappings to database.
      * @param \stdClass $data
      * @return void
+     * @throws \coding_exception
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
-    public function save_assessment_mapping(\stdClass $data) {
+    public function save_assessment_mappings(\stdClass $data): void {
         global $DB;
+        // Remove any empty values.
+        $componentgrades = array_filter($data->gradepushassessmentselect);
 
-        if (!$this->is_activity_mapped($data->coursemodule)) {
-            $record = new \stdClass();
-            $record->courseid = $data->course;
-            $record->coursemoduleid = $data->coursemodule;
-            $record->moduletype = $data->modulename;
-            $record->componentgradeid = $data->gradepushassessmentselect;
-            $record->timecreated = time();
-            $record->timemodified = time();
+        // Validate component grades.
+        $result = $this->validate_component_grades($componentgrades, $data->coursemodule);
 
-            $DB->insert_record(self::TABLE_ASSESSMENT_MAPPING, $record);
+        // Something went wrong, throw exception.
+        if ($result->errormessages) {
+            throw new \moodle_exception(implode('<br>', $result->errormessages));
+        }
+
+        // Delete existing mappings.
+        if ($result->mappingtoremove) {
+            foreach ($result->mappingtoremove as $mapping) {
+                $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mapping->id]);
+            }
+        }
+
+        // Insert new mappings.
+        if ($result->componentgradestomap) {
+            foreach ($result->componentgradestomap as $componentgradeid) {
+                $record = new \stdClass();
+                $record->courseid = $data->course;
+                $record->coursemoduleid = $data->coursemodule;
+                $record->moduletype = $data->modulename;
+                $record->componentgradeid = $componentgradeid;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record(self::TABLE_ASSESSMENT_MAPPING, $record);
+            }
         }
     }
 
     /**
-     * Lookup assessment mapping.
+     * Lookup assessment mappings.
      *
      * @param int $cmid course module id
-     * @return false|mixed|\stdClass
+     * @return array
      * @throws \dml_exception
      */
-    public function get_assessment_mapping(int $cmid) {
+    public function get_assessment_mappings(int $cmid) {
         global $DB;
         $sql = "SELECT am.id, am.courseid, am.coursemoduleid, am.moduletype, am.componentgradeid, am.reassessment,
                        am.reassessmentseq, cg.modcode, cg.modocc, cg.academicyear, cg.periodslotcode, cg.mapcode,
-                       cg.mabseq, cg.astcode, cg.mabname
+                       cg.mabseq, cg.astcode, cg.mabname,
+                       CONCAT(cg.modcode, '-', cg.academicyear, '-', cg.periodslotcode, '-', cg.modocc, '-',
+                       cg.mabseq, ' ', cg.mabname) AS 'formattedname'
                 FROM {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                 JOIN {" . self::TABLE_COMPONENT_GRADE . "} cg ON am.componentgradeid = cg.id
                 WHERE am.coursemoduleid = :cmid";
-        return $DB->get_record_sql($sql, ['cmid' => $cmid]);
+        return $DB->get_records_sql($sql, ['cmid' => $cmid]);
     }
 
     /**
@@ -418,12 +449,12 @@ class manager {
      * Check if the component grade is mapped to an activity.
      *
      * @param int $id
-     * @return bool
+     * @return mixed
      * @throws \dml_exception
      */
-    public function is_component_grade_mapped(int $id): bool {
+    public function is_component_grade_mapped(int $id) {
         global $DB;
-        return $DB->record_exists(self::TABLE_ASSESSMENT_MAPPING, ['componentgradeid' => $id]);
+        return $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['componentgradeid' => $id]);
     }
 
     /**
@@ -497,65 +528,92 @@ class manager {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_student_from_sits(\stdClass $componentgrade, int $userid) {
+    public function get_student_from_sits(\stdClass $componentgrade, int $userid): mixed {
+        $studentspr = null;
+
         // Get user.
         $user = user_get_users_by_id([$userid]);
 
-        // Try to get student spr from cache.
-        $cache = cache::make('local_sitsgradepush', 'studentspr');
-        $sprcodecachekey = 'studentspr_' . $componentgrade->mapcode . '_' . $user[$userid]->idnumber;
-        $expirescachekey = 'expires_' . $componentgrade->mapcode . '_' . $user[$userid]->idnumber;
-        $studentspr = $cache->get($sprcodecachekey);
-        $expires = $cache->get($expirescachekey);
-
-        // If cache is empty or expired, get student from SITS.
-        if (empty($studentspr) || empty($expires) || time() >= $expires) {
-            // Build required data.
-            $data = new \stdClass();
-            $data->idnumber = $user[$userid]->idnumber;
-            $data->mapcode = $componentgrade->mapcode;
-            $data->mabseq = $componentgrade->mabseq;
-
-            // Build and send request.
-            $request = $this->apiclient->build_request('getstudent', $data);
-            $response = $this->apiclient->send_request($request);
-
-            // Check response.
-            $this->check_response($response, $request);
-
-            // Save response to cache.
-            $cache->set($sprcodecachekey, $response['SPR_CODE']);
-
-            // Save expires to cache, expires in 30 days.
-            $cache->set($expirescachekey, time() + 2592000);
-
-            return $response['SPR_CODE'];
-        } else {
-            return $studentspr;
+        // Get students for the component grade.
+        $students = $this->get_students_from_sits($componentgrade);
+        foreach ($students as $student) {
+            if ($student['code'] == $user[$userid]->idnumber) {
+                $studentspr = $student['spr_code'];
+            }
         }
+
+        return $studentspr;
+    }
+
+    /**
+     * Get students for a grade component from SITS.
+     *
+     * @param \stdClass $componentgrade
+     * @return \cache_application|\cache_session|\cache_store|mixed
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function get_students_from_sits(\stdClass $componentgrade): mixed {
+        // Stutalk Direct is not supported currently.
+        if ($this->apiclient->get_client_name() == 'Stutalk Direct') {
+            throw new \moodle_exception(
+                get_string('error:multiplemappingsnotsupported', 'local_sitsgradepush', $this->apiclient->get_client_name()
+            ));
+        }
+
+        // Try to get cache first.
+        $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $componentgrade->mapcode, $componentgrade->mabseq]);
+        $students = cachemanager::get_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
+
+        // Cache found, return students.
+        if (!empty($students)) {
+            return $students;
+        }
+
+        // Build required data.
+        $data = new \stdClass();
+        $data->mapcode = $componentgrade->mapcode;
+        $data->mabseq = $componentgrade->mabseq;
+
+        // Build and send request.
+        $request = $this->apiclient->build_request('getstudents', $data);
+        $result = $this->apiclient->send_request($request);
+
+        // Set cache if result is not empty.
+        if (!empty($result)) {
+            cachemanager::set_cache(
+                cachemanager::CACHE_AREA_STUDENTSPR,
+                $key,
+                $result,
+                strtotime('+30 days'),
+            );
+        }
+
+        return $result;
     }
 
     /**
      * Push grade to SITS.
      *
-     * @param assessment $assessment
+     * @param \stdClass $assessmentmapping
      * @param int $userid
      * @return bool
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function push_grade_to_sits(assessment $assessment, int $userid) {
+    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid): bool {
         try {
             // Check if last push was succeeded, exit if succeeded.
-            if ($this->last_push_succeeded(self::PUSH_GRADE, $assessment->get_course_module()->id, $userid)) {
+            if ($this->last_push_succeeded($assessmentmapping->id, $userid, self::PUSH_GRADE)) {
                 return false;
             }
 
             // Get required data for pushing.
-            $data = $this->get_required_data_for_pushing($assessment, $userid);
+            $data = $this->get_required_data_for_pushing($assessmentmapping, $userid);
 
             // Get grade.
-            $grade = $this->get_student_grade($assessment->get_course_module(), $userid);
+            $grade = $this->get_student_grade($assessmentmapping->coursemoduleid, $userid);
 
             // Push if grade is found.
             if ($grade->grade) {
@@ -569,12 +627,13 @@ class manager {
                 $this->check_response($response, $request);
 
                 // Save transfer log.
-                $this->save_transfer_log(self::PUSH_GRADE, $assessment->get_course_module()->id, $userid, $request, $response);
+                $this->save_transfer_log(self::PUSH_GRADE, $assessmentmapping->id, $userid, $request, $response);
 
                 return true;
             }
         } catch (\moodle_exception $e) {
-            $this->mark_push_as_failed(self::PUSH_GRADE, $assessment->get_course_module()->id, $userid, $e);
+            $this->mark_push_as_failed(self::PUSH_GRADE, $assessmentmapping->id, $userid, $e);
+            throw $e;
         }
 
         return false;
@@ -583,12 +642,12 @@ class manager {
     /**
      * Push submission log to SITS.
      *
-     * @param assessment $assessment
+     * @param \stdClass $assessmentmapping
      * @param int $userid
      * @return bool
      * @throws \dml_exception
      */
-    public function push_submission_log_to_sits(assessment $assessment, int $userid): bool {
+    public function push_submission_log_to_sits(\stdClass $assessmentmapping, int $userid): bool {
         try {
             // Check if submission log push is enabled.
             if (!get_config('local_sitsgradepush', 'sublogpush')) {
@@ -596,15 +655,15 @@ class manager {
             }
 
             // Check if last push was succeeded, exit if succeeded.
-            if ($this->last_push_succeeded(self::PUSH_SUBMISSION_LOG, $assessment->get_course_module()->id, $userid)) {
+            if ($this->last_push_succeeded($assessmentmapping->id, $userid, self::PUSH_SUBMISSION_LOG)) {
                 return false;
             }
 
             // Get required data for pushing.
-            $data = $this->get_required_data_for_pushing($assessment, $userid);
+            $data = $this->get_required_data_for_pushing($assessmentmapping, $userid);
 
             // Create the submission object.
-            $submission = submissionfactory::get_submission($assessment->get_course_module(), $userid);
+            $submission = submissionfactory::get_submission($assessmentmapping->coursemoduleid, $userid);
 
             // Push if student has submission.
             if ($submission->get_submission_data()) {
@@ -616,12 +675,12 @@ class manager {
 
                 // Save push log.
                 $this->save_transfer_log(
-                    self::PUSH_SUBMISSION_LOG, $assessment->get_course_module()->id, $userid, $request, $response);
+                    self::PUSH_SUBMISSION_LOG, $assessmentmapping->id, $userid, $request, $response);
 
                 return true;
             }
         } catch (\moodle_exception $e) {
-            $this->mark_push_as_failed(self::PUSH_SUBMISSION_LOG, $assessment->get_course_module()->id, $userid, $e);
+            $this->mark_push_as_failed(self::PUSH_SUBMISSION_LOG, $assessmentmapping->id, $userid, $e);
         }
 
         return false;
@@ -630,40 +689,31 @@ class manager {
     /**
      * Get required data for pushing.
      *
-     * @param assessment $assessment
+     * @param \stdClass $assessmentmapping
      * @param int $userid
      * @return \stdClass
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_required_data_for_pushing (assessment $assessment, int $userid): \stdClass {
+    public function get_required_data_for_pushing (\stdClass $assessmentmapping, int $userid): \stdClass {
         global $USER;
 
-        // Get assessment mapping.
-        $assessmentinfo = 'CMID: ' .$assessment->get_course_module()->id . ', USERID: ' . $userid;
-
-        // Check mapping.
-        if (!$mapping = $this->get_assessment_mapping($assessment->get_course_module()->id)) {
-            logger::log(get_string('error:assessmentmapping', 'local_sitsgradepush', $assessmentinfo));
-            throw new \moodle_exception('error:assessmentisnotmapped', 'local_sitsgradepush', '', $assessmentinfo);
-        }
-
         // Get SPR_CODE from SITS.
-        $studentspr = $this->get_student_from_sits($mapping, $userid);
+        $studentspr = $this->get_student_from_sits($assessmentmapping, $userid);
 
         // Build the required data.
         $data = new \stdClass();
-        $data->mapcode = $mapping->mapcode;
-        $data->mabseq = $mapping->mabseq;
+        $data->mapcode = $assessmentmapping->mapcode;
+        $data->mabseq = $assessmentmapping->mabseq;
         $data->sprcode = $studentspr;
-        $data->academicyear = $mapping->academicyear;
-        $data->pslcode = $mapping->periodslotcode;
-        $data->reassessment = $mapping->reassessment;
+        $data->academicyear = $assessmentmapping->academicyear;
+        $data->pslcode = $assessmentmapping->periodslotcode;
+        $data->reassessment = $assessmentmapping->reassessment;
         $data->source = sprintf(
             'moodle-course%s-activity%s-user%s',
-            $assessment->get_course_module()->course,
-            $assessment->get_course_module()->id,
+            $assessmentmapping->courseid,
+            $assessmentmapping->coursemoduleid,
             $USER->id
         );
         $data->srarseq = '001'; // Just a dummy reassessment sequence number for now.
@@ -672,22 +722,44 @@ class manager {
     }
 
     /**
-     * Return the last push log for a given grade push.
+     * Return the last push logs for a given user id and assessment mapping id.
      *
-     * @param string $type
-     * @param int $coursemoduleid
+     * @param int $assessmentmappingid
      * @param int $userid
-     * @return false|mixed
+     * @param string|null $type
+     * @return array
      * @throws \dml_exception
      */
-    public function get_transfer_log (string $type, int $coursemoduleid, int $userid) {
+    public function get_transfer_logs (int $assessmentmappingid, int $userid, string $type = null): array {
         global $DB;
-        $sql = "SELECT trflog.id, trflog.response, trflog.timecreated, errlog.errortype, errlog.message
-                FROM {" . self::TABLE_TRANSFER_LOG . "} trflog LEFT JOIN
-                {" . self::TABLE_ERROR_LOG . "} errlog  ON trflog.errlogid = errlog.id
-                WHERE type = :type AND trflog.userid = :userid AND coursemoduleid = :coursemoduleid
-                ORDER BY timecreated DESC LIMIT 1";
-        return $DB->get_record_sql($sql, ['type' => $type, 'coursemoduleid' => $coursemoduleid, 'userid' => $userid]);
+
+        // Initialize params.
+        $params = [
+            'assessmentmappingid' => $assessmentmappingid,
+            'userid1' => $userid,
+            'userid2' => $userid,
+        ];
+
+        // Filter by type if given.
+        $bytype = '';
+        if (!empty($type)) {
+            $bytype = 'AND t1.type = :type';
+            $params['type'] = $type;
+        }
+
+        // Get the latest record for each push type, e.g. grade push, submission log push.
+        $sql = "SELECT t1.id, t1.type, t1.request, t1.response, t1.timecreated, t1.errlogid, errlog.errortype, errlog.message
+                FROM {" . self::TABLE_TRANSFER_LOG . "} t1
+                INNER JOIN (
+                    SELECT type, assessmentmappingid, MAX(timecreated) AS latest_time
+                    FROM {" . self::TABLE_TRANSFER_LOG . "}
+                    WHERE userid = :userid1 AND assessmentmappingid = :assessmentmappingid
+                    GROUP BY type) t2
+                ON t1.type = t2.type AND t1.timecreated = t2.latest_time AND t1.assessmentmappingid = t2.assessmentmappingid
+                LEFT JOIN {" . self::TABLE_ERROR_LOG . "} errlog ON t1.errlogid = errlog.id
+                WHERE t1.userid = :userid2 {$bytype}";
+
+        return $DB->get_records_sql($sql, $params);
     }
 
     /**
@@ -699,61 +771,52 @@ class manager {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_assessment_data(assessment $assessment) {
+    public function get_assessment_data(assessment $assessment): array {
         $assessmentdata = [];
+        $assessmentdata['studentsnotrecognized'] = [];
         $students = $assessment->get_all_participants();
         $coursemodule = $assessment->get_course_module();
-        foreach ($students as $student) {
-            $grade = $this->get_student_grade($coursemodule, $student->id);
-            if (!empty($grade->grade)) {
-                $data = new \stdClass();
-                $data->userid = $student->id;
-                $data->idnumber = $student->idnumber;
-                $data->firstname = $student->firstname;
-                $data->lastname = $student->lastname;
-                $data->marks = $grade->grade;
-                $data->handin_datetime = '-';
-                $data->handin_status = '-';
-                $data->export_staff = '-';
-                $data->lastgradepushresult = null;
-                $data->lastgradepusherrortype = null;
-                $data->lastgradepushtime = '-';
-                $data->lastsublogpushresult = null;
-                $data->lastsublogpusherrortype = null;
-                $data->lastsublogpushtime = '-';
 
-                // Get grade push status.
-                if ($gradepushstatus = $this->get_transfer_log(self::PUSH_GRADE, $coursemodule->id, $student->id)) {
-                    $response = json_decode($gradepushstatus->response);
-                    $errortype = $gradepushstatus->errortype ?: errormanager::ERROR_UNKNOWN;
-                    $data->lastgradepushresult = ($response->code == '0') ? 'success' : 'failed';
-                    $data->lastgradepusherrortype = ($response->code == '0') ? 0 : $errortype;
-                    $data->lastgradepushtime = date('Y-m-d H:i:s', $gradepushstatus->timecreated);
+        // Get assessment mappings.
+        $mappings = $this->get_assessment_mappings($coursemodule->id);
+        if (empty($mappings)) {
+            return [];
+        }
+
+        // Fetch students from SITS.
+        foreach ($mappings as $mapping) {
+            $mabkey = $mapping->mapcode . '-' . $mapping->mabseq;
+            $studentsfromsits[$mabkey] =
+                array_column($this->get_students_from_sits($mapping), 'code');
+            $assessmentdata['mappings'][$mabkey] = $mapping;
+
+            foreach ($students as $key => $student) {
+                $studentrecord = new pushrecord($student, $coursemodule->id, $mapping);
+                // Add students who have push records of this mapping to the mapping's students array.
+                if ($studentrecord->componentgrade == $mabkey || in_array($studentrecord->idnumber, $studentsfromsits[$mabkey])) {
+                    $assessmentdata['mappings'][$mabkey]->students[] = $studentrecord;
+                    unset($students[$key]);
                 }
-
-                // Get submission log push status.
-                if ($gradepushstatus = $this->get_transfer_log(self::PUSH_SUBMISSION_LOG, $coursemodule->id, $student->id)) {
-                    $response = json_decode($gradepushstatus->response);
-                    $errortype = $gradepushstatus->errortype ?: errormanager::ERROR_UNKNOWN;
-                    $data->lastsublogpushresult = ($response->code == '0') ? 'success' : 'failed';
-                    $data->lastsublogpusherrortype = ($response->code == '0') ? 0 : $errortype;
-                    $data->lastsublogpushtime = date('Y-m-d H:i:s', $gradepushstatus->timecreated);
-                }
-
-                // Get submission.
-                $submission = submissionfactory::get_submission($coursemodule, $student->id);
-                if ($submission->get_submission_data()) {
-                    $data->handin_datetime = $submission->get_handin_datetime();
-                    $data->handin_status = $submission->get_handin_status();
-                    $data->export_staff = $submission->get_export_staff();
-                }
-
-                $assessmentdata[] = $data;
             }
         }
 
-        // Sort data.
-        return $this->sort_grade_push_history_table($assessmentdata);
+        // Remaining students are not valid for pushing.
+        $invalidstudents = new \stdClass();
+        $invalidstudents->formattedname = get_string('invalidstudents', 'local_sitsgradepush');
+        $invalidstudents->students = [];
+        foreach ($students as $student) {
+            $invalidstudents->students[] = new pushrecord($student, $coursemodule->id);
+        }
+        $assessmentdata['invalidstudents'] = $invalidstudents;
+
+        // Sort students for each mapping.
+        foreach ($assessmentdata['mappings'] as $mapping) {
+            if (!empty($mapping->students)) {
+                $mapping->students = $this->sort_grade_push_history_table($mapping->students);
+            }
+        }
+
+        return $assessmentdata;
     }
 
     /**
@@ -834,7 +897,7 @@ class manager {
      * @return array|false
      * @throws \dml_exception
      */
-    public function get_moodle_ast_codes() {
+    public function get_moodle_ast_codes(): bool|array {
         $codes = get_config('local_sitsgradepush', 'moodle_ast_codes');
         if (!empty($codes)) {
             if ($codes = explode(',', $codes)) {
@@ -851,7 +914,7 @@ class manager {
      * @return array|false
      * @throws \dml_exception
      */
-    public function get_moodle_ast_codes_work_with_exam_room_code() {
+    public function get_moodle_ast_codes_work_with_exam_room_code(): bool|array {
         $codes = get_config('local_sitsgradepush', 'moodle_ast_codes_exam_room');
         if (!empty($codes)) {
             if ($codes = explode(',', $codes)) {
@@ -869,7 +932,7 @@ class manager {
      * @return bool|int
      * @throws \dml_exception
      */
-    public function schedule_push_task(int $coursemoduleid) {
+    public function schedule_push_task(int $coursemoduleid): bool|int {
         global $DB, $USER;
 
         // Check course module exists.
@@ -877,7 +940,7 @@ class manager {
             throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush');
         }
 
-        // Check if course module has been mapped to an assessment component.
+        // Check if the course module has been mapped to an assessment component.
         if (!$DB->record_exists('local_sitsgradepush_mapping', ['coursemoduleid' => $coursemoduleid])) {
             throw new \moodle_exception('error:assessmentisnotmapped', 'local_sitsgradepush');
         }
@@ -903,7 +966,7 @@ class manager {
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function get_pending_task_in_queue(int $coursemoduleid) {
+    public function get_pending_task_in_queue(int $coursemoduleid): bool|\stdClass {
         global $DB;
         $sql = 'SELECT *
                 FROM {local_sitsgradepush_tasks}
@@ -942,7 +1005,7 @@ class manager {
      * @return false|mixed
      * @throws \dml_exception
      */
-    public function get_last_finished_push_task(int $coursemoduleid) {
+    public function get_last_finished_push_task(int $coursemoduleid): mixed {
         global $DB;
         // Get the last task for the course module.
         $sql = 'SELECT *
@@ -979,7 +1042,7 @@ class manager {
      * @return int
      * @throws \dml_exception
      */
-    public function get_number_of_running_tasks() {
+    public function get_number_of_running_tasks(): int {
         global $DB;
         return $DB->count_records('local_sitsgradepush_tasks', ['status' => self::PUSH_TASK_STATUS_PROCESSING]);
     }
@@ -992,7 +1055,7 @@ class manager {
      * @return array
      * @throws \dml_exception
      */
-    public function get_push_tasks(int $status, int $limit) {
+    public function get_push_tasks(int $status, int $limit): array {
         global $DB;
         return $DB->get_records('local_sitsgradepush_tasks', ['status' => $status], 'timescheduled ASC', '*', 0, $limit);
     }
@@ -1006,7 +1069,7 @@ class manager {
      * @return void
      * @throws \dml_exception
      */
-    public function update_push_task_status(int $id, int $status, int $errlogid = null) {
+    public function update_push_task_status(int $id, int $status, int $errlogid = null): void {
         global $DB;
         $task = $DB->get_record('local_sitsgradepush_tasks', ['id' => $id]);
         $task->status = $status;
@@ -1034,7 +1097,7 @@ class manager {
      * @return mixed|\stdClass|string
      * @throws \dml_exception
      */
-    public function get_export_staff() {
+    public function get_export_staff(): mixed {
         global $USER, $DB;
 
         // Get the source field from config.
@@ -1051,13 +1114,139 @@ class manager {
     }
 
     /**
+     * Return formatted component grade name.
+     *
+     * @param int $componentgradeid
+     * @return string
+     * @throws \dml_exception
+     */
+    public function get_formatted_component_grade_name(int $componentgradeid): string {
+        $formattedname = '';
+
+        if ($componentgrade = $this->get_local_component_grade_by_id($componentgradeid)) {
+            $formattedname = sprintf(
+                '%s-%s-%s-%s-%s %s',
+                $componentgrade->modcode,
+                $componentgrade->academicyear,
+                $componentgrade->periodslotcode,
+                $componentgrade->modocc,
+                $componentgrade->mabseq,
+                $componentgrade->mabname
+            );
+        }
+
+        return $formattedname;
+    }
+
+    /**
+     * Check if any grade had been pushed for an assessment mapping.
+     * @param int $assessmentmappingid
+     * @return bool
+     * @throws \dml_exception
+     */
+    public function has_grades_pushed(int $assessmentmappingid): bool {
+        global $DB;
+        return $DB->record_exists(self::TABLE_TRANSFER_LOG, ['assessmentmappingid' => $assessmentmappingid]);
+    }
+
+    /**
+     * Validate component grades submitted from the form.
+     *
+     * @param array $componentgrades
+     * @param int|null $coursemoduleid
+     * @return \stdClass
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function validate_component_grades(array $componentgrades, int $coursemoduleid = null): \stdClass {
+        $errormessages = [];
+        $componentgradestomap = [];
+        $mappingtoremove = [];
+        $duplicatemappings = [];
+
+        // Count the number of component grades have same map code.
+        foreach ($componentgrades as $componentgradeid) {
+            $componentgrade = $this->get_local_component_grade_by_id($componentgradeid);
+            $duplicatemappings[$componentgrade->mapcode][] = $componentgrade;
+        }
+
+        // Check if more than one component grade with same map code is mapped to the same activity.
+        foreach ($duplicatemappings as $mapcode => $componentgradesarray) {
+            if (count($componentgradesarray) > 1) {
+                $errormessages[] = get_string('error:duplicatemapping', 'local_sitsgradepush', $mapcode);
+            }
+        }
+
+        // For newly created activity, no need to check existing mapping.
+        if (!$coursemoduleid) {
+            $componentgradestomap = $componentgrades;
+        } else {
+            // Get existing component grades mapping for the course module.
+            $existingmapping = $this->get_assessment_mappings($coursemoduleid);
+
+            if ($existingmapping) {
+                // Extract mapped component grades.
+                $mappedcomponentgrades = array_column($existingmapping, 'componentgradeid');
+
+                foreach ($componentgrades as $componentgradeid) {
+                    // Mapped component grade does not need to be mapped again.
+                    if (!in_array($componentgradeid, $mappedcomponentgrades)) {
+                        $componentgradestomap[] = $componentgradeid;
+                    }
+                }
+
+                // Get the mappings that need to be removed.
+                foreach ($existingmapping as $mapping) {
+                    if (!in_array($mapping->componentgradeid, $componentgrades)) {
+                        $mappingtoremove[] = $mapping;
+                    }
+                }
+            } else {
+                // No existing mapping, try to map all component grades.
+                $componentgradestomap = $componentgrades;
+            }
+        }
+
+        // Check if any component grade had been mapped to another activity.
+        foreach ($componentgradestomap as $componentgradeid) {
+            // Check if any component grade had been mapped to another activity.
+            if ($this->is_component_grade_mapped($componentgradeid)) {
+                $componentgradename = $this->get_formatted_component_grade_name($componentgradeid);
+                $errormessages[] = get_string('error:componentgrademapped', 'local_sitsgradepush', $componentgradename);
+            }
+        }
+
+        // Removing mapping is not allowed if there is any grade had been pushed.
+        foreach ($mappingtoremove as $mapping) {
+            if ($this->has_grades_pushed($mapping->id)) {
+                $componentgradename = $this->get_formatted_component_grade_name($mapping->componentgradeid);
+                $errormessages[] = get_string('error:componentgradepushed', 'local_sitsgradepush', $componentgradename);
+            }
+        }
+
+        // Return result.
+        $result = new \stdClass();
+        $result->componentgradestomap = $componentgradestomap;
+        $result->mappingtoremove = $mappingtoremove;
+        $result->errormessages = $errormessages;
+
+        return $result;
+    }
+
+    /**
      * Get grade of an assessment for a student.
      *
-     * @param \stdClass $coursemodule
+     * @param int $coursemoduleid
      * @param int $userid
      * @return \stdClass|null
+     * @throws \coding_exception
+     * @throws \moodle_exception
      */
-    private function get_student_grade(\stdClass $coursemodule, int $userid): ?\stdClass {
+    public function get_student_grade(int $coursemoduleid, int $userid): ?\stdClass {
+        $coursemodule = get_coursemodule_from_id('', $coursemoduleid);
+        if (empty($coursemodule)) {
+            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $coursemoduleid);
+        }
         // Return grade of the first grade item.
         if ($grade = grade_get_grades($coursemodule->course, 'mod', $coursemodule->modname, $coursemodule->instance, $userid)) {
             foreach ($grade->items as $item) {
@@ -1074,7 +1263,7 @@ class manager {
      * Save transfer log.
      *
      * @param string $type
-     * @param int $coursemoduleid
+     * @param int $assessmentmappingid
      * @param int $userid
      * @param mixed $request
      * @param array $response
@@ -1083,12 +1272,12 @@ class manager {
      * @throws \dml_exception
      */
     private function save_transfer_log(
-        string $type, int $coursemoduleid, int $userid, $request, array $response, int $errorlogid = null) {
+        string $type, int $assessmentmappingid, int $userid, mixed $request, array $response, int $errorlogid = null): void {
         global $USER, $DB;
         $insert = new \stdClass();
         $insert->type = $type;
         $insert->userid = $userid;
-        $insert->coursemoduleid = $coursemoduleid;
+        $insert->assessmentmappingid = $assessmentmappingid;
         $insert->request = ($request instanceof irequest) ? $request->get_endpoint_url_with_params() : null;
         $insert->requestbody = ($request instanceof irequest) ? $request->get_request_body() : null;
         $insert->response = json_encode($response);
@@ -1102,14 +1291,16 @@ class manager {
     /**
      * Check if the last push was succeeded.
      *
-     * @param string $pushtype
-     * @param int $coursemoduleid
+     * @param int $assessmentmappingid
      * @param int $userid
+     * @param string $pushtype
      * @return bool
      * @throws \dml_exception
      */
-    private function last_push_succeeded(string $pushtype, int $coursemoduleid, int $userid): bool {
-        if ($log = $this->get_transfer_log($pushtype, $coursemoduleid, $userid)) {
+    private function last_push_succeeded(int $assessmentmappingid, int $userid, string $pushtype): bool {
+        if ($log = $this->get_transfer_logs($assessmentmappingid, $userid, $pushtype)) {
+            // Get the first element.
+            $log = reset($log);
             if (!empty($log->response)) {
                 $response = json_decode($log->response);
                 // Last push was succeeded. No need to push again.
@@ -1132,7 +1323,7 @@ class manager {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    private function check_response($response, irequest $request) {
+    private function check_response(mixed $response, irequest $request): void {
         // Throw exception when response is empty.
         if (empty($response)) {
             // If request is get student, return a student not found message for the logger to identify the error.
@@ -1163,24 +1354,24 @@ class manager {
      * Add failed transfer log.
      *
      * @param string $requestidentifier
-     * @param int $coursemoduleid
+     * @param int $assessmentmappingid
      * @param int $userid
      * @param \moodle_exception $exception
      * @return void
      * @throws \dml_exception
      */
     private function mark_push_as_failed(
-        string $requestidentifier, int $coursemoduleid, int $userid, \moodle_exception $exception) {
+        string $requestidentifier, int $assessmentmappingid, int $userid, \moodle_exception $exception): void {
         // Failed response.
         $response = [
             "code" => "-1",
-            "message" => $exception->getMessage()
+            "message" => $exception->getMessage(),
         ];
 
         // Get error log id if any.
         $errorlogid = $exception->debuginfo ?: null;
 
         // Add failed transfer log.
-        $this->save_transfer_log($requestidentifier, $coursemoduleid, $userid, null, $response, $errorlogid);
+        $this->save_transfer_log($requestidentifier, $assessmentmappingid, $userid, null, $response, intval($errorlogid));
     }
 }

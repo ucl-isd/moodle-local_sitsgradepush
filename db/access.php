@@ -25,17 +25,17 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$capabilities = array(
-    'local/sitsgradepush:mapassessment' => array(
+$capabilities = [
+    'local/sitsgradepush:mapassessment' => [
         'riskbitmask' => RISK_CONFIG,
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(),
-    ),
-    'local/sitsgradepush:pushgrade' => array(
+        'archetypes' => [],
+    ],
+    'local/sitsgradepush:pushgrade' => [
         'riskbitmask' => RISK_SPAM,
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(),
-    ),
-);
+        'archetypes' => [],
+    ],
+];

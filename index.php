@@ -53,8 +53,6 @@ $context = context_course::instance($coursemodule->course);
 // Check user's capability.
 require_capability('local/sitsgradepush:pushgrade', $context);
 
-$course = get_course($coursemodule->course);
-
 // Set the required data into the PAGE object.
 $param = ['id' => $coursemoduleid];
 $url = new moodle_url('/local/sitsgradepush/index.php', $param);
@@ -65,9 +63,6 @@ $PAGE->set_url($url);
 $PAGE->set_title('SITS Grade Push');
 $PAGE->activityheader->disable();
 
-// Get assessment.
-$assessment = assessmentfactory::get_assessment($coursemodule);
-
 // Set the breadcrumbs.
 $PAGE->navbar->add('SITS Grade Push',
     new moodle_url('/local/sitsgradepush/index.php', $param));
@@ -77,17 +72,23 @@ echo $OUTPUT->header();
 
 // Get renderer.
 $renderer = $PAGE->get_renderer('local_sitsgradepush');
-$manager = manager::get_manager();
 
 echo '<div class="container py-5">';
 // Assessment name.
-echo '<h3 class="mb-4">Sits grade push</h3>';
-// Get students with grades.
-$studentswithgrade = $manager->get_assessment_data($assessment);
+echo '<h3 class="mb-4">Sits grade push history</h3>';
 
-if (!empty($studentswithgrade)) {
+$manager = manager::get_manager();
+// Get assessment.
+$assessment = assessmentfactory::get_assessment($coursemodule);
+
+// Get page content.
+$content = $manager->get_assessment_data($assessment);
+
+if (!empty($content)) {
     // Check if asynchronous grade push is enabled.
     $async = get_config('local_sitsgradepush', 'async');
+
+    // Check if this course module has pending task.
     if ($async) {
         // Get push button label.
         $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
@@ -101,14 +102,18 @@ if (!empty($studentswithgrade)) {
     } else {
         // Push grade and submission log.
         if ($pushgrade == 1) {
-            // Push grades.
-            foreach ($studentswithgrade as $student) {
-                $manager->push_grade_to_sits($assessment, $student->userid);
-                $manager->push_submission_log_to_sits($assessment, $student->userid);
+            // Loop through each mapping.
+            foreach ($content['mappings'] as $mapping) {
+                // Push grades for each student in the mapping.
+                foreach ($mapping->students as $student) {
+                    $manager->push_grade_to_sits($mapping, $student->userid);
+                    $manager->push_submission_log_to_sits($mapping, $student->userid);
+                }
             }
-            // Refresh data after completed all pushes.
-            $studentswithgrade = $manager->get_assessment_data($assessment);
-            $buttonlabel = get_string('label:ok', 'local_sitsgradepush');;
+
+              // Refresh data after completed all pushes.
+            $content = $manager->get_assessment_data($assessment);
+            $buttonlabel = get_string('label:ok', 'local_sitsgradepush');
         } else {
             $url->param('pushgrade', 1);
             $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
@@ -129,17 +134,24 @@ if (!empty($studentswithgrade)) {
                 'local_sitsgradepush', [
                     'statustext' => $lastfinishedtask->statustext,
                     'date' => date('d/m/Y', $lastfinishedtask->timeupdated),
-                    'time' => date('g:i:s a', $lastfinishedtask->timeupdated)]) .
+                    'time' => date('g:i:s a', $lastfinishedtask->timeupdated), ]) .
                 '</p>';
         }
     } else {
         echo '<p class="alert alert-danger">' . get_string('error:assessmentisnotmapped', 'local_sitsgradepush') . '</p>';
     }
 
-    // Render assessment push status table.
-    echo $renderer->render_assessment_push_status_table($studentswithgrade);
+    // Display grade push records for each mapping.
+    foreach ($content['mappings'] as $mapping) {
+        echo $renderer->render_assessment_push_status_table($mapping);
+    }
+
+    // Display invalid students.
+    if (!empty($content['invalidstudents']->students)) {
+        echo $renderer->render_assessment_push_status_table($content['invalidstudents']);
+    }
 } else {
-    echo '<p class="alert alert-info">' . get_string('error:nostudentgrades', 'local_sitsgradepush') . '</p>';
+    echo '<p class="alert alert-info">' . get_string('error:assessmentisnotmapped', 'local_sitsgradepush') . '</p>';
 }
 echo '</div>';
 

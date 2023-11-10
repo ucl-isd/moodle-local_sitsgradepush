@@ -25,6 +25,7 @@ namespace sitsapiclient_easikit\requests;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class getmarkingschemes extends request {
+
     /** @var string request method */
     const METHOD = 'GET';
 
@@ -66,7 +67,7 @@ class getmarkingschemes extends request {
                     'MKS_CODE' => $markingscheme['identifier'],
                     'MKS_MARKS' => $markingscheme['usage_indicator']['code'],
                     'MKS_TYPE' => $markingscheme['type']['code'],
-                    'MKS_IUSE' => $markingscheme['in_use_indicator']
+                    'MKS_IUSE' => $markingscheme['in_use_indicator'],
                 ];
             }
         }

@@ -108,7 +108,7 @@ class stutalkdirect extends client {
                 curl_setopt(
                     $curlclient,
                     CURLOPT_HTTPHEADER,
-                    array('Content-Type: application/json')
+                    ['Content-Type: application/json']
                 );
             }
 

@@ -23,6 +23,7 @@ use local_sitsgradepush\submission\submission;
 use sitsapiclient_easikit\requests\getcomponentgrade;
 use sitsapiclient_easikit\requests\getmarkingschemes;
 use sitsapiclient_easikit\requests\getstudent;
+use sitsapiclient_easikit\requests\getstudents;
 use sitsapiclient_easikit\requests\pushgrade;
 use sitsapiclient_easikit\requests\pushsubmissionlog;
 use sitsapiclient_easikit\requests\request;
@@ -65,6 +66,9 @@ class easikit extends client {
                 break;
             case manager::GET_STUDENT:
                 $request = new getstudent($data);
+                break;
+            case manager::GET_STUDENTS:
+                $request = new getstudents($data);
                 break;
             case manager::PUSH_SUBMISSION_LOG:
                 $request = new pushsubmissionlog($data, $submission);
