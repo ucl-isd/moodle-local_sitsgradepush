@@ -71,11 +71,22 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
 
         // Add component grades options to the dropdown list.
         if (empty($manager->get_api_errors())) {
-            // Get component grade options.
-            $options = $manager->get_component_grade_options(
+            // Get module deliveries with component grades data.
+            $moduledeliveries = $manager->get_component_grade_options(
                 $formwrapper->get_course()->id,
                 $formwrapper->get_current()->coursemodule
             );
+
+            // Combine all component grades into a single array.
+            if (!empty($moduledeliveries)) {
+                $options = [];
+                foreach ($moduledeliveries as $moduledelivery) {
+                    if (empty($moduledelivery->componentgrades)) {
+                        continue;
+                    }
+                    $options = array_merge($options, $moduledelivery->componentgrades);
+                }
+            }
 
             if (empty($options)) {
                 $mform->addElement(
@@ -234,4 +245,50 @@ function local_sitsgradepush_extend_settings_navigation(settings_navigation $set
         // Add node.
         $modulesettings->add_node($node);
     }
+}
+
+/**
+ * Extend the course navigation with a link to the grade push dashboard.
+ *
+ * @param navigation_node $parentnode
+ * @param stdClass $course
+ * @param context_course $context
+ * @return void|null
+ * @throws coding_exception
+ * @throws dml_exception
+ * @throws moodle_exception
+ */
+function local_sitsgradepush_extend_navigation_course(navigation_node $parentnode, stdClass $course, context_course $context) {
+
+    global $PAGE;
+
+    // Only add this settings item on non-site course pages and if the user has the capability to perform a rollover.
+    if (!$PAGE->course || $PAGE->course->id == SITEID || !has_capability('local/sitsgradepush:mapassessment', $context)) {
+        return null;
+    }
+
+    // Is the plugin enabled?
+    $enabled = (bool)get_config('local_sitsgradepush', 'enabled');
+    if (!$enabled) {
+        return null;
+    }
+
+    $url = new moodle_url('/local/sitsgradepush/dashboard.php', [
+        'id' => $course->id,
+    ]);
+
+    $node = navigation_node::create(
+        get_string('pluginname', 'local_sitsgradepush'),
+        $url,
+        navigation_node::NODETYPE_LEAF,
+        'local_sitsgradepush',
+        'local_sitsgradepush',
+        new pix_icon('repeat', get_string('pluginname', 'local_sitsgradepush'), 'local_sitsgradepush')
+    );
+
+    if ($PAGE->url->compare($url, URL_MATCH_BASE)) {
+        $node->make_active();
+    }
+
+    $parentnode->add_node($node);
 }

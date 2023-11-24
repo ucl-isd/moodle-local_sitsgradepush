@@ -14,9 +14,9 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template local_sitsgradepush/button
+    @template local_sitsgradepush/back_to_top_button
 
-    Template for displaying a simple button
+    Template for displaying back to top button.
 
     Classes required for JS:
     * none
@@ -25,16 +25,10 @@
     * none
 
     Context variables required for this template:
-    * class - String, CSS class to apply to the button.
-    * id - String, Button id.
-    * name - String, Button display name.
-    * url - String, The URL to navigate to.
+    * none
 
-    Example context (json):
-    {"url":"https://moodlesite/index.php?id=125&modname=assign","id":"local_sitsgradepush_pushbutton","name":"Push"}
+    Example context (json): {}
 }}
-
-<p class="{{class}}">
-    <button class="btn btn-primary" id="{{id}}" {{disabled}}>{{name}}</button>
-</p>
-
+<button id="backToTopButton" class="back-to-top">
+    <i class="fa-solid fa-arrow-up"></i> Back to Top
+</button>

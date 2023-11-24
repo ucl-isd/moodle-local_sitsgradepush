@@ -1,0 +1,165 @@
+{{!
+    This file is part the Local Analytics plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/module_delivery_table
+
+    Template for displaying a module delivery information.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-assessmentmappingid - String, assessment mapping id.
+
+    Context variables required for this template:
+    * tableid - String, table id.
+    * modcode - String, module code.
+    * academicyear - String, academic year.
+    * level - String, level.
+    * graduatetype - String, graduate type.
+    * mapcode - String, map code.
+    * componentgrades - Array, array of component grades.
+        * mabseq - String, mab sequence.
+        * mabname - String, mab name.
+        * mabperc - String, mab percentage.
+        * astcode - String, ast code.
+        * assessmentmapping - Array, array of assessment mapping.
+            * id - String, assessment mapping id.
+            * type - String, assessment mapping type.
+            * url - String, assessment mapping url.
+            * statusicon - String, assessment mapping status icon.
+        * disablechangesourcebutton - String, value to insert into the button, for 'disabled' or not.
+        * disablepushgradebutton - String, value to insert into the button, for 'disabled' or not.
+
+    Example context (json):
+    {
+        "tableid": "PHAY0063-A7P-T1-2022",
+        "modcode": "PHAY0063",
+        "academicyear": "2022",
+        "componentgrades":
+        {
+            "21":
+            {
+                "mabseq": "001",
+                "astcode": "CN01",
+                "mabperc": "50",
+                "mabname": "Coursework 4000 word written case studies (50%)",
+                "assessmentmapping":
+                {
+                    "id": "39",
+                    "type": "Assignment",
+                    "name": "Test assignment 2",
+                    "url": "http://test.m4.local:4001/mod/assign/view.php?id=960",
+                    "statusicon": "<i class=\"fa-regular fa-file-lines\" data-toggle=\"tooltip\" data-placement=\"top\" title=\"Push records exist\"></i>"
+                },
+                "disablechangesourcebutton": " disabled",
+                "disablepushgradebutton": ""
+            }
+        },
+        "mapcode": "PHAY0063A7PE",
+        "level": "7",
+        "graduatetype": "POSTGRADUATE"
+    }
+}}
+<table id="{{tableid}}" class="module-delivery-table table table-hover table-bordered">
+    <thead>
+    <tr>
+        <th colspan="6">
+            <div class="row">
+                <div class="col header-part" style="text-align: left">MODULE CODE: {{modcode}}</div>
+                <div class="col header-part">ACADEMIC YEAR: {{academicyear}}</div>
+                <div class="col header-part" style="text-align: right">LEVEL: {{level}} {{graduatetype}}</div>
+            </div>
+        </th>
+    </tr>
+    <tr>
+        <th colspan="6" style="text-align: left">MAP CODE: {{mapcode}}</th>
+    </tr>
+    <tr>
+        <th class="seq-col">SEQ</th>
+        <th class="title-col">TITLE</th>
+        <th class="weight-col">WGT</th>
+        <th class="assessment-col">AST TYPE</th>
+        <th class="mark-col">MARK TRANSFER</th>
+        <th class="action-col">ACTIONS</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#componentgrades}}
+        <tr>
+            <td class="seq-col">{{mabseq}}</td>
+            <td class="title-col">{{mabname}}</td>
+            <td class="weight-col">{{mabperc}}</td>
+            <td class="assessment-col">{{astcode}}</td>
+            <td class="mark-col">
+                {{#assessmentmapping}}
+                    <a href="{{url}}" target="_blank" data-toggle="tooltip" data-placement="top" title="{{name}}">{{type}}</a>
+                {{/assessmentmapping}}
+                {{^assessmentmapping}}
+                    <button type="button" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top"
+                            title="Add Source">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                {{/assessmentmapping}}
+            </td>
+            <td class="action-col">
+                <div style="display: flex; justify-content: space-around; align-items: center">
+                    <span>
+                        <button type="button"
+                                class="btn btn-secondary btn-sm change-source-button"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                title="Change Source"
+                            {{#assessmentmapping}}
+                                data-assessmentmappingid="{{id}}"
+                            {{/assessmentmapping}}
+                            {{disablechangesourcebutton}}>
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+                    </span>
+                    <span>
+                        <button type="button"
+                                class="btn btn-warning btn-sm push-mark-button"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                title="Push Mark"
+                            {{#assessmentmapping}}
+                                data-assessmentmappingid="{{id}}"
+                            {{/assessmentmapping}}
+                            {{disablepushgradebutton}}>
+                            <i class="fa-solid fa-upload"></i>
+                        </button>
+                    </span>
+                    <span style="width: 20px">
+                        {{#assessmentmapping}}
+                            {{{statusicon}}}
+                        {{/assessmentmapping}}
+                        {{^assessmentmapping}}
+                            <i class="fa-solid fa-circle-info" data-toggle="tooltip" data-placement="top"
+                               title="{{#str}} pushrecordsnotexist, local_sitsgradepush {{/str}}"></i>
+                        {{/assessmentmapping}}
+                    </span>
+                </div>
+            </td>
+        </tr>
+    {{/componentgrades}}
+    {{^componentgrades}}
+        <tr>
+            <td colspan="6">{{#str}} error:no_mab_found, local_sitsgradepush {{/str}}</td>
+        </tr>
+    {{/componentgrades}}
+    </tbody>
+</table>

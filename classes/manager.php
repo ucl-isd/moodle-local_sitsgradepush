@@ -235,61 +235,83 @@ class manager {
         // Get module occurrences from portico enrolments block.
         $modocc = \block_portico_enrolments\manager::get_modocc_mappings($courseid);
 
-        // Get local component grades records.
-        $records = $this->get_local_component_grades($modocc);
-
         // Fetch component grades from SITS.
         // TODO: Could do some caching here.
         $this->fetch_component_grades_from_sits($modocc);
-        $records = $this->get_local_component_grades($modocc);
+        $modocccomponentgrades = $this->get_local_component_grades($modocc);
 
-        // Loop through records and build options.
-        foreach ($records as $record) {
-            $option = new \stdClass();
-            $option->selected = '';
+        // Loop through each component grade for each module occurrence and build the options.
+        foreach ($modocccomponentgrades as $occ) {
+            foreach ($occ->componentgrades as $mab) {
+                $mab->selected = '';
 
-            // This component grade is mapped to this activity, so set selected.
-            if (!empty($record->coursemoduleid) && $record->coursemoduleid == $coursemoduleid) {
-                $option->selected = 'selected';
+                // This component grade is mapped to this activity, so set selected.
+                if (!empty($mab->coursemoduleid) && $mab->coursemoduleid == $coursemoduleid) {
+                    $mab->selected = 'selected';
+                }
+                $mab->text = sprintf(
+                    '%s-%s-%s-%s-%s %s',
+                    $mab->modcode,
+                    $mab->academicyear,
+                    $mab->periodslotcode,
+                    $mab->modocc,
+                    $mab->mabseq,
+                    $mab->mabname
+                );
+                $mab->value = $mab->id;
             }
-            $option->text = sprintf(
-                '%s-%s-%s-%s-%s %s',
-                $record->modcode,
-                $record->academicyear,
-                $record->periodslotcode,
-                $record->modocc,
-                $record->mabseq,
-                $record->mabname
-            );
-            $option->value = $record->id;
-            $options[] = $option;
         }
 
-        return $options;
+        return $modocccomponentgrades;
+    }
+
+    /**
+     * Decode the module occurrence's module availability code, e.g. A6U, A7P.
+     *
+     * @param string $mav
+     * @return array
+     */
+    public function get_decoded_mod_occ_mav(string $mav): array {
+        $decoded = [];
+        if (!empty($mav)) {
+            // Get level.
+            $decoded['level'] = substr($mav, 1, 1);
+            // Get graduate type.
+            $graduatetype = substr($mav, 2, 1);
+            $decoded['graduatetype'] = match ($graduatetype) {
+                'U' => 'UNDERGRADUATE',
+                'P' => 'POSTGRADUATE',
+                default => 'UNKNOWN',
+            };
+        }
+
+        return $decoded;
     }
 
     /**
      * Get component grades from local DB.
      *
-     * @param array $modocc
-     * @return array
-     * @throws \dml_exception
+     * @param array $modocc module occurrences of the current course.
+     * @return array Array of module occurrences with component grades.
+     * @throws \dml_exception|\coding_exception
      */
     public function get_local_component_grades(array $modocc): array {
         global $DB;
 
-        $componentgrades = [];
+        $moduledeliveries = [];
         foreach ($modocc as $occ) {
-            $sql = "SELECT cg.*, am.coursemoduleid AS 'coursemoduleid'
+            $sql = "SELECT cg.*, am.coursemoduleid AS 'coursemoduleid', am.id AS 'assessmentmappingid'
                     FROM {" . self::TABLE_COMPONENT_GRADE . "} cg LEFT JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                     ON cg.id = am.componentgradeid
                     WHERE cg.modcode = :modcode AND cg.modocc = :modocc AND cg.academicyear = :academicyear
                     AND cg.periodslotcode = :periodslotcode";
 
             $params = [
-                'modcode' => $occ->mod_code, 'modocc' => $occ->mod_occ_mav,
+                'modcode' => $occ->mod_code,
+                'modocc' => $occ->mod_occ_mav,
                 'academicyear' => $occ->mod_occ_year_code,
-                'periodslotcode' => $occ->mod_occ_psl_code, ];
+                'periodslotcode' => $occ->mod_occ_psl_code,
+            ];
 
             // Get AST codes.
             if ($astcodes = self::get_moodle_ast_codes()) {
@@ -316,11 +338,31 @@ class manager {
                 }
             }
 
-            // Merge results for multiple module occurrences.
-            $componentgrades = array_merge($componentgrades, $records);
+            // Create module delivery object with component grades data.
+            $moduledelivery = new \stdClass();
+            $moduledelivery->modcode = $occ->mod_code;
+            $moduledelivery->modocc = $occ->mod_occ_mav;
+            $moduledelivery->academicyear = $occ->mod_occ_year_code;
+            $moduledelivery->periodslotcode = $occ->mod_occ_psl_code;
+            $moduledelivery->modoccname = $occ->mod_occ_name;
+            $moduledelivery->componentgrades = $records;
+
+            // Get MAP code from the first record.
+            if (!empty($records)) {
+                $moduledelivery->mapcode = $records[array_key_first($records)]->mapcode;
+            } else {
+                $moduledelivery->mapcode = '';
+            }
+
+            // Get decoded module occurrence's MAV.
+            $decodedmav = $this->get_decoded_mod_occ_mav($occ->mod_occ_mav);
+            $moduledelivery->level = $decodedmav['level'];
+            $moduledelivery->graduatetype = $decodedmav['graduatetype'];
+            $moduledeliveries[] = $moduledelivery;
         }
 
-        return $componentgrades;
+        // Return module deliveries with component grades info.
+        return $moduledeliveries;
     }
 
     /**
@@ -928,32 +970,39 @@ class manager {
     /**
      * Schedule push task.
      *
-     * @param int $coursemoduleid
+     * @param int $assessmentmappingid Assessment mapping id
      * @return bool|int
      * @throws \dml_exception
      */
-    public function schedule_push_task(int $coursemoduleid): bool|int {
+    public function schedule_push_task(int $assessmentmappingid): bool|int {
         global $DB, $USER;
 
-        // Check course module exists.
-        if (!$DB->record_exists('course_modules', ['id' => $coursemoduleid])) {
-            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush');
-        }
-
-        // Check if the course module has been mapped to an assessment component.
-        if (!$DB->record_exists('local_sitsgradepush_mapping', ['coursemoduleid' => $coursemoduleid])) {
-            throw new \moodle_exception('error:assessmentisnotmapped', 'local_sitsgradepush');
+        // Check if the assessment mapping exists.
+        $mapping = $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['id' => $assessmentmappingid]);
+        if (!$mapping) {
+            throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $assessmentmappingid);
         }
 
         // Check if there is already in one of the following status: added, queued, processing.
-        if (self::get_pending_task_in_queue($coursemoduleid)) {
+        if (self::get_pending_task_in_queue($mapping->id)) {
             throw new \moodle_exception('error:duplicatedtask', 'local_sitsgradepush');
         }
 
+        // Check course module exists.
+        if (!$DB->record_exists('course_modules', ['id' => $mapping->coursemoduleid])) {
+            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush');
+        }
+
+        // Check if the assessment component exists.
+        if (!$DB->record_exists('local_sitsgradepush_mab', ['id' => $mapping->componentgradeid])) {
+            throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mapping->componentgradeid);
+        }
+
+        // Create and insert the task.
         $task = new \stdClass();
         $task->userid = $USER->id;
         $task->timescheduled = time();
-        $task->coursemoduleid = $coursemoduleid;
+        $task->assessmentmappingid = $assessmentmappingid;
 
         return $DB->insert_record('local_sitsgradepush_tasks', $task);
     }
@@ -961,24 +1010,25 @@ class manager {
     /**
      * Get push task in status requested, queued or processing for a course module.
      *
-     * @param int $coursemoduleid
-     * @return \stdClass|bool
-     * @throws \coding_exception
-     * @throws \dml_exception
+     * @param int $assessmentmappingid Assessment mapping id
+     * @return \stdClass|bool false if no task found, otherwise return the task object with button label.
+     * @throws \coding_exception|\dml_exception
      */
-    public function get_pending_task_in_queue(int $coursemoduleid): bool|\stdClass {
+    public function get_pending_task_in_queue(int $assessmentmappingid): bool|\stdClass {
         global $DB;
+
         $sql = 'SELECT *
                 FROM {local_sitsgradepush_tasks}
-                WHERE coursemoduleid = :coursemoduleid AND status IN (:status1, :status2, :status3)
+                WHERE assessmentmappingid = :assessmentmappingid AND status IN (:status1, :status2, :status3)
                 ORDER BY id DESC';
         $params = [
-            'coursemoduleid' => $coursemoduleid,
+            'assessmentmappingid' => $assessmentmappingid,
             'status1' => self::PUSH_TASK_STATUS_REQUESTED,
             'status2' => self::PUSH_TASK_STATUS_QUEUED,
             'status3' => self::PUSH_TASK_STATUS_PROCESSING,
         ];
 
+        // Add button label to the task object.
         if ($result = $DB->get_record_sql($sql, $params)) {
             switch ($result->status) {
                 case self::PUSH_TASK_STATUS_REQUESTED:
@@ -1001,25 +1051,27 @@ class manager {
     /**
      * Get last finished push task for a course module.
      *
-     * @param int $coursemoduleid
-     * @return false|mixed
-     * @throws \dml_exception
+     * @param int $assessmentmappingid Assessment mapping id
+     * @return false|mixed Returns false if no task found, otherwise return the task object with status text.
+     * @throws \dml_exception|\coding_exception
      */
-    public function get_last_finished_push_task(int $coursemoduleid): mixed {
+    public function get_last_finished_push_task(int $assessmentmappingid): mixed {
         global $DB;
+
         // Get the last task for the course module.
         $sql = 'SELECT *
                 FROM {local_sitsgradepush_tasks}
-                WHERE coursemoduleid = :coursemoduleid AND status IN (:status1, :status2)
+                WHERE assessmentmappingid = :assessmentmappingid AND status IN (:status1, :status2)
                 ORDER BY id DESC
                 LIMIT 1';
 
         $params = [
-            'coursemoduleid' => $coursemoduleid,
+            'assessmentmappingid' => $assessmentmappingid,
             'status1' => self::PUSH_TASK_STATUS_COMPLETED,
             'status2' => self::PUSH_TASK_STATUS_FAILED,
         ];
 
+        // Add status text to the task object.
         if ($task = $DB->get_record_sql($sql, $params)) {
             switch ($task->status) {
                 case self::PUSH_TASK_STATUS_COMPLETED:

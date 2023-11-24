@@ -302,5 +302,70 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023110600, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2023112400) {
+        $table = new xmldb_table('local_sitsgradepush_tasks');
+
+        // Define index idx_coursemoduleid (not unique) to be dropped form local_sitsgradepush_tasks.
+        $index = new xmldb_index('idx_coursemoduleid', XMLDB_INDEX_NOTUNIQUE, ['coursemoduleid']);
+
+        // Conditionally launch drop index idx_coursemoduleid.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Define field assessmentmappingid to be added to local_sitsgradepush_tasks.
+        $field = new xmldb_field('assessmentmappingid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'status');
+
+        // Conditionally launch add field assessmentmappingid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Patch task table.
+        $tasks = $DB->get_records('local_sitsgradepush_tasks');
+        if (!empty($tasks)) {
+            foreach ($tasks as $task) {
+                $mappings = $DB->get_records('local_sitsgradepush_mapping', ['coursemoduleid' => $task->coursemoduleid]);
+                if (!empty($mappings)) {
+                    foreach ($mappings as $mapping) {
+                        $inserttask = new stdClass();
+                        $inserttask->userid = $task->userid;
+                        $inserttask->timescheduled = $task->timescheduled;
+                        $inserttask->timeupdated = $task->timeupdated;
+                        $inserttask->status = $task->status;
+                        $inserttask->coursemoduleid = $task->coursemoduleid;
+                        $inserttask->assessmentmappingid = $mapping->id;
+                        $inserttask->info = $task->info;
+                        $inserttask->errlogid = $task->errlogid;
+                        $DB->insert_record('local_sitsgradepush_tasks', $inserttask);
+                    }
+                }
+                $DB->delete_records('local_sitsgradepush_tasks', ['id' => $task->id]);
+            }
+        }
+
+        // Launch change of nullability for field assessmentmappingid.
+        $dbman->change_field_notnull($table, $field);
+
+        // Define index assessmentmappingid_idx (not unique) to be added to local_sitsgradepush_tasks.
+        $index = new xmldb_index('idx_assessmentmappingid', XMLDB_INDEX_NOTUNIQUE, ['assessmentmappingid']);
+
+        // Conditionally launch add index idx_assessmentmappingid.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Define field coursemoduleid to be dropped from local_sitsgradepush_tasks.
+        $field = new xmldb_field('coursemoduleid');
+
+        // Conditionally launch drop field coursemoduleid.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023112400, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

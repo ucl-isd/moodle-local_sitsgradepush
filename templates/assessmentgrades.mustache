@@ -16,7 +16,7 @@
 {{!
     @template local_sitsgradepush/assessmentgrades
 
-    Template for displaying the grades for an assessment.
+    Template for displaying the grade push history for an assessment.
 
     Classes required for JS:
     * none
@@ -25,15 +25,40 @@
     * none
 
     Context variables required for this template:
-    * tabletitle - The assessment name
-    * students - Array variable, array of students
+    * tabletitle - String, The assessment component's name
+    * additionalinfo - Boolean, whether to display additional information
+    * students - Array, array of students
 
     Example context (json):
-    {"tabletitle":"","students":[]}
+    {
+        "tabletitle":"PHAY0063-2022-T1-A7P-001 Coursework 4000 word written case studies (50%)",
+        "additionalinfo":true,
+        "students":[{
+                "firstname":"Test",
+                "lastname":"User",
+                "idnumber":"1234567",
+                "marks":"0",
+                "handindatetime":"2019-01-01 00:00:00",
+                "lastgradepushresultlabel":"<span class=\"badge badge-success\">Success</span> ",
+                "lastgradepushtime":"2019-01-01 00:00:00",
+                "lastsublogpushresultlabel":"<span class=\"badge badge-success\">Success</span> ",
+                "lastsublogpushtime":"2019-01-01 00:00:00"
+        }]
+    }
 }}
 <table class="table table-hover my-4">
     <caption>{{tabletitle}}</caption>
     <thead class="thead-light">
+    {{#additionalinfo}}
+        <tr>
+            <th colspan="6" style="background-color: #ecf5fd">
+                <div>
+                    <span id="taskstatus-{{mappingid}}" style="float: left;">{{{taskstatus}}}</span>
+                    <span style="float: right;">{{lasttask}}</span>
+                </div>
+            </th>
+        </tr>
+    {{/additionalinfo}}
     <tr>
         <th scope="col">Student</th>
         <th scope="col">Portico number</th>

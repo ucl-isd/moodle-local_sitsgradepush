@@ -1,0 +1,57 @@
+.sitgradepush-btn-center {
+    text-align: center;
+}
+
+.sitsgradepush-dasboard .selector-container {
+    margin-bottom: 20px;
+}
+
+.sitsgradepush-dasboard .module-delivery-table {
+    text-align: center;
+    margin-bottom: 50px;
+    background-color: #fff5ea;
+}
+
+.sitsgradepush-dasboard .module-delivery-table .seq-col {
+    width: 5%;
+}
+
+.sitsgradepush-dasboard .module-delivery-table .title-col {
+    width: 40%;
+}
+
+.sitsgradepush-dasboard .module-delivery-table .weight-col {
+    width: 5%;
+}
+
+.sitsgradepush-dasboard .module-delivery-table .assessment-col {
+    width: 15%;
+}
+
+.sitsgradepush-dasboard .module-delivery-table .mark-col {
+    width: 20%;
+}
+
+.sitsgradepush-dasboard .module-delivery-table .action-col {
+    width: 15%;
+}
+
+/* Add CSS styles for the "Back to Top" button */
+.sitsgradepush-dasboard .back-to-top {
+    display: none;
+    position: fixed;
+    bottom: 20px; /* Adjust the distance from the bottom as needed */
+    right: 20px; /* Adjust the distance from the right as needed */
+    z-index: 999;
+    padding: 10px 20px;
+    background-color: #007bff; /* Button background color */
+    color: #fff; /* Button text color */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.sitsgradepush-dasboard .back-to-top:hover {
+    background-color: #0056b3; /* Hover background color */
+}

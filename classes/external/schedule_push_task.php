@@ -15,6 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 namespace local_sitsgradepush\external;
 
+use context_course;
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
@@ -37,7 +38,7 @@ class schedule_push_task extends external_api {
      */
     public static function execute_parameters() {
         return new external_function_parameters([
-            'coursemoduleid' => new external_value(PARAM_INT, 'Course module ID', VALUE_REQUIRED),
+            'assessmentmappingid' => new external_value(PARAM_INT, 'Assessment mapping ID', VALUE_REQUIRED),
         ]);
     }
 
@@ -57,14 +58,19 @@ class schedule_push_task extends external_api {
     /**
      * Schedule a push task.
      *
-     * @param int $coursemoduleid
+     * @param int $assessmentmappingid
      * @return array
      */
-    public static function execute(int $coursemoduleid) {
+    public static function execute(int $assessmentmappingid) {
+        global $USER;
         try {
-            $params = self::validate_parameters(self::execute_parameters(), ['coursemoduleid' => $coursemoduleid]);
+            $params = self::validate_parameters(
+                self::execute_parameters(),
+                ['assessmentmappingid' => $assessmentmappingid]
+            );
             $manager = manager::get_manager();
-            $manager->schedule_push_task($params['coursemoduleid']);
+            $manager->schedule_push_task($params['assessmentmappingid']);
+
             return [
                 'success' => true,
                 'status' => get_string('task:status:requested', 'local_sitsgradepush'),
