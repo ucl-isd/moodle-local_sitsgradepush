@@ -1,7 +1,10 @@
-import {schedulePushTask} from "./push_tasks";
+import {schedulePushTask} from "./sitsgradepush_helper";
 import notification from "core/notification";
 
 export const init = () => {
+    // If there is a saved message by successfully mapped an assessment in localStorage, display it.
+    displayNotification();
+
     // Find the page element.
     let page = document.getElementById("page");
 
@@ -45,15 +48,31 @@ export const init = () => {
         tableSelector.selectedIndex = 0;
     });
 
+    // Get all change source buttons.
+    let changesourcebuttons = document.querySelectorAll(".change-source-button:not([disabled])");
+
+    // Add event listener to each change source button.
+    // When the user clicks on each change source button, redirect to the select source page.
+    if (changesourcebuttons.length > 0) {
+        changesourcebuttons.forEach(function(button) {
+            button.addEventListener("click", function() {
+                // Redirect to the change source page.
+                window.location.href = button.getAttribute("data-url");
+            });
+        });
+    }
+
     // Get all the push buttons that are not disabled.
     let mabpushbuttons = document.querySelectorAll(".push-mark-button:not([disabled])");
 
-    // Push grades when the user clicks on each enabled push button.
-    mabpushbuttons.forEach(function(button) {
-        button.addEventListener("click", function() {
-            pushgrade(this);
+    if (mabpushbuttons.length > 0) {
+        // Push grades when the user clicks on each enabled push button.
+        mabpushbuttons.forEach(function(button) {
+            button.addEventListener("click", function() {
+                pushMarks(this);
+            });
         });
-    });
+    }
 
     // Get the push all button.
     let pushallbutton = document.getElementById("push-all-button");
@@ -70,10 +89,10 @@ export const init = () => {
         // Create an array to hold all the Promises.
         let promises = [];
 
-        // Push grades to SITS for each MAB.
+        // Push grades to SITS for each component grade.
         mabpushbuttons.forEach(function(button) {
             // Create a Promise for each button and push it into the array.
-            let promise = pushgrade(button)
+            let promise = pushMarks(button)
                 .then(function(result) {
                     if (result) {
                         count = count + 1;
@@ -106,7 +125,7 @@ export const init = () => {
  * @param {HTMLElement} button The button element.
  * @return {Promise} Promise.
  */
-async function pushgrade(button) {
+async function pushMarks(button) {
     try {
         // Get the assessment mapping ID from the button.
         let assessmentmappingid = button.getAttribute("data-assessmentmappingid");
@@ -157,5 +176,25 @@ async function pushgrade(button) {
     } catch (error) {
         window.console.error(error);
         return false;
+    }
+}
+
+/**
+ * Display a notification if a success message is available in localStorage.
+ */
+function displayNotification() {
+    // Retrieve the success message from localStorage.
+    let successMessage = localStorage.getItem('successMessage');
+
+    // Check if a success message is available.
+    if (successMessage) {
+        // Display the success message using a notification library or other means.
+        notification.addNotification({
+            message: successMessage,
+            type: 'success'
+        });
+
+        // Remove the success message from localStorage to avoid showing it again.
+        localStorage.removeItem('successMessage');
     }
 }

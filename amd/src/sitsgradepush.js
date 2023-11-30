@@ -1,4 +1,4 @@
-import {schedulePushTask} from "./push_tasks";
+import {schedulePushTask} from "./sitsgradepush_helper";
 import notification from 'core/notification';
 
 export const init = (coursemoduleid, mappingids) => {

@@ -78,7 +78,7 @@ class assign extends submission {
         // Get student's moodle assignment.
         $submission = $DB->get_record(
             'assign_submission',
-            ['assignment' => $this->coursemodule->instance, 'userid' => $this->userid, 'status' => 'submitted']
+            ['assignment' => $this->coursemodule->instance, 'userid' => $this->userid, 'status' => 'submitted', 'latest' => 1]
         );
 
         if ($submission) {

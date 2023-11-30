@@ -55,3 +55,54 @@
 .sitsgradepush-dasboard .back-to-top:hover {
     background-color: #0056b3; /* Hover background color */
 }
+
+/* Styles for select source page */
+/* Styles scoped to cards within a specific .sitsgradepush-select-source container */
+.sitsgradepush-select-source .card-custom {
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 30px;
+    height: 200px;
+    width: 100%;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+/* Card background colors */
+.sitsgradepush-select-source .card-1 {
+    background-color: #e0bbe4;
+}
+.sitsgradepush-select-source .card-2 {
+    background-color: #ffdfd3;
+}
+.sitsgradepush-select-source .card-3 {
+    background-color: #bee7e9;
+}
+.sitsgradepush-select-source .card-4 {
+    background-color: #ffebbb;
+}
+
+/* Hover effect for cards */
+.sitsgradepush-select-source .card-custom:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Centering the card container on the page */
+.sitsgradepush-select-source .centered-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin-top: 100px;
+    align-items: center;
+}
+
+/* Max width for the container */
+.sitsgradepush-select-source .container {
+    max-width: 90%;
+}

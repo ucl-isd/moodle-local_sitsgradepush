@@ -25,6 +25,31 @@ namespace local_sitsgradepush\assessment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class turnitintooltwo extends assessment {
+
+    /** @var array Parts of this turnitin assignment. */
+    private $turnitinparts;
+
+    /** @var int Current part id set. */
+    private $partid;
+
+    /** @var \stdClass First part of this turnitin assignment. */
+    private $firstpart;
+
+    /**
+     * Constructor.
+     *
+     * @param \stdClass $coursemodule
+     * @throws \dml_exception
+     */
+    public function __construct(\stdClass $coursemodule) {
+        global $DB;
+        parent::__construct($coursemodule);
+
+        // Get all parts for this assignment.
+        $this->turnitinparts = $DB->get_records('turnitintooltwo_parts', ['turnitintooltwoid' => $this->moduleinstance->id]);
+        $this->firstpart = reset($this->turnitinparts);
+    }
+
     /**
      * Get all participants.
      *
@@ -36,15 +61,43 @@ class turnitintooltwo extends assessment {
     }
 
     /**
-     * Set assessment name.
+     * Get the start date of this assessment.
      *
-     * @return void
-     * @throws \dml_exception
+     * @return int|null
      */
-    protected function set_assessment_name() {
-        global $DB;
-        if ($turnitinassign = $DB->get_record('turnitintooltwo', ['id' => $this->coursemodule->instance])) {
-            $this->assessmentname = $turnitinassign->name;
+    public function get_start_date() : ?int {
+        if ($this->partid) {
+            // Return the start date of this part.
+            return $this->turnitinparts[$this->partid]->dtstart;
+        } else {
+            // Return the start date of the first part.
+            return $this->firstpart->dtstart;
         }
+    }
+
+    /**
+     * Get the end date of this assessment.
+     *
+     * @return int|null
+     */
+    public function get_end_date() : ?int {
+        if ($this->partid) {
+            // Return the end date of the part currently pointing to.
+            return $this->turnitinparts[$this->partid]->dtdue;
+        } else {
+            // Return the end date of the first part.
+            return $this->firstpart->dtdue;
+        }
+    }
+
+    /**
+     * Set the part ID for this turnitin assignment.
+     *
+     * @param int $partid
+     * @return turnitintooltwo
+     */
+    public function set_part_id(int $partid): turnitintooltwo {
+        $this->partid = $partid;
+        return $this;
     }
 }

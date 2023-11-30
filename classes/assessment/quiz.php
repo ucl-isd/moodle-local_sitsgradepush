@@ -36,15 +36,20 @@ class quiz extends assessment {
     }
 
     /**
-     * Set assessment name.
+     * Get the start date of this assessment.
      *
-     * @return void
-     * @throws \dml_exception
+     * @return int|null
      */
-    protected function set_assessment_name() {
-        global $DB;
-        if ($quiz = $DB->get_record('quiz', ['id' => $this->coursemodule->instance])) {
-            $this->assessmentname = $quiz->name;
-        }
+    public function get_start_date() : ?int {
+        return $this->moduleinstance->timeopen;
+    }
+
+    /**
+     * Get the end date of this assessment.
+     *
+     * @return int|null
+     */
+    public function get_end_date() : ?int {
+        return $this->moduleinstance->timeclose;
     }
 }

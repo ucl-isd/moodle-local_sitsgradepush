@@ -21,6 +21,7 @@ use local_sitsgradepush\api\client_factory;
 use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
+use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\output\pushrecord;
 use local_sitsgradepush\submission\submissionfactory;
 
@@ -414,6 +415,7 @@ class manager {
 
     /**
      * Save assessment mappings to database.
+     *
      * @param \stdClass $data
      * @return void
      * @throws \coding_exception
@@ -456,14 +458,58 @@ class manager {
     }
 
     /**
+     * Save component grade mapping to database. Used by the select existing activity page.
+     *
+     * @param \stdClass $data
+     * @return int|bool
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function save_assessment_mapping(\stdClass $data): int|bool {
+        global $DB;
+
+        // Validate component grade.
+        $this->validate_component_grade($data->componentgradeid, $data->coursemoduleid);
+
+        if ($mapping = $this->is_component_grade_mapped($data->componentgradeid)) {
+            // Checked in the above validation, the current mapping to this component grade
+            // can be deleted as it does not have push records nor mapped to the current activity.
+            $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mapping->id]);
+        }
+
+        // Get the course module.
+        $coursemodule = get_coursemodule_from_id('', $data->coursemoduleid);
+
+        // Insert new mapping.
+        $record = new \stdClass();
+        $record->courseid = $coursemodule->course;
+        $record->coursemoduleid = $coursemodule->id;
+        $record->moduletype = $coursemodule->modname;
+        $record->componentgradeid = $data->componentgradeid;
+        $record->timecreated = time();
+        $record->timemodified = time();
+
+        return $DB->insert_record(self::TABLE_ASSESSMENT_MAPPING, $record);
+    }
+
+    /**
      * Lookup assessment mappings.
      *
      * @param int $cmid course module id
-     * @return array
+     * @param int|null $componentgradeid component grade id
+     * @return mixed
      * @throws \dml_exception
      */
-    public function get_assessment_mappings(int $cmid) {
+    public function get_assessment_mappings(int $cmid, int $componentgradeid = null): mixed {
         global $DB;
+
+        $params = ['cmid' => $cmid];
+        $where = '';
+        if (!empty($componentgradeid)) {
+            $params['componentgradeid'] = $componentgradeid;
+            $where = 'AND am.componentgradeid = :componentgradeid';
+        }
+
         $sql = "SELECT am.id, am.courseid, am.coursemoduleid, am.moduletype, am.componentgradeid, am.reassessment,
                        am.reassessmentseq, cg.modcode, cg.modocc, cg.academicyear, cg.periodslotcode, cg.mapcode,
                        cg.mabseq, cg.astcode, cg.mabname,
@@ -471,8 +517,9 @@ class manager {
                        cg.mabseq, ' ', cg.mabname) AS 'formattedname'
                 FROM {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                 JOIN {" . self::TABLE_COMPONENT_GRADE . "} cg ON am.componentgradeid = cg.id
-                WHERE am.coursemoduleid = :cmid";
-        return $DB->get_records_sql($sql, ['cmid' => $cmid]);
+                WHERE am.coursemoduleid = :cmid $where";
+
+        return ($componentgradeid) ? $DB->get_record_sql($sql, $params) : $DB->get_records_sql($sql, $params);
     }
 
     /**
@@ -658,8 +705,8 @@ class manager {
             $grade = $this->get_student_grade($assessmentmapping->coursemoduleid, $userid);
 
             // Push if grade is found.
-            if ($grade->grade) {
-                $data->marks = $grade->grade;
+            if (isset($grade)) {
+                $data->marks = $grade;
                 $data->grade = ''; // TODO: Where to get the grade?
 
                 $request = $this->apiclient->build_request(self::PUSH_GRADE, $data);
@@ -990,7 +1037,7 @@ class manager {
 
         // Check course module exists.
         if (!$DB->record_exists('course_modules', ['id' => $mapping->coursemoduleid])) {
-            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush');
+            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $mapping->coursemoduleid);
         }
 
         // Check if the assessment component exists.
@@ -1286,29 +1333,101 @@ class manager {
     }
 
     /**
-     * Get grade of an assessment for a student.
+     * Validate assessment mapping request from select existing activity page.
      *
+     * @param int $componentgradeid
      * @param int $coursemoduleid
-     * @param int $userid
-     * @return \stdClass|null
-     * @throws \coding_exception
+     * @return bool
+     * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_student_grade(int $coursemoduleid, int $userid): ?\stdClass {
-        $coursemodule = get_coursemodule_from_id('', $coursemoduleid);
-        if (empty($coursemodule)) {
+    public function validate_component_grade(int $componentgradeid, int $coursemoduleid): bool {
+        // Check if the component grade exists.
+        if (!$componentgrade = $this->get_local_component_grade_by_id($componentgradeid)) {
+            throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $componentgradeid);
+        }
+
+        // Check if the course module exists.
+        if (!$coursemodule = $this->get_course_module($coursemoduleid)) {
             throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $coursemoduleid);
         }
-        // Return grade of the first grade item.
-        if ($grade = grade_get_grades($coursemodule->course, 'mod', $coursemodule->modname, $coursemodule->instance, $userid)) {
-            foreach ($grade->items as $item) {
-                foreach ($item->grades as $grade) {
-                    return $grade;
+
+        // A component grade can only be mapped to one activity, so there is only one mapping record for each component grade.
+        if (!empty($mapping = $this->is_component_grade_mapped($componentgradeid))) {
+            // Check if this mapping has grades pushed.
+            if ($this->has_grades_pushed($mapping->id)) {
+                throw new \moodle_exception(
+                    'error:mab_has_push_records',
+                    'local_sitsgradepush',
+                    '',
+                    $componentgrade->mapcode . '-' . $componentgrade->mabseq
+                );
+            }
+
+            // Nothing to update if the mapping is the same.
+            if ($mapping->coursemoduleid == $coursemoduleid) {
+                throw new \moodle_exception('error:no_update_for_same_mapping', 'local_sitsgradepush');
+            }
+        }
+
+        // Get existing mappings for this activity.
+        if ($existingmappings = $this->get_assessment_mappings($coursemoduleid)) {
+            // Make sure it does not map to another component grade with same map code.
+            foreach ($existingmappings as $existingmapping) {
+                if ($existingmapping->mapcode == $componentgrade->mapcode) {
+                    throw new \moodle_exception('error:same_map_code_for_same_activity', 'local_sitsgradepush');
                 }
             }
         }
 
-        return null;
+        return true;
+    }
+
+    /**
+     * Get grade of an assessment for a student.
+     *
+     * @param int $coursemoduleid
+     * @param int $userid
+     * @param int|null $partid
+     * @return string|null
+     * @throws \coding_exception
+     * @throws \moodle_exception
+     */
+    public function get_student_grade(int $coursemoduleid, int $userid, int $partid = null): ?string {
+        $coursemodule = get_coursemodule_from_id('', $coursemoduleid);
+        if (empty($coursemodule)) {
+            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $coursemoduleid);
+        }
+
+        // Get the assessment object.
+        $assessment = assessmentfactory::get_assessment($coursemodule);
+        if (empty($assessment)) {
+            throw new \moodle_exception('error:assessmentnotfound', 'local_sitsgradepush', '', $coursemoduleid);
+        }
+
+        // Get the grade.
+        return $assessment->get_user_grade($userid, $partid);
+    }
+
+    /**
+     * Get all course activities eligible for grade push.
+     *
+     * @param int $courseid Course id
+     * @return array
+     * @throws \moodle_exception
+     */
+    public function get_all_course_activities(int $courseid): array {
+        $activities = [];
+        foreach (self::ALLOWED_ACTIVITIES as $modname) {
+            if (!empty($results = get_coursemodules_in_course($modname, $courseid))) {
+                foreach ($results as $result) {
+                    $assessemnt = assessmentfactory::get_assessment($result);
+                    $activities[] = $assessemnt;
+                }
+            }
+        }
+
+        return $activities;
     }
 
     /**

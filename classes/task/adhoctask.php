@@ -65,7 +65,8 @@ class adhoctask extends adhoc_task {
 
             // Get the course module.
             if (!$coursemodule = get_coursemodule_from_id(null, $assessmentmapping->coursemoduleid)) {
-                throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush');
+                throw new \moodle_exception(
+                    'error:coursemodulenotfound', 'local_sitsgradepush', '', $assessmentmapping->coursemoduleid);
             }
 
             // Check the MAB exists.

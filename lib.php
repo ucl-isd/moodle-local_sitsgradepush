@@ -283,7 +283,7 @@ function local_sitsgradepush_extend_navigation_course(navigation_node $parentnod
         navigation_node::NODETYPE_LEAF,
         'local_sitsgradepush',
         'local_sitsgradepush',
-        new pix_icon('repeat', get_string('pluginname', 'local_sitsgradepush'), 'local_sitsgradepush')
+        new pix_icon('i/grades', get_string('pluginname', 'local_sitsgradepush'), 'moodle')
     );
 
     if ($PAGE->url->compare($url, URL_MATCH_BASE)) {

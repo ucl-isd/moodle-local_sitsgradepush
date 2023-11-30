@@ -115,8 +115,8 @@ class pushrecord {
      */
     protected function set_grade (int $coursemoduleid, int $studentid): void {
         $grade = $this->manager->get_student_grade($coursemoduleid, $studentid);
-        if (!empty($grade->grade)) {
-            $this->marks = $grade->grade;
+        if (isset($grade)) {
+            $this->marks = $grade;
         }
     }
 

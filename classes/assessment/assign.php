@@ -36,15 +36,20 @@ class assign extends assessment {
     }
 
     /**
-     * Set assessment name.
+     * Get the start date of this assessment.
      *
-     * @return void
-     * @throws \dml_exception
+     * @return int|null
      */
-    protected function set_assessment_name() {
-        global $DB;
-        if ($assign = $DB->get_record('assign', ['id' => $this->coursemodule->instance])) {
-            $this->assessmentname = $assign->name;
-        }
+    public function get_start_date() : ?int {
+        return $this->moduleinstance->allowsubmissionsfromdate;
+    }
+
+    /**
+     * Get the end date of this assessment.
+     *
+     * @return int|null
+     */
+    public function get_end_date() : ?int {
+        return $this->moduleinstance->duedate;
     }
 }

@@ -1,5 +1,5 @@
 {{!
-    This file is part the Local Analytics plugin for Moodle
+    This file is part the Local SITS Grade Push plugin for Moodle
     Moodle is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -109,10 +109,8 @@
                     <a href="{{url}}" target="_blank" data-toggle="tooltip" data-placement="top" title="{{name}}">{{type}}</a>
                 {{/assessmentmapping}}
                 {{^assessmentmapping}}
-                    <button type="button" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top"
-                            title="Add Source">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+                    <a href="{{selectsourceurl}}" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top"
+                       title="Add Source"><i class="fa-solid fa-plus"></i></a>
                 {{/assessmentmapping}}
             </td>
             <td class="action-col">
@@ -123,6 +121,7 @@
                                 data-toggle="tooltip"
                                 data-placement="top"
                                 title="Change Source"
+                                data-url="{{selectsourceurl}}"
                             {{#assessmentmapping}}
                                 data-assessmentmappingid="{{id}}"
                             {{/assessmentmapping}}

@@ -1,0 +1,85 @@
+{{!
+    This file is part the Local SITS Grade Push plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/select_source_existing
+
+    Template for displaying existing activities.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * activities - Array, array of activity.
+        * type - String, acitivity type.
+        * name - String, activity name.
+        * startdate - String, activity start date.
+        * enddate - String, activity end date.
+
+    Example context (json):
+    {
+        "activities":
+        [
+            {
+                "type": "Assignment",
+                "name": "Test assignment",
+                "startdate": "13/07/2023 00:00:00",
+                "enddate": "20/07/2023 00:00:00"
+            }
+        ]
+    }
+}}
+<div class="container mt-5">
+    <h2 class="mb-4">{{#str}} existingactivity:header, local_sitsgradepush {{/str}}</h2>
+    <input type="text" id="filterInput" class="form-control mb-3" placeholder="Filter assessments">
+    <table class="table table-hover table-bordered" id="existing-activity-table">
+        <thead style="background-color: lightgrey">
+        <tr>
+            <th>Type <i class="fas fa-sort"></i></th>
+            <th>Name <i class="fas fa-sort"></i></th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Select</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#activities}}
+            <tr>
+                <td>{{type}}</td>
+                <td>{{name}}</td>
+                <td>{{startdate}}</td>
+                <td>{{enddate}}</td>
+                <td style="text-align: center">
+                    <button type="button"
+                            class="btn btn-primary select-assessment-button"
+                            data-mapcode="{{mapcode}}"
+                            data-mabseq="{{mabseq}}"
+                            data-courseid="{{courseid}}"
+                            data-mabid="{{mabid}}"
+                            data-coursemoduleid="{{coursemoduleid}}">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </td>
+            </tr>
+        {{/activities}}
+        </tbody>
+    </table>
+    <div id="noMatchingRowsMessage" style="display: none;">
+        {{#str}} existingactivity:no_match_row, local_sitsgradepush {{/str}}
+    </div>
+</div>

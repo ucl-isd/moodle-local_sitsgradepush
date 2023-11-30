@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\output;
 
+use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\errormanager;
 use local_sitsgradepush\manager;
 use moodle_page;
@@ -178,6 +179,13 @@ class renderer extends plugin_renderer_base {
             if (!empty($moduledelivery->componentgrades) && is_array($moduledelivery->componentgrades)) {
                 $componentgrades = array_values($moduledelivery->componentgrades);
                 foreach ($componentgrades as $componentgrade) {
+                    // Add the select source url.
+                    $selectsourceurl = new \moodle_url(
+                        '/local/sitsgradepush/select_source.php',
+                        ['courseid' => $courseid, 'mabid' => $componentgrade->id]
+                    );
+                    $componentgrade->selectsourceurl = $selectsourceurl->out(false);
+
                     // No course module ID means the MAB is not mapped to any activity.
                     if (empty($componentgrade->coursemoduleid)) {
                         // Disable the change source button and push grade button if the MAB is not mapped to any activity.
@@ -193,10 +201,11 @@ class renderer extends plugin_renderer_base {
                         $assessmentmapping->id = $componentgrade->assessmentmappingid;
                         $assessmentmapping->type = get_module_types_names()[$coursemodule->modname];
                         $assessmentmapping->name = $coursemodule->name;
-                        $assessmentmapping->url = new \moodle_url(
+                        $coursemoduleurl = new \moodle_url(
                             '/mod/' . $coursemodule->modname . '/view.php',
                             ['id' => $coursemodule->id]
                         );
+                        $assessmentmapping->url = $coursemoduleurl->out(false);
                         $assessmentmapping->status =
                             $this->get_assessment_mapping_status_icon($componentgrade->assessmentmappingid);
                         $assessmentmapping->statusicon = $assessmentmapping->status->statusicon;
@@ -254,6 +263,73 @@ class renderer extends plugin_renderer_base {
     }
 
     /**
+     * Render the select source page.
+     *
+     * @return string Rendered HTML
+     * @throws \moodle_exception
+     */
+    public function render_select_source_page() {
+        return $this->output->render_from_template('local_sitsgradepush/select_source_page', []);
+    }
+
+    /**
+     * Render the select existing activity page.
+     *
+     * @param array $param Parameters containing course ID and MAB ID
+     * @return bool|string
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function render_existing_activity_page(array $param) {
+        // Make sure we have the required parameters.
+        if (empty($param['courseid']) || empty($param['mabid'])) {
+            throw new \moodle_exception('error:missingparams', 'local_sitsgradepush');
+        }
+
+        // Make sure the component grade exists.
+        if (empty($componentgrade = $this->manager->get_local_component_grade_by_id($param['mabid']))) {
+            throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $param['mabid']);
+        }
+
+        $formattedactivities = [];
+        // Get all activities in the course.
+        $activities = $this->manager->get_all_course_activities($param['courseid']);
+
+        // Remove the currently mapped activity from the list.
+        if ($assessmentmapping = $this->manager->is_component_grade_mapped($param['mabid'])) {
+            foreach ($activities as $key => $activity) {
+                if ($activity->get_coursemodule_id() == $assessmentmapping->coursemoduleid) {
+                    unset($activities[$key]);
+                }
+            }
+        }
+
+        foreach ($activities as $activity) {
+            // Skip activities mapped with the same map code.
+            if (!empty($mappings = $this->manager->get_assessment_mappings($activity->get_coursemodule_id()))) {
+                if (in_array($componentgrade->mapcode, array_column($mappings, 'mapcode'))) {
+                    continue;
+                }
+            }
+
+            $tempactivity = new \stdClass();
+            $tempactivity->courseid = $param['courseid'];
+            $tempactivity->coursemoduleid = $activity->get_coursemodule_id();
+            $tempactivity->mabid = $param['mabid'];
+            $tempactivity->mapcode = $componentgrade->mapcode;
+            $tempactivity->mabseq = $componentgrade->mabseq;
+            $tempactivity->type = $activity->get_module_type();
+            $tempactivity->name = $activity->get_assessment_name();
+            $tempactivity->startdate = !empty($activity->get_start_date()) ? date('d/m/Y H:i:s', $activity->get_start_date()) : '-';
+            $tempactivity->enddate = !empty($activity->get_end_date()) ? date('d/m/Y H:i:s', $activity->get_end_date()) : '-';
+            $formattedactivities[] = $tempactivity;
+        }
+
+        return $this->output->render_from_template('local_sitsgradepush/select_source_existing',
+            ['activities' => $formattedactivities]);
+    }
+
+    /**
      * Get the last push result label.
      *
      * @param int|null $errortype
@@ -304,6 +380,7 @@ class renderer extends plugin_renderer_base {
 
     /**
      * Get the assessment mapping status icon.
+     *
      * @param int $assessmentmappingid Assessment mapping ID
      * @return \stdClass Assessment mapping status icon
      * @throws \coding_exception
@@ -374,6 +451,7 @@ class renderer extends plugin_renderer_base {
      * @param string $pushstatus Push task status
      * @param int $courseid Course ID
      * @return bool
+     * @throws \coding_exception
      */
     private function disable_push_grade_button(string $pushstatus, int $courseid) : bool {
         // Disable the push grade button if the user does not have the capability.

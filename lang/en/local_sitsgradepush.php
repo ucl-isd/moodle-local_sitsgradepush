@@ -70,6 +70,24 @@ $string['pushrecordsnotexist'] = 'No push records';
 // Grade push index page.
 $string['index:header'] = 'Sits Grade Push History';
 
+// Grade push dashboard page.
+$string['dashboard:header'] = 'Sits Grade Push Dashboard';
+
+// Select source page.
+$string['selectsource:header'] = 'Select Source';
+$string['selectsource:title'] = 'SITS Grade Push Select Source';
+$string['selectsource:existing'] = 'Select an Existing Activity';
+$string['selectsource:new'] = 'Create a New Activity';
+$string['selectsource:gradeitem'] = 'Select a Gradebook Item';
+$string['selectsource:mul_turnitin'] = 'Advanced Multiple Turnitin Activity Selector';
+$string['error:invalid_source_type'] = 'Invalid source type. {$a}';
+
+// Existing activity page.
+$string['existingactivity:header'] = 'Select Existing Activity';
+$string['existingactivity:no_match_row'] = 'No matching rows found.';
+$string['existingactivity:navbar'] = 'Existing Activity';
+
+
 // Error strings.
 $string['error:assessmentmapping'] = 'Assessment mapping is not found. ID: {$a}';
 $string['error:assessmentisnotmapped'] = 'This activity is not mapped to any assessment component.';
@@ -83,7 +101,6 @@ $string['error:nostudentfoundformapping'] = 'No student found for this assessmen
 $string['error:emptyresponse'] = 'Empty response received when calling {$a}.';
 $string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Grade Push.';
 $string['error:duplicatedtask'] = 'There is already a push task in queue / processing for this assessment mapping.';
-$string['error:coursemodulenotfound'] = 'Course module not found.';
 $string['error:tasknotfound'] = 'Push task not found.';
 $string['error:multiplemappingsnotsupported'] = 'Multiple assessment component mappings is not supported by {$a}';
 $string['error:studentnotfound'] = 'Student with idnumber {$a->idnumber} not found for component grade {$a->componentgrade}';
@@ -92,6 +109,11 @@ $string['error:duplicatemapping'] = 'Cannot map multiple assessment components w
 $string['error:nomoduledeliveryfound'] = 'No module delivery found.';
 $string['error:no_mab_found'] = 'No assessment component found for this module delivery.';
 $string['error:mab_not_found'] = 'Assessment component not found. ID: {$a}';
+$string['error:assessmentnotfound'] = 'Error getting assessment. ID: {$a}';
+$string['error:mab_has_push_records'] = 'Assessment component mapping cannot be updated as grades have been pushed for {$a}';
+$string['error:no_update_for_same_mapping'] = 'Nothing to update as the assessment component is already mapped to this activity.';
+$string['error:same_map_code_for_same_activity'] = 'An activity cannot be mapped to more than one assessment component with same map code';
+$string['error:missingparams'] = 'Missing parameters.';
 $string['form:alert_no_mab_found'] = 'No assessment components found';
 $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Grade Push.';
 
