@@ -14,9 +14,9 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template local_sitsgradepush/button
+    @template local_sitsgradepush/selectelement
 
-    Template for displaying a simple button
+    Template for displaying a select element.
 
     Classes required for JS:
     * none
@@ -25,15 +25,31 @@
     * none
 
     Context variables required for this template:
-    * class - String, CSS class to apply to the button.
-    * id - String, Button id.
-    * name - String, Button display name.
-    * url - String, The URL to navigate to.
+    * none
 
     Example context (json):
-    {"url":"https://moodlesite/index.php?id=125&modname=assign","id":"local_sitsgradepush_pushbutton","name":"Push"}
+    {
+        "label": "test",
+        "selectid": "test0",
+        "options": [
+            {
+                "value": "test0",
+                "name": "test0",
+                "selected": "selected"
+            },
+            {
+                "value": "test1",
+                "name": "test1",
+                "selected": ""
+            }
+        ]
+    }
 }}
-
-<p class="{{class}}">
-    <button class="btn btn-primary" id="{{id}}" {{disabled}}>{{name}}</button>
-</p>
+<div class="selector-container">
+    <label for="{{selectid}}">{{label}}</label>
+    <select id="{{selectid}}">
+        {{#options}}
+        <option value="{{value}}" {{selected}}>{{name}}</option>
+        {{/options}}
+    </select>
+</div>

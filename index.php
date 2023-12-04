@@ -75,7 +75,7 @@ $renderer = $PAGE->get_renderer('local_sitsgradepush');
 
 echo '<div class="container py-5">';
 // Assessment name.
-echo '<h3 class="mb-4">Sits grade push history</h3>';
+echo '<h3 class="mb-4">' . get_string('index:header', 'local_sitsgradepush') . '</h3>';
 
 $manager = manager::get_manager();
 // Get assessment.
@@ -83,6 +83,8 @@ $assessment = assessmentfactory::get_assessment($coursemodule);
 
 // Get page content.
 $content = $manager->get_assessment_data($assessment);
+
+$mappingids = [];
 
 if (!empty($content)) {
     // Check if asynchronous grade push is enabled.
@@ -93,12 +95,6 @@ if (!empty($content)) {
         // Get push button label.
         $buttonlabel = get_string('label:pushgrade', 'local_sitsgradepush');
         $disabled = '';
-
-        // Check if this course module has pending task.
-        if ($task = $manager->get_pending_task_in_queue($coursemoduleid)) {
-            $buttonlabel = $task->buttonlabel;
-            $disabled = 'disabled';
-        }
     } else {
         // Push grade and submission log.
         if ($pushgrade == 1) {
@@ -128,21 +124,13 @@ if (!empty($content)) {
             echo $renderer->render_link('local_sitsgradepush_pushbutton', $buttonlabel, $url->out(false));
         }
 
-        if ($lastfinishedtask = $manager->get_last_finished_push_task($coursemoduleid)) {
-            echo '<p>'. get_string(
-                'label:lastpushtext',
-                'local_sitsgradepush', [
-                    'statustext' => $lastfinishedtask->statustext,
-                    'date' => date('d/m/Y', $lastfinishedtask->timeupdated),
-                    'time' => date('g:i:s a', $lastfinishedtask->timeupdated), ]) .
-                '</p>';
-        }
     } else {
         echo '<p class="alert alert-danger">' . get_string('error:assessmentisnotmapped', 'local_sitsgradepush') . '</p>';
     }
 
     // Display grade push records for each mapping.
     foreach ($content['mappings'] as $mapping) {
+        $mappingids[] = $mapping->id;
         echo $renderer->render_assessment_push_status_table($mapping);
     }
 
@@ -155,7 +143,8 @@ if (!empty($content)) {
 }
 echo '</div>';
 
-$PAGE->requires->js_call_amd('local_sitsgradepush/sitsgradepush', 'init', [$coursemoduleid]);
+// Initialize javascript.
+$PAGE->requires->js_call_amd('local_sitsgradepush/sitsgradepush', 'init', [$coursemoduleid, $mappingids]);
 
 // And the page footer.
 echo $OUTPUT->footer();

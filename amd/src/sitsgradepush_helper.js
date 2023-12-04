@@ -1,0 +1,51 @@
+import Ajax from 'core/ajax';
+
+/**
+ * Schedule a task to push grades to SITS.
+ *
+ * @param {string} assessmentmappingid The assessment mapping ID.
+ * @return {Promise} Promise.
+ */
+export const schedulePushTask = (assessmentmappingid) => {
+    return new Promise((resolve, reject) => {
+        Ajax.call([{
+            methodname: 'local_sitsgradepush_schedule_push_task',
+            args: {
+                'assessmentmappingid': assessmentmappingid,
+            },
+        }])[0].done(function(response) {
+            resolve(response);
+        }).fail(function(err) {
+            window.console.log(err);
+            reject(err);
+        });
+    });
+};
+
+/**
+ * Map an assessment to a component grade.
+ *
+ * @param {string} courseid
+ * @param {string} coursemoduleid
+ * @param {string} mabid
+ * @param {string} partid
+ * @return {Promise}
+ */
+export const mapAssessment = (courseid, coursemoduleid, mabid, partid = null) => {
+    return new Promise((resolve, reject) => {
+        Ajax.call([{
+            methodname: 'local_sitsgradepush_map_assessment',
+            args: {
+                'courseid': courseid,
+                'coursemoduleid': coursemoduleid,
+                'mabid': mabid,
+                'partid': partid,
+            },
+        }])[0].done(function(response) {
+            resolve(response);
+        }).fail(function(err) {
+            window.console.log(err);
+            reject(err);
+        });
+    });
+};

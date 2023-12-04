@@ -23,14 +23,14 @@ use core_external\external_value;
 use local_sitsgradepush\manager;
 
 /**
- * External API for scheduling a push task.
+ * External API for mapping an assessment to an SITS assessment component (MAB).
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class schedule_push_task extends external_api {
+class map_assessment extends external_api {
     /**
      * Returns description of method parameters.
      *
@@ -38,7 +38,10 @@ class schedule_push_task extends external_api {
      */
     public static function execute_parameters() {
         return new external_function_parameters([
-            'assessmentmappingid' => new external_value(PARAM_INT, 'Assessment mapping ID', VALUE_REQUIRED),
+            'courseid' => new external_value(PARAM_INT, 'Coruse ID', VALUE_REQUIRED),
+            'coursemoduleid' => new external_value(PARAM_INT, 'Course Module ID', VALUE_REQUIRED),
+            'mabid' => new external_value(PARAM_INT, 'Assessment Component ID', VALUE_REQUIRED),
+            'partid' => new external_value(PARAM_INT, 'Assessment Part ID', VALUE_OPTIONAL),
         ]);
     }
 
@@ -50,31 +53,45 @@ class schedule_push_task extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Result of request', VALUE_REQUIRED),
-            'status' => new external_value(PARAM_TEXT, 'Status', VALUE_OPTIONAL),
             'message' => new external_value(PARAM_TEXT, 'Error message', VALUE_OPTIONAL),
         ]);
     }
 
     /**
-     * Schedule a push task.
+     * Map an assessment to an SITS assessment component (MAB).
      *
-     * @param int $assessmentmappingid
+     * @param int $courseid
+     * @param int $coursemoduleid
+     * @param int $mabid
+     * @param int|null $partid
      * @return array
      */
-    public static function execute(int $assessmentmappingid) {
-        global $USER;
+    public static function execute(int $courseid, int $coursemoduleid, int $mabid, int $partid = null) {
         try {
+            if (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($courseid))) {
+                throw new \moodle_exception('error:mapassessment', 'local_sitsgradepush');
+            }
+
             $params = self::validate_parameters(
                 self::execute_parameters(),
-                ['assessmentmappingid' => $assessmentmappingid]
+                [
+                    'courseid' => $courseid,
+                    'coursemoduleid' => $coursemoduleid,
+                    'mabid' => $mabid,
+                    'partid' => $partid,
+                ]
             );
+
             $manager = manager::get_manager();
-            $manager->schedule_push_task($params['assessmentmappingid']);
+            $data = new \stdClass();
+            $data->componentgradeid = $params['mabid'];
+            $data->coursemoduleid = $params['coursemoduleid'];
+            $data->partid = $params['partid'];
+            $manager->save_assessment_mapping($data);
 
             return [
                 'success' => true,
-                'status' => get_string('task:status:requested', 'local_sitsgradepush'),
-                'message' => get_string('task:requested:success', 'local_sitsgradepush'),
+                'message' => 'Assessment mapped successfully.',
             ];
         } catch (\Exception $e) {
             return [

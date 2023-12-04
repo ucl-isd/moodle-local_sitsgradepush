@@ -50,6 +50,8 @@ $string['settings:concurrenttasks:desc'] = 'Number of concurrent ad-hoc tasks al
 $string['settings:userprofilefield'] = 'User Profile Field';
 $string['settings:userprofilefield:desc'] = 'User profile field for export staff';
 $string['label:gradepushassessmentselect'] = 'Select SITS assessment to link to';
+$string['label:jumpto'] = 'Jump to: ';
+$string['label:pushall'] = 'Push All';
 $string['label:reassessmentselect'] = 'Re-assessment';
 $string['label:pushgrade'] = 'Push grades';
 $string['label:ok'] = 'OK';
@@ -62,25 +64,56 @@ $string['reassessmentselect_help'] = 'Select YES if it is a re-assessment.';
 $string['subplugintype_sitsapiclient'] = 'API client used for data integration.';
 $string['cachedef_studentspr'] = 'Student\'s SPR code per SITS assessment pattern';
 $string['invalidstudents'] = 'Students not valid for the mapped assessment components';
+$string['pushrecordsexist'] = 'Push records exist';
+$string['pushrecordsnotexist'] = 'No push records';
+
+// Grade push index page.
+$string['index:header'] = 'Sits Grade Push History';
+
+// Grade push dashboard page.
+$string['dashboard:header'] = 'Sits Grade Push Dashboard';
+
+// Select source page.
+$string['selectsource:header'] = 'Select Source';
+$string['selectsource:title'] = 'SITS Grade Push Select Source';
+$string['selectsource:existing'] = 'Select an Existing Activity';
+$string['selectsource:new'] = 'Create a New Activity';
+$string['selectsource:gradeitem'] = 'Select a Gradebook Item';
+$string['selectsource:mul_turnitin'] = 'Advanced Multiple Turnitin Activity Selector';
+$string['error:invalid_source_type'] = 'Invalid source type. {$a}';
+
+// Existing activity page.
+$string['existingactivity:header'] = 'Select Existing Activity';
+$string['existingactivity:no_match_row'] = 'No matching rows found.';
+$string['existingactivity:navbar'] = 'Existing Activity';
+
 
 // Error strings.
-$string['error:assessmentmapping'] = 'No valid mapping or component grade. {$a}';
+$string['error:assessmentmapping'] = 'Assessment mapping is not found. ID: {$a}';
 $string['error:assessmentisnotmapped'] = 'This activity is not mapped to any assessment component.';
 $string['error:componentgradepushed'] = '{$a} cannot be removed because it has grade push records.';
 $string['error:componentgrademapped'] = '{$a} had been mapped to another activity.';
 $string['error:pastactivity'] = 'It looks like this course is from a previous academic year, mappings are not allowed.';
 $string['error:mapassessment'] = 'You do not have permission to map assessment.';
+$string['error:pushgradespermission'] = 'You do not have permission to push grades.';
 $string['error:nostudentgrades'] = 'No student grades found.';
 $string['error:nostudentfoundformapping'] = 'No student found for this assessment component.';
 $string['error:emptyresponse'] = 'Empty response received when calling {$a}.';
 $string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Grade Push.';
-$string['error:duplicatedtask'] = 'There is already a push task in queue / processing for this course module.';
-$string['error:coursemodulenotfound'] = 'Course module not found.';
+$string['error:duplicatedtask'] = 'There is already a push task in queue / processing for this assessment mapping.';
 $string['error:tasknotfound'] = 'Push task not found.';
 $string['error:multiplemappingsnotsupported'] = 'Multiple assessment component mappings is not supported by {$a}';
 $string['error:studentnotfound'] = 'Student with idnumber {$a->idnumber} not found for component grade {$a->componentgrade}';
 $string['error:coursemodulenotfound'] = 'Course module not found. ID: {$a}';
 $string['error:duplicatemapping'] = 'Cannot map multiple assessment components with same module delivery to an activity. Mapcode: {$a}';
+$string['error:nomoduledeliveryfound'] = 'No module delivery found.';
+$string['error:no_mab_found'] = 'No assessment component found for this module delivery.';
+$string['error:mab_not_found'] = 'Assessment component not found. ID: {$a}';
+$string['error:assessmentnotfound'] = 'Error getting assessment. ID: {$a}';
+$string['error:mab_has_push_records'] = 'Assessment component mapping cannot be updated as grades have been pushed for {$a}';
+$string['error:no_update_for_same_mapping'] = 'Nothing to update as the assessment component is already mapped to this activity.';
+$string['error:same_map_code_for_same_activity'] = 'An activity cannot be mapped to more than one assessment component with same map code';
+$string['error:missingparams'] = 'Missing parameters.';
 $string['form:alert_no_mab_found'] = 'No assessment components found';
 $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Grade Push.';
 

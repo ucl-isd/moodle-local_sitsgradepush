@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace local_sitsgradepush\submission;
-use quiz_attempt;
+use mod_quiz\quiz_attempt;
 
 /**
  * Class for quiz submission.

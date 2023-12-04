@@ -34,6 +34,13 @@ $functions = [
         'type' => 'write',
         'loginrequired' => true,
     ],
+    'local_sitsgradepush_map_assessment' => [
+        'classname' => 'local_sitsgradepush\external\map_assessment',
+        'description' => 'Map assessment',
+        'ajax' => true,
+        'type' => 'write',
+        'loginrequired' => true,
+    ],
 ];
 
 

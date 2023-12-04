@@ -48,4 +48,46 @@ interface iassessment {
      * @return string
      */
     public function get_assessment_name(): string;
+
+    /**
+     * Get the grade of a user.
+     *
+     * @param int $userid
+     * @param int|null $partid
+     * @return string|null
+     * @package local_sitsgradepush
+     */
+    public function get_user_grade(int $userid, int $partid = null): ?string;
+
+    /**
+     * Get the start date of the assessment.
+     *
+     * @package local_sitsgradepush
+     * @return int|null
+     */
+    public function get_start_date(): ?int;
+
+    /**
+     * Get the end date of the assessment.
+     *
+     * @package local_sitsgradepush
+     * @return int|null
+     */
+    public function get_end_date(): ?int;
+
+    /**
+     * Get course module type.
+     *
+     * @package local_sitsgradepush
+     * @return string
+     */
+    public function get_module_type(): string;
+
+    /**
+     * Get the course module id.
+     *
+     * @package local_sitsgradepush
+     * @return int
+     */
+    public function get_coursemodule_id(): int;
 }

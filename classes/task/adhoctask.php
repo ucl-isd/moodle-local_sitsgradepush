@@ -58,9 +58,20 @@ class adhoctask extends adhoc_task {
                 throw new \moodle_exception('error:tasknotfound', 'local_sitsgradepush');
             }
 
+            // Check assessment mapping exists.
+            if (!$assessmentmapping = $DB->get_record('local_sitsgradepush_mapping', ['id' => $task->assessmentmappingid])) {
+                throw new \moodle_exception('error:mappingnotfound', 'local_sitsgradepush');
+            }
+
             // Get the course module.
-            if (!$coursemodule = get_coursemodule_from_id(null, $task->coursemoduleid)) {
-                throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush');
+            if (!$coursemodule = get_coursemodule_from_id(null, $assessmentmapping->coursemoduleid)) {
+                throw new \moodle_exception(
+                    'error:coursemodulenotfound', 'local_sitsgradepush', '', $assessmentmapping->coursemoduleid);
+            }
+
+            // Check the MAB exists.
+            if (!$DB->get_record('local_sitsgradepush_mab', ['id' => $assessmentmapping->componentgradeid])) {
+                throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $assessmentmapping->componentgradeid);
             }
 
             // Log start.
@@ -73,10 +84,16 @@ class adhoctask extends adhoc_task {
             $assessment = assessmentfactory::get_assessment($coursemodule);
             if ($assessmentdata = $manager->get_assessment_data($assessment)) {
                 foreach ($assessmentdata['mappings'] as $mapping) {
+                    // If the mapping is not the assessment mapping stated in the task, skip it.
+                    if ($mapping->id != $assessmentmapping->id) {
+                        continue;
+                    }
+
                     // Skip if there is no student in the mapping.
                     if (empty($mapping->students)) {
                         continue;
                     }
+
                     // Push grades for each student in the mapping.
                     foreach ($mapping->students as $student) {
                         $manager->push_grade_to_sits($mapping, $student->userid);
