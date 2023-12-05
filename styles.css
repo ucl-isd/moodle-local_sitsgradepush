@@ -24,12 +24,8 @@
     width: 5%;
 }
 
-.sitsgradepush-dasboard .module-delivery-table .assessment-col {
-    width: 15%;
-}
-
 .sitsgradepush-dasboard .module-delivery-table .mark-col {
-    width: 20%;
+    width: 35%;
 }
 
 .sitsgradepush-dasboard .module-delivery-table .action-col {
@@ -105,4 +101,8 @@
 /* Max width for the container */
 .sitsgradepush-select-source .container {
     max-width: 90%;
+}
+
+.sitsgradepush-select-source .hidden {
+    display: none;
 }

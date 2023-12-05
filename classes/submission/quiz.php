@@ -78,14 +78,35 @@ class quiz extends submission {
         require_once($CFG->dirroot.'/mod/quiz/locallib.php');
 
         // Get student's quiz attempts.
-        $attemps = $DB->get_records(
-            'quiz_attempts',
-            ['quiz' => $this->modinstance->id, 'userid' => $this->userid, 'preview' => 0, 'state' => quiz_attempt::FINISHED]
-        );
+        $attempts = quiz_get_user_attempts($this->modinstance->id, $this->userid);
 
         // Throw error if no attempt found.
-        if ($attemps) {
-            return quiz_calculate_best_attempt($this->modinstance, $attemps);
+        if (!empty($attempts)) {
+            switch ($this->modinstance->grademethod) {
+                // Return the first attempt.
+                case QUIZ_ATTEMPTFIRST:
+                    return reset($attempts);
+
+                // Return the last attempt.
+                case QUIZ_ATTEMPTLAST:
+                case QUIZ_GRADEAVERAGE:
+                    return end($attempts);
+
+                // Return the highest grade attempt.
+                case QUIZ_GRADEHIGHEST:
+                default:
+                    $maxattempt = null;
+                    $maxsumgrades = -1;
+
+                    foreach ($attempts as $attempt) {
+                        if ($attempt->sumgrades > $maxsumgrades) {
+                            $maxsumgrades = $attempt->sumgrades;
+                            $maxattempt = $attempt;
+                        }
+                    }
+
+                    return $maxattempt;
+            }
         }
 
         return null;

@@ -27,7 +27,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'SITS Marks Transfer';
-$string['privacy:metadata'] = 'This plugin does not store any personal data.';
 $string['settings:apiclientselect'] = 'Select API client';
 $string['settings:apiclient'] = 'API client';
 $string['settings:apiclient:desc'] = 'Choose which API client to use';
@@ -67,11 +66,29 @@ $string['invalidstudents'] = 'Students not valid for the mapped assessment compo
 $string['pushrecordsexist'] = 'Transfer records exist';
 $string['pushrecordsnotexist'] = 'No transfer records';
 
-// Marks Transfer index page.
+// Marks transfer activity index page.
 $string['index:header'] = 'SITS Marks Transfer History';
+$string['index:student'] = 'Student';
+$string['index:porticonumber'] = 'Portico number';
+$string['index:grade'] = 'Grade';
+$string['index:submissiondate'] = 'Submission date';
+$string['index:lastmarktransfer'] = 'Last Mark Transfer';
+$string['index:lastsublogtransfer'] = 'Last Submission Log Transfer';
 
-// Marks Transfer dashboard page.
+// Marks transfer dashboard page.
 $string['dashboard:header'] = 'SITS Marks Transfer Dashboard';
+$string['dashboard:modcode'] = 'MODULE CODE: {$a}';
+$string['dashboard:academicyear'] = 'ACADEMIC YEAR: {$a}';
+$string['dashboard:level'] = 'LEVEL: {$a}';
+$string['dashboard:mapcode'] = 'MAP CODE: {$a}';
+$string['dashboard:seq'] = 'SEQ';
+$string['dashboard:title'] = 'TITLE';
+$string['dashboard:weight'] = 'WEIGHT';
+$string['dashboard:asttype'] = 'AST TYPE';
+$string['dashboard:source'] = 'SOURCE';
+$string['dashboard:actions'] = 'ACTIONS';
+$string['dashboard:transfermark'] = 'Transfer Mark';
+$string['dashboard:changesource'] = 'Change Source';
 
 // Select source page.
 $string['selectsource:header'] = 'Select Source';
@@ -130,3 +147,24 @@ $string['task:status:queued'] = 'Transfer task queued';
 $string['task:status:processing'] = 'Transfer task processing';
 $string['task:status:completed'] = 'completed';
 $string['task:status:failed'] = 'failed';
+
+// Privacy strings.
+$string['privacy:metadata'] = 'This plugin does not store any personal data.';
+$string['privacy:metadata:local_sitsgradepush_tfr_log'] = 'Stores the marks transfer records.';
+$string['privacy:metadata:local_sitsgradepush_tfr_log:type'] = 'The type of the transfer task.';
+$string['privacy:metadata:local_sitsgradepush_tfr_log:userid'] = 'Whose this transfer task is for.';
+$string['privacy:metadata:local_sitsgradepush_tfr_log:request'] = 'The request\'s URL';
+$string['privacy:metadata:local_sitsgradepush_tfr_log:requestbody'] = 'The request\'s body';
+$string['privacy:metadata:local_sitsgradepush_tfr_log:response'] = 'The response received from SITS';
+$string['privacy:metadata:local_sitsgradepush_tfr_log:usermodified'] = 'The user who requested the transfer task.';
+$string['privacy:metadata:local_sitsgradepush_err_log'] = 'Stores the error logs.';
+$string['privacy:metadata:local_sitsgradepush_err_log:message'] = 'The error message.';
+$string['privacy:metadata:local_sitsgradepush_err_log:errortype'] = 'The error type.';
+$string['privacy:metadata:local_sitsgradepush_err_log:requesturl'] = 'The request\'s URL.';
+$string['privacy:metadata:local_sitsgradepush_err_log:data'] = 'The data sent to SITS.';
+$string['privacy:metadata:local_sitsgradepush_err_log:response'] = 'The response received from SITS.';
+$string['privacy:metadata:local_sitsgradepush_err_log:userid'] = 'The user having the error.';
+$string['privacy:metadata:local_sitsgradepush_tasks'] = 'Stores the transfer tasks.';
+$string['privacy:metadata:local_sitsgradepush_tasks:userid'] = 'The user who requested the transfer task.';
+$string['privacy:metadata:local_sitsgradepush_tasks:status'] = 'The status of the transfer task.';
+$string['privacy:metadata:local_sitsgradepush_tasks:info'] = 'Additional information about the transfer task.';

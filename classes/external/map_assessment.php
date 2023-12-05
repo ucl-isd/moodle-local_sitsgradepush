@@ -41,7 +41,7 @@ class map_assessment extends external_api {
             'courseid' => new external_value(PARAM_INT, 'Coruse ID', VALUE_REQUIRED),
             'coursemoduleid' => new external_value(PARAM_INT, 'Course Module ID', VALUE_REQUIRED),
             'mabid' => new external_value(PARAM_INT, 'Assessment Component ID', VALUE_REQUIRED),
-            'partid' => new external_value(PARAM_INT, 'Assessment Part ID', VALUE_OPTIONAL),
+            'partid' => new external_value(PARAM_INT, 'Assessment Part ID', VALUE_DEFAULT, null),
         ]);
     }
 
