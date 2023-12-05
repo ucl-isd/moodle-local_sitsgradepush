@@ -77,24 +77,23 @@
 <table id="{{tableid}}" class="module-delivery-table table table-hover table-bordered">
     <thead>
     <tr>
-        <th colspan="6">
+        <th colspan="5">
             <div class="row">
-                <div class="col header-part" style="text-align: left">MODULE CODE: {{modcode}}</div>
-                <div class="col header-part">ACADEMIC YEAR: {{academicyear}}</div>
-                <div class="col header-part" style="text-align: right">LEVEL: {{level}} {{graduatetype}}</div>
+                <div class="col header-part" style="text-align: left">{{#str}} dashboard:modcode, local_sitsgradepush, {{modcode}} {{/str}}</div>
+                <div class="col header-part">{{#str}} dashboard:academicyear, local_sitsgradepush, {{academicyear}} {{/str}}</div>
+                <div class="col header-part" style="text-align: right">{{#str}} dashboard:level, local_sitsgradepush, {{level}} {{/str}} {{graduatetype}}</div>
             </div>
         </th>
     </tr>
     <tr>
-        <th colspan="6" style="text-align: left">MAP CODE: {{mapcode}}</th>
+        <th colspan="5" style="text-align: left">{{#str}} dashboard:mapcode, local_sitsgradepush, {{mapcode}} {{/str}}</th>
     </tr>
     <tr>
-        <th class="seq-col">SEQ</th>
-        <th class="title-col">TITLE</th>
-        <th class="weight-col">WGT</th>
-        <th class="assessment-col">AST TYPE</th>
-        <th class="mark-col">MARK TRANSFER</th>
-        <th class="action-col">ACTIONS</th>
+        <th class="seq-col">{{#str}} dashboard:seq, local_sitsgradepush {{/str}}</th>
+        <th class="title-col">{{#str}} dashboard:title, local_sitsgradepush {{/str}}</th>
+        <th class="weight-col">{{#str}} dashboard:weight, local_sitsgradepush {{/str}}</th>
+        <th class="mark-col">{{#str}} dashboard:source, local_sitsgradepush {{/str}}</th>
+        <th class="action-col">{{#str}} dashboard:actions, local_sitsgradepush {{/str}}</th>
     </tr>
     </thead>
     <tbody>
@@ -103,10 +102,9 @@
             <td class="seq-col">{{mabseq}}</td>
             <td class="title-col">{{mabname}}</td>
             <td class="weight-col">{{mabperc}}</td>
-            <td class="assessment-col">{{astcode}}</td>
             <td class="mark-col">
                 {{#assessmentmapping}}
-                    <a href="{{url}}" target="_blank" data-toggle="tooltip" data-placement="top" title="{{name}}">{{type}}</a>
+                    <a href="{{url}}" target="_blank" data-toggle="tooltip" data-placement="top" title="{{type}}">{{name}}</a>
                 {{/assessmentmapping}}
                 {{^assessmentmapping}}
                     <a href="{{selectsourceurl}}" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top"
@@ -120,7 +118,7 @@
                                 class="btn btn-secondary btn-sm change-source-button"
                                 data-toggle="tooltip"
                                 data-placement="top"
-                                title="Change Source"
+                                title="{{#str}} dashboard:changesource, local_sitsgradepush {{/str}}"
                                 data-url="{{selectsourceurl}}"
                             {{#assessmentmapping}}
                                 data-assessmentmappingid="{{id}}"
@@ -134,7 +132,7 @@
                                 class="btn btn-warning btn-sm push-mark-button"
                                 data-toggle="tooltip"
                                 data-placement="top"
-                                title="Push Mark"
+                                title="{{#str}} dashboard:transfermark, local_sitsgradepush {{/str}}"
                             {{#assessmentmapping}}
                                 data-assessmentmappingid="{{id}}"
                             {{/assessmentmapping}}

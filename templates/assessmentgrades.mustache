@@ -60,12 +60,12 @@
         </tr>
     {{/additionalinfo}}
     <tr>
-        <th scope="col">Student</th>
-        <th scope="col">Portico number</th>
-        <th scope="col">Grade</th>
-        <th scope="col">Submission date</th>
-        <th scope="col">Last grade push</th>
-        <th scope="col">Last submission log push</th>
+        <th scope="col">{{#str}} index:student, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:porticonumber, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:grade, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:submissiondate, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:lastmarktransfer, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:lastsublogtransfer, local_sitsgradepush {{/str}}</th>
     </tr>
     </thead>
     <tbody>
