@@ -19,17 +19,17 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_sitsgradepush\taskmanager;
+use local_sitsgradepush\manager;
 
 /**
- * External API for scheduling a push task.
+ * External API for getting assessments update for page updates.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class schedule_push_task extends external_api {
+class get_assessments_update extends external_api {
     /**
      * Returns description of method parameters.
      *
@@ -37,7 +37,8 @@ class schedule_push_task extends external_api {
      */
     public static function execute_parameters() {
         return new external_function_parameters([
-            'assessmentmappingid' => new external_value(PARAM_INT, 'Assessment mapping ID', VALUE_REQUIRED),
+            'courseid' => new external_value(PARAM_INT, 'Course ID', VALUE_REQUIRED),
+            'coursemoduleid' => new external_value(PARAM_INT, 'Course module ID', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -49,30 +50,39 @@ class schedule_push_task extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Result of request', VALUE_REQUIRED),
-            'status' => new external_value(PARAM_TEXT, 'Status', VALUE_OPTIONAL),
+            'assessments' => new external_value(PARAM_RAW, 'Assessments Latest Status', VALUE_REQUIRED),
             'message' => new external_value(PARAM_TEXT, 'Error message', VALUE_OPTIONAL),
         ]);
     }
 
     /**
-     * Schedule a push task.
+     * Get the tasks progresses for a given course.
      *
-     * @param int $assessmentmappingid
+     * @param int $courseid
+     * @param int $coursemoduleid
+     *
      * @return array
      */
-    public static function execute(int $assessmentmappingid) {
+    public static function execute(int $courseid, int $coursemoduleid = 0) {
         try {
+            // Validate parameters.
             $params = self::validate_parameters(
                 self::execute_parameters(),
-                ['assessmentmappingid' => $assessmentmappingid]
+                [
+                    'courseid' => $courseid,
+                    'coursemoduleid' => $coursemoduleid,
+                ]
             );
 
-            taskmanager::schedule_push_task($params['assessmentmappingid']);
+            // Get updates.
+            if (empty($assessments = manager::get_manager()
+                ->get_data_for_page_update($params['courseid'], $params['coursemoduleid']))) {
+                $assessments = [];
+            }
 
             return [
                 'success' => true,
-                'status' => get_string('task:status:requested', 'local_sitsgradepush'),
-                'message' => get_string('task:requested:success', 'local_sitsgradepush'),
+                'assessments' => json_encode($assessments),
             ];
         } catch (\Exception $e) {
             return [

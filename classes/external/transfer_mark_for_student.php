@@ -19,17 +19,17 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_sitsgradepush\taskmanager;
+use local_sitsgradepush\manager;
 
 /**
- * External API for scheduling a push task.
+ * External API for transfer mark for a student.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class schedule_push_task extends external_api {
+class transfer_mark_for_student extends external_api {
     /**
      * Returns description of method parameters.
      *
@@ -38,6 +38,7 @@ class schedule_push_task extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'assessmentmappingid' => new external_value(PARAM_INT, 'Assessment mapping ID', VALUE_REQUIRED),
+            'userid' => new external_value(PARAM_INT, 'User ID', VALUE_REQUIRED),
         ]);
     }
 
@@ -49,30 +50,57 @@ class schedule_push_task extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Result of request', VALUE_REQUIRED),
-            'status' => new external_value(PARAM_TEXT, 'Status', VALUE_OPTIONAL),
             'message' => new external_value(PARAM_TEXT, 'Error message', VALUE_OPTIONAL),
         ]);
     }
 
     /**
-     * Schedule a push task.
+     * Transfer marks and submission logs for a student.
      *
      * @param int $assessmentmappingid
+     * @param int $userid
+     *
      * @return array
      */
-    public static function execute(int $assessmentmappingid) {
+    public static function execute(int $assessmentmappingid, int $userid) {
+        global $DB;
         try {
             $params = self::validate_parameters(
                 self::execute_parameters(),
-                ['assessmentmappingid' => $assessmentmappingid]
+                [
+                    'assessmentmappingid' => $assessmentmappingid,
+                    'userid' => $userid,
+                ]
             );
 
-            taskmanager::schedule_push_task($params['assessmentmappingid']);
+            $manager = manager::get_manager();
+
+            // Get assessment mapping.
+            $mapping = $DB->get_record(manager::TABLE_ASSESSMENT_MAPPING, ['id' => $params['assessmentmappingid']]);
+
+            if (empty($mapping)) {
+                throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $params['assessmentmappingid']);
+            }
+
+            // Check if user has permission to transfer marks.
+            if (!has_capability('local/sitsgradepush:pushgrade', \context_course::instance($mapping->courseid))) {
+                throw new \moodle_exception('error:pushgradespermission', 'local_sitsgradepush');
+            }
+
+            // Get assessment mapping.
+            $assessmentmapping = $manager->get_assessment_mappings($mapping->coursemoduleid, $mapping->componentgradeid);
+
+            if (!$manager->push_grade_to_sits($assessmentmapping, $params['userid'])) {
+                throw new \moodle_exception('error:marks_transfer_failed', 'local_sitsgradepush');
+            }
+
+            if (!$manager->push_submission_log_to_sits($assessmentmapping, $params['userid'])) {
+                throw new \moodle_exception('error:submission_log_transfer_failed', 'local_sitsgradepush');
+            }
 
             return [
                 'success' => true,
-                'status' => get_string('task:status:requested', 'local_sitsgradepush'),
-                'message' => get_string('task:requested:success', 'local_sitsgradepush'),
+                'message' => get_string('marks_transferred_successfully', 'local_sitsgradepush'),
             ];
         } catch (\Exception $e) {
             return [

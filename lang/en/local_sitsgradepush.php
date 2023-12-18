@@ -48,6 +48,8 @@ $string['settings:concurrenttasks'] = 'Number of concurrent tasks allowed';
 $string['settings:concurrenttasks:desc'] = 'Number of concurrent ad-hoc tasks allowed';
 $string['settings:userprofilefield'] = 'User Profile Field';
 $string['settings:userprofilefield:desc'] = 'User profile field for export staff';
+$string['settings:sync_threshold'] = 'Sync Threshold';
+$string['settings:sync_threshold:desc'] = 'The threshold to allow for running synchronous mark transfer task';
 $string['label:gradepushassessmentselect'] = 'Select SITS assessment to link to';
 $string['label:jumpto'] = 'Jump to: ';
 $string['label:pushall'] = 'Transfer All';
@@ -65,6 +67,7 @@ $string['cachedef_studentspr'] = 'Student\'s SPR code per SITS assessment patter
 $string['invalidstudents'] = 'Students not valid for the mapped assessment components';
 $string['pushrecordsexist'] = 'Transfer records exist';
 $string['pushrecordsnotexist'] = 'No transfer records';
+$string['marks_transferred_successfully'] = 'Marks Transferred Successfully';
 
 // Marks transfer activity index page.
 $string['index:header'] = 'SITS Marks Transfer History';
@@ -114,7 +117,7 @@ $string['error:pastactivity'] = 'It looks like this course is from a previous ac
 $string['error:mapassessment'] = 'You do not have permission to map assessment.';
 $string['error:pushgradespermission'] = 'You do not have permission to transfer marks.';
 $string['error:nostudentgrades'] = 'No student marks found.';
-$string['error:nostudentfoundformapping'] = 'No student found for this assessment component.';
+$string['error:nostudentfoundformapping'] = 'No students found for this assessment component.';
 $string['error:emptyresponse'] = 'Empty response received when calling {$a}.';
 $string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Marks Transfer.';
 $string['error:duplicatedtask'] = 'There is already a transfer task in queue / processing for this assessment mapping.';
@@ -131,6 +134,9 @@ $string['error:mab_has_push_records'] = 'Assessment component mapping cannot be 
 $string['error:no_update_for_same_mapping'] = 'Nothing to update as the assessment component is already mapped to this activity.';
 $string['error:same_map_code_for_same_activity'] = 'An activity cannot be mapped to more than one assessment component with same map code';
 $string['error:missingparams'] = 'Missing parameters.';
+$string['error:inserttask'] = 'Failed to insert task.';
+$string['error:marks_transfer_failed'] = 'Marks transfer failed.';
+$string['error:submission_log_transfer_failed'] = 'Submission Transfer failed.';
 $string['form:alert_no_mab_found'] = 'No assessment components found';
 $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Marks Transfer.';
 
@@ -168,3 +174,9 @@ $string['privacy:metadata:local_sitsgradepush_tasks'] = 'Stores the transfer tas
 $string['privacy:metadata:local_sitsgradepush_tasks:userid'] = 'The user who requested the transfer task.';
 $string['privacy:metadata:local_sitsgradepush_tasks:status'] = 'The status of the transfer task.';
 $string['privacy:metadata:local_sitsgradepush_tasks:info'] = 'Additional information about the transfer task.';
+
+// Email strings.
+$string['email:subject'] = 'Marks Transfer Task {$a->status}: {$a->activityname} - {$a->mab}';
+$string['email:content:success'] = 'Marks Transfer Task from {$a->activityname} to {$a->mab} has been {$a->status}.<br><br>You can check the marks transfer history for this task here: <a href="{$a->link}">{$a->activityname} - {$a->mab}</a>';
+$string['email:content:fail'] = 'Marks Transfer Task from {$a->activityname} to {$a->mab} has been {$a->status}.<br><br>Please try again later.';
+$string['email:unknown'] = 'unknown';

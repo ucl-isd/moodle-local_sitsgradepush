@@ -28,11 +28,18 @@ class assessmentfactory {
     /**
      * Return assessment object by a given mod name.
      *
-     * @param \stdClass $coursemodule
+     * @param int|\stdClass $coursemodule
      * @return assessment
      * @throws \moodle_exception
      */
-    public static function get_assessment(\stdClass $coursemodule) {
+    public static function get_assessment(int|\stdClass $coursemodule) {
+        // Get course module object if coursemodule is an id.
+        if (is_int($coursemodule)) {
+            if (!$coursemodule = \get_coursemodule_from_id('', $coursemodule)) {
+                throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', $coursemodule);
+            }
+        }
+
         switch ($coursemodule->modname) {
             case 'quiz':
                 return new quiz($coursemodule);

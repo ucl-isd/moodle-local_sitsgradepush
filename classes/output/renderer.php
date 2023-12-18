@@ -16,9 +16,9 @@
 
 namespace local_sitsgradepush\output;
 
-use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\errormanager;
 use local_sitsgradepush\manager;
+use local_sitsgradepush\taskmanager;
 use moodle_page;
 use plugin_renderer_base;
 
@@ -116,23 +116,18 @@ class renderer extends plugin_renderer_base {
         }
 
         $lasttasktext = null;
-        $taskstatustext = null;
+        $hastaskinprogress = null;
         $mappingid = null;
 
         // Add last task details and push task status to the mapping object if any.
         if (!empty($mapping->id)) {
             $mappingid = $mapping->id;
             $lasttasktext = $this->get_last_push_task_time($mapping->id);
-            if ($taskstatus = $this->get_assessment_mapping_status_icon($mapping->id)) {
-                if ($taskstatus->status !== self::PUSH_STATUS_ICON_HAS_PUSH_RECORDS &&
-                    $taskstatus->status !== self::PUSH_STATUS_ICON_NO_PUSH_RECORDS) {
-                    $taskstatustext = $taskstatus->statusicon . ' ' . $taskstatus->statustext;
-                }
-            }
+            $hastaskinprogress = taskmanager::get_pending_task_in_queue($mapping->id);
         }
 
         // Check if there is any task info to display.
-        $additionalinfo = $lasttasktext || $taskstatustext;
+        $additionalinfo = $lasttasktext || $hastaskinprogress;
 
         // Render the table.
         return $this->output->render_from_template('local_sitsgradepush/assessmentgrades', [
@@ -140,7 +135,6 @@ class renderer extends plugin_renderer_base {
             'tabletitle' => $mapping->formattedname,
             'students' => $students,
             'lasttask' => $lasttasktext,
-            'taskstatus' => $taskstatustext,
             'additionalinfo' => $additionalinfo,
         ]);
     }
@@ -190,14 +184,19 @@ class renderer extends plugin_renderer_base {
                     if (empty($componentgrade->coursemoduleid)) {
                         // Disable the change source button and push grade button if the MAB is not mapped to any activity.
                         $componentgrade->disablechangesourcebutton = ' disabled';
-                        $componentgrade->disablepushgradebutton = ' disabled';
                         continue;
                     }
 
                     // Get the assessment mapping status.
                     if ($coursemodule = get_coursemodule_from_id('', $componentgrade->coursemoduleid)) {
+                        $students = $this->manager->get_students_in_assessment_mapping($componentgrade->assessmentmappingid);
+                        $numberofstudents = 0;
+                        if (!empty($students)) {
+                            $numberofstudents = count($students);
+                        }
+
                         $assessmentmapping = new \stdClass();
-                        $assessmentmapping->info =
+                        $assessmentmapping->numberofstudents = $numberofstudents;
                         $assessmentmapping->id = $componentgrade->assessmentmappingid;
                         $assessmentmapping->type = get_module_types_names()[$coursemodule->modname];
                         $assessmentmapping->name = $coursemodule->name;
@@ -212,8 +211,6 @@ class renderer extends plugin_renderer_base {
                         $componentgrade->assessmentmapping = $assessmentmapping;
                         $componentgrade->disablechangesourcebutton =
                             $this->disable_change_source_button($componentgrade->assessmentmappingid) ? ' disabled' : '';
-                        $componentgrade->disablepushgradebutton =
-                            $this->disable_push_grade_button($assessmentmapping->status->status, $courseid) ? ' disabled' : '';
                     } else {
                         throw new \moodle_exception('error:invalidcoursemoduleid', 'local_sitsgradepush');
                     }
@@ -366,7 +363,7 @@ class renderer extends plugin_renderer_base {
     private function get_last_push_task_time(int $assessmentmappingid) {
         // Add last task details to the mapping if any.
         $time = null;
-        if ($lasttask = $this->manager->get_last_finished_push_task($assessmentmappingid)) {
+        if ($lasttask = taskmanager::get_last_finished_push_task($assessmentmappingid)) {
             $time = get_string(
                 'label:lastpushtext',
                 'local_sitsgradepush', [
@@ -386,47 +383,22 @@ class renderer extends plugin_renderer_base {
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    private function get_assessment_mapping_status_icon(int $assessmentmappingid) {
-        $manager = manager::get_manager();
-
-        // Work out the status of this assessment mapping.
-        if ($task = $manager->get_pending_task_in_queue($assessmentmappingid)) {
-            $status = match (intval($task->status)) {
-                manager::PUSH_TASK_STATUS_REQUESTED => self::PUSH_STATUS_ICON_REQUESTED,
-                manager::PUSH_TASK_STATUS_QUEUED => self::PUSH_STATUS_ICON_QUEUED,
-                manager::PUSH_TASK_STATUS_PROCESSING => self::PUSH_STATUS_ICON_PROCESSING,
-            };
-        } else {
-            $status = $manager->has_grades_pushed($assessmentmappingid) ?
-                self::PUSH_STATUS_ICON_HAS_PUSH_RECORDS : self::PUSH_STATUS_ICON_NO_PUSH_RECORDS;
-        }
+    public function get_assessment_mapping_status_icon(int $assessmentmappingid) {
+        $status = manager::get_manager()->has_grades_pushed($assessmentmappingid) ?
+            self::PUSH_STATUS_ICON_HAS_PUSH_RECORDS : self::PUSH_STATUS_ICON_NO_PUSH_RECORDS;
 
         $result = new \stdClass();
         $result->status = $status;
         switch ($status) {
-            case self::PUSH_STATUS_ICON_REQUESTED:
-                $result->statusicon = '<i class="fa-solid fa-hourglass-start" data-toggle="tooltip" data-placement="top" title="' .
-                    get_string('task:status:requested', 'local_sitsgradepush') . '"></i>';
-                $result->statustext = get_string('task:status:requested', 'local_sitsgradepush');
-                break;
-            case self::PUSH_STATUS_ICON_QUEUED:
-                $result->statusicon = '<i class="fa-solid fa-hourglass-half" data-toggle="tooltip" data-placement="top" title="' .
-                    get_string('task:status:queued', 'local_sitsgradepush') . '"></i>';
-                $result->statustext = get_string('task:status:queued', 'local_sitsgradepush');
-                break;
-            case self::PUSH_STATUS_ICON_PROCESSING:
-                $result->statusicon = '<i class="fa-solid fa-hammer" data-toggle="tooltip" data-placement="top" title="' .
-                    get_string('task:status:processing', 'local_sitsgradepush') . '"></i>';
-                $result->statustext = get_string('task:status:processing', 'local_sitsgradepush');
-                break;
             case self::PUSH_STATUS_ICON_HAS_PUSH_RECORDS:
-                $result->statusicon = '<i class="fa-regular fa-file-lines" data-toggle="tooltip" data-placement="top" title="' .
-                    get_string('pushrecordsexist', 'local_sitsgradepush') . '"></i>';
+                $result->statusicon = '<i class="fa-regular fa-file-lines records-icon" data-toggle="tooltip"
+                 data-placement="top" title="' . get_string('pushrecordsexist', 'local_sitsgradepush') .
+                    '" data-assessmentmappingid="' . $assessmentmappingid . '"></i>';
                 $result->statustext = get_string('pushrecordsexist', 'local_sitsgradepush');
                 break;
             default:
-                $result->statusicon = '<i class="fa-solid fa-circle-info" data-toggle="tooltip" data-placement="top" title="' .
-                    get_string('pushrecordsnotexist', 'local_sitsgradepush') . '"></i>';
+                $result->statusicon = '<i class="fa-solid fa-circle-info records-icon" data-toggle="tooltip"
+                 data-placement="top" title="' . get_string('pushrecordsnotexist', 'local_sitsgradepush') . '"></i>';
                 $result->statustext = get_string('pushrecordsnotexist', 'local_sitsgradepush');
                 break;
         }
@@ -443,25 +415,5 @@ class renderer extends plugin_renderer_base {
      */
     private function disable_change_source_button(int $assessmentmappingid) : bool {
         return $this->manager->has_grades_pushed($assessmentmappingid);
-    }
-
-    /**
-     * Disable the push grade button if the push task is in progress.
-     *
-     * @param string $pushstatus Push task status
-     * @param int $courseid Course ID
-     * @return bool
-     * @throws \coding_exception
-     */
-    private function disable_push_grade_button(string $pushstatus, int $courseid) : bool {
-        // Disable the push grade button if the user does not have the capability.
-        if (!has_capability('local/sitsgradepush:pushgrade', \context_course::instance($courseid))) {
-            return true;
-        }
-
-        return match($pushstatus) {
-            self::PUSH_STATUS_ICON_REQUESTED, self::PUSH_STATUS_ICON_QUEUED, self::PUSH_STATUS_ICON_PROCESSING => true,
-            default => false,
-        };
     }
 }

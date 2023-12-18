@@ -17,8 +17,8 @@
 namespace local_sitsgradepush\task;
 
 use core\task\scheduled_task;
-use local_sitsgradepush\manager;
-use core\task\manager as task_manager;
+use core\task\manager as coretaskmanager;
+use local_sitsgradepush\taskmanager;
 
 /**
  * Scheduled task to process grade push requests and queue adhoc tasks.
@@ -48,16 +48,13 @@ class pushtask extends scheduled_task {
      * @return void
      */
     public function execute() {
-        // Get the manager.
-        $manager = manager::get_manager();
-
         // Get the number of concurrent tasks allowed.
         if (!$concurrenttasksallowed = get_config('local_sitsgradepush', 'concurrent_running_tasks')) {
             $concurrenttasksallowed = self::MAX_CONCURRENT_TASKS;
         }
 
         // Get the number of tasks currently running.
-        $runningtasks = $manager->get_number_of_running_tasks();
+        $runningtasks = taskmanager::get_number_of_running_tasks();
 
         if ($runningtasks >= $concurrenttasksallowed) {
             // Too many tasks running, exit.
@@ -67,7 +64,8 @@ class pushtask extends scheduled_task {
         }
 
         // Get queued tasks.
-        $tasks = $manager->get_push_tasks(manager::PUSH_TASK_STATUS_REQUESTED, $concurrenttasksallowed - $runningtasks);
+        $tasks = taskmanager::get_push_tasks(taskmanager::PUSH_TASK_STATUS_REQUESTED, $concurrenttasksallowed - $runningtasks);
+
         if (empty($tasks)) {
             // No tasks to run, exit.
             mtrace(date('Y-m-d H:i:s', time()) . ' : ' .
@@ -75,6 +73,7 @@ class pushtask extends scheduled_task {
             return;
         }
 
+        // Get the number of tasks to run.
         $count = $runningtasks + 1;
 
         // Run the tasks.
@@ -87,10 +86,10 @@ class pushtask extends scheduled_task {
             $adhoctask->set_custom_data([
                 'taskid' => $task->id,
             ]);
-            task_manager::queue_adhoc_task($adhoctask);
+            coretaskmanager::queue_adhoc_task($adhoctask);
 
             // Mark the task as queued.
-            $manager->update_push_task_status($task->id, manager::PUSH_TASK_STATUS_QUEUED);
+            taskmanager::update_task_status($task->id, taskmanager::PUSH_TASK_STATUS_QUEUED);
 
             $count++;
         }
