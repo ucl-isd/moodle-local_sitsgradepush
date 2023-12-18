@@ -46,15 +46,17 @@
         }]
     }
 }}
-<table class="table table-hover my-4">
+<table class="table table-hover my-4 sitsgradepush-history-table">
     <caption>{{tabletitle}}</caption>
     <thead class="thead-light">
     {{#additionalinfo}}
         <tr>
             <th colspan="6" style="background-color: #ecf5fd">
                 <div>
-                    <span id="taskstatus-{{mappingid}}" style="float: left;">{{{taskstatus}}}</span>
-                    <span style="float: right;">{{lasttask}}</span>
+                    <div class="last-transfer-task-date" style="float: left;" data-assessmentmappingid="{{mappingid}}">{{lasttask}}</div>
+                    <div style="float: right;">
+                        <div id="task-status-container-{{mappingid}}" class="task-status" style="display: inline-flex;margin-top: 5px;" data-assessmentmappingid="{{mappingid}}"></div>
+                    </div>
                 </div>
             </th>
         </tr>

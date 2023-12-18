@@ -31,4 +31,9 @@ $definitions = [
         'simplekeys' => true,
         'simpledata' => false,
     ],
+    'componentgrades' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => false,
+    ],
 ];

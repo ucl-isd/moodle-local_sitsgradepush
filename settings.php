@@ -57,6 +57,14 @@ if ($hassiteconfig) {
             0
         ));
 
+        // Threshold to allow for synchronous mark transfer.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/sync_threshold',
+            get_string('settings:sync_threshold', 'local_sitsgradepush'),
+            get_string('settings:sync_threshold:desc', 'local_sitsgradepush'),
+            30,
+            PARAM_INT
+        ));
+
         // Setting to enable/disable submission log push.
         $settings->add(new admin_setting_configcheckbox(
             'local_sitsgradepush/sublogpush',

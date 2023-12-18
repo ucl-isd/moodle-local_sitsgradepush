@@ -41,8 +41,9 @@
             * type - String, assessment mapping type.
             * url - String, assessment mapping url.
             * statusicon - String, assessment mapping status icon.
+            * selectsourceurl - String, select source url.
+            * numberofstudents - String, number of students.
         * disablechangesourcebutton - String, value to insert into the button, for 'disabled' or not.
-        * disablepushgradebutton - String, value to insert into the button, for 'disabled' or not.
 
     Example context (json):
     {
@@ -63,10 +64,11 @@
                     "type": "Assignment",
                     "name": "Test assignment 2",
                     "url": "http://test.m4.local:4001/mod/assign/view.php?id=960",
-                    "statusicon": "<i class=\"fa-regular fa-file-lines\" data-toggle=\"tooltip\" data-placement=\"top\" title=\"Push records exist\"></i>"
+                    "statusicon": "<i class=\"fa-regular fa-file-lines\" data-toggle=\"tooltip\" data-placement=\"top\" title=\"Push records exist\"></i>",
+                    "selectsourceurl": "http://test.m4.local:4001/local/sitsgradepush/select_source.php?courseid=2&mabid=22",
+                    "numberofstudents": "10"
                 },
-                "disablechangesourcebutton": " disabled",
-                "disablepushgradebutton": ""
+                "disablechangesourcebutton": " disabled"
             }
         },
         "mapcode": "PHAY0063A7PE",
@@ -135,8 +137,8 @@
                                 title="{{#str}} dashboard:transfermark, local_sitsgradepush {{/str}}"
                             {{#assessmentmapping}}
                                 data-assessmentmappingid="{{id}}"
-                            {{/assessmentmapping}}
-                            {{disablepushgradebutton}}>
+                                data-numberofstudents="{{numberofstudents}}"
+                            {{/assessmentmapping}}>
                             <i class="fa-solid fa-upload"></i>
                         </button>
                     </span>
@@ -145,7 +147,7 @@
                             {{{statusicon}}}
                         {{/assessmentmapping}}
                         {{^assessmentmapping}}
-                            <i class="fa-solid fa-circle-info" data-toggle="tooltip" data-placement="top"
+                            <i class="fa-solid fa-circle-info records-icon" data-toggle="tooltip" data-placement="top"
                                title="{{#str}} pushrecordsnotexist, local_sitsgradepush {{/str}}"></i>
                         {{/assessmentmapping}}
                     </span>

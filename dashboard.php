@@ -90,7 +90,16 @@ if (!empty($result)) {
 }
 
 // Initialise the javascript.
-$PAGE->requires->js_call_amd('local_sitsgradepush/dashboard', 'init', []);
+$PAGE->requires->js_call_amd(
+    'local_sitsgradepush/dashboard',
+    'init',
+    [
+        $courseid,
+        get_config('local_sitsgradepush', 'sync_threshold'),
+        get_config('local_sitsgradepush', 'async'),
+        $CFG->version,
+    ]
+);
 
 // Page footer.
 echo $OUTPUT->footer();

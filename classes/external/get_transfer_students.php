@@ -19,17 +19,17 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use local_sitsgradepush\taskmanager;
+use local_sitsgradepush\manager;
 
 /**
- * External API for scheduling a push task.
+ * External API for getting students information for an assessment mapping.
  *
  * @package    local_sitsgradepush
  * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class schedule_push_task extends external_api {
+class get_transfer_students extends external_api {
     /**
      * Returns description of method parameters.
      *
@@ -49,13 +49,13 @@ class schedule_push_task extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Result of request', VALUE_REQUIRED),
-            'status' => new external_value(PARAM_TEXT, 'Status', VALUE_OPTIONAL),
+            'students' => new external_value(PARAM_RAW, 'Students', VALUE_OPTIONAL),
             'message' => new external_value(PARAM_TEXT, 'Error message', VALUE_OPTIONAL),
         ]);
     }
 
     /**
-     * Schedule a push task.
+     * Get students information for an assessment mapping
      *
      * @param int $assessmentmappingid
      * @return array
@@ -64,15 +64,28 @@ class schedule_push_task extends external_api {
         try {
             $params = self::validate_parameters(
                 self::execute_parameters(),
-                ['assessmentmappingid' => $assessmentmappingid]
+                [
+                    'assessmentmappingid' => $assessmentmappingid,
+                ]
             );
 
-            taskmanager::schedule_push_task($params['assessmentmappingid']);
+            $students = manager::get_manager()->get_students_in_assessment_mapping($params['assessmentmappingid']);
+            if (!empty($students)) {
+                $students = array_map(function ($student) {
+                    return [
+                        'userid' => $student->userid,
+                        'lastgradepushresult' => $student->lastgradepushresult,
+                        'lastsublogpushresult' => $student->lastsublogpushresult,
+                    ];
+                }, $students);
+            } else {
+                $students = [];
+            }
 
             return [
                 'success' => true,
-                'status' => get_string('task:status:requested', 'local_sitsgradepush'),
-                'message' => get_string('task:requested:success', 'local_sitsgradepush'),
+                'students' => json_encode($students),
+                'message' => 'Mark Transfer task completed successfully.',
             ];
         } catch (\Exception $e) {
             return [

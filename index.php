@@ -78,11 +78,9 @@ echo '<div class="container py-5">';
 echo '<h3 class="mb-4">' . get_string('index:header', 'local_sitsgradepush') . '</h3>';
 
 $manager = manager::get_manager();
-// Get assessment.
-$assessment = assessmentfactory::get_assessment($coursemodule);
 
 // Get page content.
-$content = $manager->get_assessment_data($assessment);
+$content = $manager->get_assessment_data($coursemoduleid);
 
 $mappingids = [];
 
@@ -108,7 +106,7 @@ if (!empty($content)) {
             }
 
               // Refresh data after completed all pushes.
-            $content = $manager->get_assessment_data($assessment);
+            $content = $manager->get_assessment_data($coursemoduleid);
             $buttonlabel = get_string('label:ok', 'local_sitsgradepush');
         } else {
             $url->param('pushgrade', 1);
@@ -144,7 +142,7 @@ if (!empty($content)) {
 echo '</div>';
 
 // Initialize javascript.
-$PAGE->requires->js_call_amd('local_sitsgradepush/sitsgradepush', 'init', [$coursemoduleid, $mappingids]);
+$PAGE->requires->js_call_amd('local_sitsgradepush/sitsgradepush', 'init', [$coursemodule->course, $coursemoduleid, $mappingids]);
 
 // And the page footer.
 echo $OUTPUT->footer();

@@ -2,6 +2,19 @@
     text-align: center;
 }
 
+#dashboard-progress-bar-sync {
+    height: 20px;
+}
+
+.sitsgradepush-history-table .progress {
+    height: 15px;
+    width: 150px;
+}
+
+.sitsgradepush-history-table .spinner-border {
+    margin-right: 10px;
+}
+
 .sitsgradepush-dasboard .selector-container {
     margin-bottom: 20px;
 }
@@ -50,6 +63,10 @@
 
 .sitsgradepush-dasboard .back-to-top:hover {
     background-color: #0056b3; /* Hover background color */
+}
+
+.sitsgradepush-dasboard .progress {
+    margin: 10px 5px 0px 5px;
 }
 
 /* Styles for select source page */
