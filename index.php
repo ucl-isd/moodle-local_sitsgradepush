@@ -129,12 +129,12 @@ if (!empty($content)) {
     // Display grade push records for each mapping.
     foreach ($content['mappings'] as $mapping) {
         $mappingids[] = $mapping->id;
-        echo $renderer->render_assessment_push_status_table($mapping);
+        echo $renderer->render_assessment_push_status_table($mapping, $coursemodule->course);
     }
 
     // Display invalid students.
     if (!empty($content['invalidstudents']->students)) {
-        echo $renderer->render_assessment_push_status_table($content['invalidstudents']);
+        echo $renderer->render_assessment_push_status_table($content['invalidstudents'], $coursemodule->course);
     }
 } else {
     echo '<p class="alert alert-info">' . get_string('error:assessmentisnotmapped', 'local_sitsgradepush') . '</p>';

@@ -143,6 +143,7 @@ $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with m
 // Capability strings.
 $string['sitsgradepush:mapassessment'] = 'Map assessment component to Moodle activity';
 $string['sitsgradepush:pushgrade'] = 'Transfer Marks to SITS';
+$string['sitsgradepush:showsubmissionlogcolumn'] = 'Show Submission Log column';
 
 // Task strings.
 $string['task:pushtask:name'] = 'Schedule Transfer Task';
