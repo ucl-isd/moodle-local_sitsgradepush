@@ -71,7 +71,7 @@ class renderer extends plugin_renderer_base {
      * @return string Rendered HTML
      * @throws \moodle_exception
      */
-    public function render_button(string $id, string $name, string $disabled = '', $class = '') : string {
+    public function render_button(string $id, string $name, string $disabled = '', string $class = '') : string {
         return $this->output->render_from_template(
             'local_sitsgradepush/button',
             ['id' => $id, 'name' => $name, 'disabled' => $disabled, 'class' => $class]
@@ -95,10 +95,11 @@ class renderer extends plugin_renderer_base {
      * Render the assessment push status table.
      *
      * @param \stdClass $mapping Assessment mapping
+     * @param int $courseid Course ID
      * @return string Rendered HTML
      * @throws \moodle_exception
      */
-    public function render_assessment_push_status_table(\stdClass $mapping) : string {
+    public function render_assessment_push_status_table(\stdClass $mapping, int $courseid) : string {
         $students = null;
         // Modify the timestamp format and add the label for the last push result.
         if (!empty($mapping->students)) {
@@ -129,6 +130,9 @@ class renderer extends plugin_renderer_base {
         // Check if there is any task info to display.
         $additionalinfo = $lasttasktext || $hastaskinprogress;
 
+        // Check if the user has the capability to see the submission log column.
+        $showsublogcolumn = has_capability('local/sitsgradepush:showsubmissionlogcolumn', \context_course::instance($courseid));
+
         // Render the table.
         return $this->output->render_from_template('local_sitsgradepush/assessmentgrades', [
             'mappingid' => $mappingid,
@@ -136,6 +140,7 @@ class renderer extends plugin_renderer_base {
             'students' => $students,
             'lasttask' => $lasttasktext,
             'additionalinfo' => $additionalinfo,
+            'showsublogcolumn' => $showsublogcolumn,
         ]);
     }
 

@@ -32,7 +32,7 @@
     Example context (json):
     {
         "tabletitle":"PHAY0063-2022-T1-A7P-001 Coursework 4000 word written case studies (50%)",
-        "additionalinfo":true,
+        "additionalinfo":false,
         "students":[{
                 "firstname":"Test",
                 "lastname":"User",
@@ -62,12 +62,14 @@
         </tr>
     {{/additionalinfo}}
     <tr>
-        <th scope="col">{{#str}} index:student, local_sitsgradepush {{/str}}</th>
-        <th scope="col">{{#str}} index:porticonumber, local_sitsgradepush {{/str}}</th>
-        <th scope="col">{{#str}} index:grade, local_sitsgradepush {{/str}}</th>
-        <th scope="col">{{#str}} index:submissiondate, local_sitsgradepush {{/str}}</th>
-        <th scope="col">{{#str}} index:lastmarktransfer, local_sitsgradepush {{/str}}</th>
-        <th scope="col">{{#str}} index:lastsublogtransfer, local_sitsgradepush {{/str}}</th>
+        <th scope="col">Student</th>
+        <th scope="col">Portico number</th>
+        <th scope="col">Grade</th>
+        <th scope="col">Submission date</th>
+        <th scope="col">Last grade push</th>
+        {{#showsublogcolumn}}
+            <th scope="col">Last submission log push</th>
+        {{/showsublogcolumn}}
     </tr>
     </thead>
     <tbody>
@@ -78,8 +80,9 @@
             <td>{{marks}}</td>
             <td>{{handindatetime}}</td>
             <td>{{{lastgradepushresultlabel}}}{{lastgradepushtime}}</td>
-            <td>{{{lastsublogpushresultlabel}}}{{lastsublogpushtime}}
-            </td>
+            {{#showsublogcolumn}}
+                <td>{{{lastsublogpushresultlabel}}}{{lastsublogpushtime}}</td>
+            {{/showsublogcolumn}}
         </tr>
     {{/students}}
     </tbody>
