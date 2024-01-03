@@ -48,7 +48,7 @@
     Example context (json):
     {
         "tableid": "PHAY0063-A7P-T1-2022",
-        "modcode": "PHAY0063",
+        "moduledelivery": "PHAY0063-A7P-T1-2022",
         "academicyear": "2022",
         "componentgrades":
         {
@@ -66,6 +66,7 @@
                     "url": "http://test.m4.local:4001/mod/assign/view.php?id=960",
                     "statusicon": "<i class=\"fa-regular fa-file-lines\" data-toggle=\"tooltip\" data-placement=\"top\" title=\"Push records exist\"></i>",
                     "selectsourceurl": "http://test.m4.local:4001/local/sitsgradepush/select_source.php?courseid=2&mabid=22",
+                    "transferhistoryurl": "http://test.m4.local:4001/local/sitsgradepush/index.php?id=22",
                     "numberofstudents": "10"
                 },
                 "disablechangesourcebutton": " disabled"
@@ -81,14 +82,18 @@
     <tr>
         <th colspan="5">
             <div class="row">
-                <div class="col header-part" style="text-align: left">{{#str}} dashboard:modcode, local_sitsgradepush, {{modcode}} {{/str}}</div>
-                <div class="col header-part">{{#str}} dashboard:academicyear, local_sitsgradepush, {{academicyear}} {{/str}}</div>
-                <div class="col header-part" style="text-align: right">{{#str}} dashboard:level, local_sitsgradepush, {{level}} {{/str}} {{graduatetype}}</div>
+                <div class="col header-part" style="text-align: left">{{#str}} dashboard:moduledelivery, local_sitsgradepush, {{moduledelivery}} {{/str}}</div>
+                <div class="col header-part" style="text-align: right">{{#str}} dashboard:academicyear, local_sitsgradepush, {{academicyear}} {{/str}}</div>
             </div>
         </th>
     </tr>
     <tr>
-        <th colspan="5" style="text-align: left">{{#str}} dashboard:mapcode, local_sitsgradepush, {{mapcode}} {{/str}}</th>
+        <th colspan="5" style="text-align: left">
+            <div class="row">
+                <div class="col header-part" style="text-align: left">{{#str}} dashboard:mapcode, local_sitsgradepush, {{mapcode}} {{/str}}</div>
+                <div class="col header-part" style="text-align: right">{{#str}} dashboard:level, local_sitsgradepush, {{level}} {{/str}} {{graduatetype}}</div>
+            </div>
+        </th>
     </tr>
     <tr>
         <th class="seq-col">{{#str}} dashboard:seq, local_sitsgradepush {{/str}}</th>
@@ -144,7 +149,7 @@
                     </span>
                     <span style="width: 20px">
                         {{#assessmentmapping}}
-                            {{{statusicon}}}
+                            <a href="{{transferhistoryurl}}" target="_blank" data-toggle="tooltip" data-placement="top">{{{statusicon}}}</a>
                         {{/assessmentmapping}}
                         {{^assessmentmapping}}
                             <i class="fa-solid fa-circle-info records-icon" data-toggle="tooltip" data-placement="top"
