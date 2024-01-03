@@ -32,15 +32,6 @@ use plugin_renderer_base;
  */
 class renderer extends plugin_renderer_base {
 
-    /** @var string Push task status - requested */
-    const PUSH_STATUS_ICON_REQUESTED = 'requested';
-
-    /** @var string Push task status - queued */
-    const PUSH_STATUS_ICON_QUEUED = 'queued';
-
-    /** @var string Push task status - processing */
-    const PUSH_STATUS_ICON_PROCESSING = 'processing';
-
     /** @var string Push task status - has push records */
     const PUSH_STATUS_ICON_HAS_PUSH_RECORDS = 'has_push_records';
 
@@ -210,6 +201,8 @@ class renderer extends plugin_renderer_base {
                             ['id' => $coursemodule->id]
                         );
                         $assessmentmapping->url = $coursemoduleurl->out(false);
+                        $transferhistoryurl = new \moodle_url('/local/sitsgradepush/index.php', ['id' => $coursemodule->id]);
+                        $assessmentmapping->transferhistoryurl = $transferhistoryurl->out(false);
                         $assessmentmapping->status =
                             $this->get_assessment_mapping_status_icon($componentgrade->assessmentmappingid);
                         $assessmentmapping->statusicon = $assessmentmapping->status->statusicon;
@@ -227,7 +220,7 @@ class renderer extends plugin_renderer_base {
                 'local_sitsgradepush/module_delivery_table',
                 [
                     'tableid' => $tableid,
-                    'modcode' => $moduledelivery->modcode,
+                    'moduledelivery' => $tableid,
                     'academicyear' => $moduledelivery->academicyear,
                     'level' => $moduledelivery->level,
                     'graduatetype' => $moduledelivery->graduatetype,

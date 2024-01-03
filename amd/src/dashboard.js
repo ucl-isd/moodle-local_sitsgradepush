@@ -168,17 +168,17 @@ function initPushMarkButtons(page, courseid) {
     if (mabpushbuttons.length > 0) {
         // Push grades when the user clicks on each enabled push button.
         mabpushbuttons.forEach(function(button) {
+            // Find the number of students to push grades.
+            let studentcount = button.getAttribute("data-numberofstudents");
+            let assessmentmappingid = button.getAttribute("data-assessmentmappingid");
+
+            // Disable the push button if there is no assessment mapping ID.
+            if (assessmentmappingid === null) {
+                button.disabled = true;
+                return;
+            }
+
             button.addEventListener("click", async function() {
-                // Find the number of students to push grades.
-                let studentcount = button.getAttribute("data-numberofstudents");
-                let assessmentmappingid = button.getAttribute("data-assessmentmappingid");
-
-                // Disable the button if there is no assessment mapping ID.
-                if (assessmentmappingid === null) {
-                    button.disabled = true;
-                    return;
-                }
-
                 if (studentcount === '0') {
                     // Show an error message if there is no student to push grades.
                     showErrorMessageForButton(button, 'There are no marks to transfer.');

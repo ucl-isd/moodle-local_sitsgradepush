@@ -80,7 +80,7 @@ $string['index:lastsublogtransfer'] = 'Last Submission Log Transfer';
 
 // Marks transfer dashboard page.
 $string['dashboard:header'] = 'SITS Marks Transfer Dashboard';
-$string['dashboard:modcode'] = 'MODULE CODE: {$a}';
+$string['dashboard:moduledelivery'] = 'MODULE DELIVERY: {$a}';
 $string['dashboard:academicyear'] = 'ACADEMIC YEAR: {$a}';
 $string['dashboard:level'] = 'LEVEL: {$a}';
 $string['dashboard:mapcode'] = 'MAP CODE: {$a}';
