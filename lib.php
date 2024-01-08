@@ -77,9 +77,9 @@ function local_sitsgradepush_coursemodule_standard_elements($formwrapper, $mform
                 $formwrapper->get_current()->coursemodule
             );
 
+            $options = [];
             // Combine all component grades into a single array.
             if (!empty($moduledeliveries)) {
-                $options = [];
                 foreach ($moduledeliveries as $moduledelivery) {
                     if (empty($moduledelivery->componentgrades)) {
                         continue;
