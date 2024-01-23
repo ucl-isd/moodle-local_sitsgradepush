@@ -23,6 +23,18 @@ export const init = (courseid, coursemoduleid, mappingids) => {
     updatePageIntervalId = setInterval(() => {
         updateTasksInfo(courseid);
     }, updatePageDelay);
+
+    // Add event listener to stop update the page when the page is not visible. e.g. when the user switches to another tab.
+    document.addEventListener("visibilitychange", function() {
+        if (document.visibilityState === "hidden") {
+            clearInterval(updatePageIntervalId);
+        } else {
+            updateTasksInfo(courseid);
+            updatePageIntervalId = setInterval(() => {
+                updateTasksInfo(courseid);
+            }, updatePageDelay);
+        }
+    });
 };
 
 /**

@@ -68,9 +68,20 @@ export const init = (courseid, syncThresholdConfig, asyncConfig, moodleVersion) 
 
     // Update the page every 15 seconds.
     updatePageIntervalId = setInterval(() => {
-        updateAssessments(globalCourseid);
+        updateAssessments(courseid);
     }, updatePageDelay);
 
+    // Add event listener to stop update the page when the page is not visible. e.g. when the user switches to another tab.
+    document.addEventListener("visibilitychange", function() {
+        if (document.visibilityState === "hidden") {
+            clearInterval(updatePageIntervalId);
+        } else {
+            updateAssessments(courseid);
+            updatePageIntervalId = setInterval(() => {
+                updateAssessments(courseid);
+            }, updatePageDelay);
+        }
+    });
 };
 
 /**
