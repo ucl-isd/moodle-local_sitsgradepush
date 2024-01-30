@@ -89,6 +89,9 @@ class manager {
     /** @var string[] Allowed activity types */
     const ALLOWED_ACTIVITIES = ['assign', 'quiz', 'turnitintooltwo'];
 
+    /** @var string Existing activity */
+    const SOURCE_EXISTING_ACTIVITY = 'existing';
+
     /** @var null Manager instance */
     private static $instance = null;
 
@@ -901,12 +904,19 @@ class manager {
             $studentsfromsits[$mabkey] =
                 array_column($this->get_students_from_sits($mapping), 'code');
             $assessmentdata['mappings'][$mabkey] = $mapping;
+            $assessmentdata['mappings'][$mabkey]->markscount = 0;
 
+            // Students here is all the participants in that assessment.
             foreach ($students as $key => $student) {
                 $studentrecord = new pushrecord($student, $coursemodule->id, $mapping);
-                // Add students who have push records of this mapping to the mapping's students array.
+                // Add participants who have push records of this mapping or
+                // are in the studentsfromsits array to the mapping's students array.
                 if ($studentrecord->componentgrade == $mabkey || in_array($studentrecord->idnumber, $studentsfromsits[$mabkey])) {
                     $assessmentdata['mappings'][$mabkey]->students[] = $studentrecord;
+                    if ($studentrecord->marks != '-' &&
+                        !($studentrecord->isgradepushed && $studentrecord->lastgradepushresult === 'success')) {
+                        $assessmentdata['mappings'][$mabkey]->markscount++;
+                    }
                     unset($students[$key]);
                 }
             }
@@ -1301,27 +1311,6 @@ class manager {
     }
 
     /**
-     * Get students in an assessment mapping eligible for marks transfer.
-     *
-     * @param int $assessmentmappingid
-     * @return null
-     * @throws \coding_exception
-     * @throws \dml_exception
-     * @throws \moodle_exception
-     */
-    public function get_students_in_assessment_mapping($assessmentmappingid) {
-        global $DB;
-
-        if (!$assessmentmapping = $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['id' => $assessmentmappingid])) {
-            throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $assessmentmappingid);
-        }
-
-        $mapping = $this->get_assessment_data($assessmentmapping->coursemoduleid, $assessmentmappingid);
-
-        return !empty($mapping->students) ? $mapping->students : null;
-    }
-
-    /**
      * Get data required for page update, e.g. progress bars, last transfer time.
      *
      * @param int $courseid
@@ -1330,7 +1319,7 @@ class manager {
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function get_data_for_page_update($courseid, $couresmoduleid = 0) {
+    public function get_data_for_page_update($courseid, $couresmoduleid = 0): array {
         global $DB;
         $results = [];
 
@@ -1349,14 +1338,17 @@ class manager {
         }
 
         foreach ($mappings as $mapping) {
+            // Get assessment data.
+            $assessmentdata = $this->get_assessment_data($mapping->coursemoduleid, $mapping->id);
+
             // Check if there is a pending / running task for this mapping.
             $task = taskmanager::get_pending_task_in_queue($mapping->id);
             $result = new \stdClass();
             $result->assessmentmappingid = $mapping->id;
             $result->courseid = $courseid;
             $result->coursemoduleid = $mapping->coursemoduleid;
+            $result->markscount = $assessmentdata->markscount;
             $result->task = !empty($task) ? $task : null;
-            $result->transferrecords = $this->has_grades_pushed($mapping->id) ? 1 : 0;
             $result->lasttransfertime = taskmanager::get_last_push_task_time($mapping->id);
             $results[] = $result;
         }

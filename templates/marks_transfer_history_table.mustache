@@ -14,25 +14,30 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template local_sitsgradepush/assessmentgrades
+    @template local_sitsgradepush/marks_transfer_history_table
 
-    Template for displaying the grade push history for an assessment.
+    Template for displaying mapping table on the marks transfer history page.
 
     Classes required for JS:
-    * none
+    * progress-container - The container for the progress bar.
 
     Data attributes required for JS:
-    * none
+    * data-assessmentmappingid - String, assessment mapping id.
+    * data-markscount - Integer, marks count.
 
     Context variables required for this template:
     * tabletitle - String, The assessment component's name
-    * additionalinfo - Boolean, whether to display additional information
+    * mappingid - String, assessment mapping id.
+    * markscount - Integer, marks count.
+    * showsublogcolumn - Boolean, whether to show the submission log column.
     * students - Array, array of students
 
     Example context (json):
     {
         "tabletitle":"PHAY0063-2022-T1-A7P-001 Coursework 4000 word written case studies (50%)",
-        "additionalinfo":false,
+        "mappingid":"21",
+        "markscount":"1",
+        "showsublogcolumn":true,
         "students":[{
                 "firstname":"Test",
                 "lastname":"User",
@@ -46,29 +51,27 @@
         }]
     }
 }}
-<table class="table table-hover my-4 sitsgradepush-history-table">
-    <caption>{{tabletitle}}</caption>
+<div class="sitsgradepush-history-table-container">
+<h5>{{tabletitle}}</h5>
+<div id="progress-container-{{mappingid}}" class="alert alert-success hidden progress-container">
+    <div>
+        <h3>{{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</h3>
+        <small>{{#str}} progress, local_sitsgradepush {{/str}} 0%</small>
+        <div class="progress">
+            <div class="progress-bar bg-success" role="progressbar" aria-valuenow="0" style="width: 0%" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+    </div>
+</div>
+<table id="sitsgradepush-history-table-{{mappingid}}" class="table table-hover my-4 sitsgradepush-history-table" data-markscount="{{markscount}}" data-assessmentmappingid="{{mappingid}}">
     <thead class="thead-light">
-    {{#additionalinfo}}
-        <tr>
-            <th colspan="6" style="background-color: #ecf5fd">
-                <div>
-                    <div class="last-transfer-task-date" style="float: left;" data-assessmentmappingid="{{mappingid}}">{{lasttask}}</div>
-                    <div style="float: right;">
-                        <div id="task-status-container-{{mappingid}}" class="task-status" style="display: inline-flex;margin-top: 5px;" data-assessmentmappingid="{{mappingid}}"></div>
-                    </div>
-                </div>
-            </th>
-        </tr>
-    {{/additionalinfo}}
     <tr>
-        <th scope="col">Student</th>
-        <th scope="col">Portico number</th>
-        <th scope="col">Grade</th>
-        <th scope="col">Submission date</th>
-        <th scope="col">Last grade push</th>
+        <th scope="col">{{#str}} index:student, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:porticonumber, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:grade, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:submissiondate, local_sitsgradepush {{/str}}</th>
+        <th scope="col">{{#str}} index:lastmarktransfer, local_sitsgradepush {{/str}}</th>
         {{#showsublogcolumn}}
-            <th scope="col">Last submission log push</th>
+            <th scope="col">{{#str}} index:lastsublogtransfer, local_sitsgradepush {{/str}}</th>
         {{/showsublogcolumn}}
     </tr>
     </thead>
@@ -87,6 +90,4 @@
     {{/students}}
     </tbody>
 </table>
-{{^students}}
-    <p class="alert alert-info">{{#str}} error:nostudentfoundformapping, local_sitsgradepush {{/str}}</p>
-{{/students}}
+</div>

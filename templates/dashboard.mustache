@@ -1,0 +1,215 @@
+{{!
+    This file is part the Local SITS Grade Push plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/dashboard
+
+    Template for displaying the marks transfer dashboard page.
+
+    Classes required for JS:
+    * marks-col-field
+    * marks-container
+    * js-btn-transfer-marks
+    * task-status-container
+    * hidden
+    * progress
+
+    Data attributes required for JS:
+    * data-assessmentmappingid - String, assessment mapping id.
+    * data-markscount - Integer, number of marks to transfer.
+    * data-task-running - String, indicate if there is a task running for this mapping.
+
+    Context variables required for this template:
+    * jump-to-label - String, jump to label.
+    * jump-to-options - Array, array of jump to options.
+        * name - String, module delivery name.
+    * module-delivery-tables - Array, array of module delivery tables.
+        * tableid - String, table id.
+        * modcode - String, module code.
+        * academicyear - String, academic year.
+        * level - String, level.
+        * graduatetype - String, graduate type.
+        * mapcode - String, map code.
+        * componentgrades - Array, array of component grades.
+            * mabseq - String, mab sequence.
+            * mabname - String, mab name.
+            * mabperc - String, mab percentage.
+            * astcode - String, ast code.
+            * assessmentmapping - Array, array of assessment mapping.
+                * id - String, assessment mapping id.
+                * type - String, assessment mapping type.
+                * url - String, assessment mapping url.
+                * statusicon - String, assessment mapping status icon.
+                * selectsourceurl - String, select source url.
+                * transferhistoryurl - String, transfer history url.
+                * markstotransfer - String, marks to transfer.
+    * transfer-all-button-label - String, button label.
+
+    Example context (json):
+    {
+        "jump-to-label": "Jump to",
+        "jump-to-options":
+        [
+            {
+                "name": "PHAY0063-2022-T1-A7P-001 Coursework 4000 word written case studies (50%)"
+            }
+        ],
+        "module-delivery-tables":
+        [
+            {
+                "tableid": "PHAY0063-A7P-T1-2022",
+                "moduledelivery": "PHAY0063-A7P-T1-2022",
+                "academicyear": "2022",
+                "componentgrades":
+                {
+                    "21":
+                    {
+                        "mabseq": "001",
+                        "astcode": "CN01",
+                        "mabperc": "50",
+                        "mabname": "Coursework 4000 word written case studies (50%)",
+                        "assessmentmapping":
+                        {
+                            "id": "39",
+                            "type": "Assignment",
+                            "name": "Test assignment 2",
+                            "url": "http://test.m4.local:4001/mod/assign/view.php?id=960",
+                            "markstotransfer": "1",
+                            "statusicon": "<i class=\"fa-regular fa-file-lines\" data-toggle=\"tooltip\" data-placement=\"top\" title=\"Push records exist\"></i>",
+                            "selectsourceurl": "http://test.m4.local:4001/local/sitsgradepush/select_source.php?courseid=2&mabid=22",
+                            "transferhistoryurl": "http://test.m4.local:4001/local/sitsgradepush/index.php?id=22"
+                        }
+                    }
+                },
+                "mapcode": "PHAY0063A7PE",
+                "level": "7",
+                "graduatetype": "POSTGRADUATE"
+            }
+        ],
+        "transfer-all-button-label": "Transfer All"
+    }
+}}
+<div class="dropdown">
+    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="jump-to-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        {{jump-to-label}}
+    </button>
+    <div class="dropdown-menu" aria-labelledby="jump-to-dropdown">
+        {{#jump-to-options}}
+            <div class="dropdown-item jump-to-dropdown-item" data-value="{{name}}">{{name}}</div>
+        {{/jump-to-options}}
+    </div>
+</div>
+{{#module-delivery-tables}}
+    <div id="{{tableid}}" class="pb-3">
+        <hr>
+        <div class="row">
+            <div class="col-6">
+                <small>{{#str}} dashboard:moduledelivery, local_sitsgradepush {{/str}}</small>
+                <h3 class="mb-0">{{{ moduledelivery }}}</h3>
+                <small>{{#str}} dashboard:level, local_sitsgradepush, {{level}} {{/str}} {{graduatetype}}</small>
+            </div>
+            <div class="col-6">
+                <small>Map code<br></small>
+                <div class="h3">{{{ mapcode }}}</div>
+            </div>
+        </div>
+    </div>
+    <table class="module-delivery-table table table-bordered mb-5">
+        <thead class="thead-light">
+        <tr class="small">
+            <th>{{#str}} dashboard:sits_assessment, local_sitsgradepush {{/str}}</th>
+            <th>{{#str}} dashboard:weight, local_sitsgradepush {{/str}}</th>
+            <th>{{#str}} dashboard:moodle_activity, local_sitsgradepush {{/str}}</th>
+            <th>{{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#componentgrades}}
+            <tr>
+                <th scope="row">
+                    <span class="badge badge-dark">{{mabseq}}</span>
+                    {{mabname}}
+                </th>
+                <td>{{mabperc}}</td>
+                <td>
+                    {{#assessmentmapping}}
+                        <p>
+                            <span class="badge badge-info">{{type}}</span>
+                            <a href="{{url}}" target="_blank">{{name}}</a>
+                        </p>
+                    {{/assessmentmapping}}
+                    <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
+                        {{#assessmentmapping}}{{#str}} dashboard:changesource, local_sitsgradepush {{/str}}{{/assessmentmapping}}
+                        {{^assessmentmapping}}{{#str}} selectsource:header, local_sitsgradepush {{/str}}{{/assessmentmapping}}
+                    </a>
+                </td>
+                <td class="marks-col">
+                    {{#assessmentmapping}}
+                        <div
+                                id="marks-col-field-{{id}}"
+                                class="marks-col-field"
+                                data-assessmentmappingid="{{id}}"
+                                data-markscount="{{markstotransfer}}"
+                                data-task-running=""
+                        >
+                            <div class="marks-container">
+                                <p>
+                                    <a href="{{transferhistoryurl}}" class="marks-count" target="_blank">{{markstotransfer}}</a>
+                                </p>
+                                <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}hidden{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
+                                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
+                                </button>
+                            </div>
+                            <div class="task-status-container hidden">
+                                <a href="{{transferhistoryurl}}" target="_blank" class="badge badge-warning p-2"><i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
+                                <small>Progress: 0%</small>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" role="progressbar" aria-valuenow="0" style="width: 0%" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </div>
+                    {{/assessmentmapping}}
+                </td>
+            </tr>
+        {{/componentgrades}}
+        {{^componentgrades}}
+            <tr>
+                <td colspan="4">{{#str}} error:no_mab_found, local_sitsgradepush {{/str}}</td>
+            </tr>
+        {{/componentgrades}}
+        </tbody>
+    </table>
+{{/module-delivery-tables}}
+
+<div class="text-right py-3">
+    {{> local_sitsgradepush/transfer_all_button }}
+</div>
+
+{{! Modal }}
+{{> local_sitsgradepush/confirmation_modal }}
+
+{{#js}}
+    require(['jquery'], function($) {
+        $('.js-btn-transfer-marks').on('click', function() {
+            let mappingid = $(this).closest('.marks-col-field').attr('data-assessmentmappingid');
+            $('#js-transfer-modal-button').attr('data-assessmentmappingid', mappingid);
+        });
+
+        $('.js-btn-transfer-all-marks').on('click', function() {
+            let mappingid = $(this).attr('data-assessmentmappingid');
+            $('#js-transfer-modal-button').attr('data-assessmentmappingid', mappingid);
+        });
+    });
+{{/js}}

@@ -14,42 +14,24 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template local_sitsgradepush/selectelement
+    @template local_sitsgradepush/transfer_all_button
 
-    Template for displaying a select element.
+    Template for displaying the transfer all button.
 
     Classes required for JS:
-    * none
+    * js-btn-transfer-all-marks
 
     Data attributes required for JS:
-    * none
+    * data-assessmentmappingid - String, assessment mapping id.
+    * data-async - Integer, async value.
 
     Context variables required for this template:
-    * none
+    * transfer-all-button-label - String, button label.
 
     Example context (json):
-    {
-        "label": "test",
-        "selectid": "test0",
-        "options": [
-            {
-                "value": "test0",
-                "name": "test0",
-                "selected": "selected"
-            },
-            {
-                "value": "test1",
-                "name": "test1",
-                "selected": ""
-            }
-        ]
-    }
+    {"transfer-all-button-label":"Transfer Marks"}
 }}
-<div class="selector-container">
-    <label for="{{selectid}}">{{label}}</label>
-    <select id="{{selectid}}">
-        {{#options}}
-        <option value="{{value}}" {{selected}}>{{name}}</option>
-        {{/options}}
-    </select>
-</div>
+
+<button class="btn btn-primary js-btn-transfer-all-marks" id="push-all-button" data-toggle="modal" data-target="#transferModal" data-assessmentmappingid="all" data-async="{{async}}">
+    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> {{transfer-all-button-label}}
+</button>

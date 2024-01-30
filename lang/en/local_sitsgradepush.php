@@ -51,12 +51,12 @@ $string['settings:userprofilefield:desc'] = 'User profile field for export staff
 $string['settings:sync_threshold'] = 'Sync Threshold';
 $string['settings:sync_threshold:desc'] = 'The threshold to allow for running synchronous mark transfer task';
 $string['label:gradepushassessmentselect'] = 'Select SITS assessment to link to';
-$string['label:jumpto'] = 'Jump to: ';
+$string['label:jumpto'] = 'Jump to';
 $string['label:pushall'] = 'Transfer All';
 $string['label:reassessmentselect'] = 'Re-assessment';
 $string['label:pushgrade'] = 'Transfer Marks';
 $string['label:ok'] = 'OK';
-$string['label:lastpushtext'] = 'Last scheduled transfer task {$a->statustext} {$a->date} at {$a->time}';
+$string['label:lastpushtext'] = 'Last transferred {$a->date} at {$a->time}';
 $string['option:none'] = 'NONE';
 $string['gradepushassessmentselect'] = 'Select SITS assessment';
 $string['gradepushassessmentselect_help'] = 'Select SITS assessment to link to this activity.';
@@ -64,10 +64,12 @@ $string['reassessmentselect'] = 'Re-assessment';
 $string['reassessmentselect_help'] = 'Select YES if it is a re-assessment.';
 $string['subplugintype_sitsapiclient'] = 'API client used for data integration.';
 $string['cachedef_studentspr'] = 'Student\'s SPR code per SITS assessment pattern';
+$string['cachedef_componentgrades'] = 'SITS assessment components';
 $string['invalidstudents'] = 'Students not valid for the mapped assessment components';
 $string['pushrecordsexist'] = 'Transfer records exist';
 $string['pushrecordsnotexist'] = 'No transfer records';
 $string['marks_transferred_successfully'] = 'Marks Transferred Successfully';
+$string['progress'] = 'Progress:';
 
 // Marks transfer activity index page.
 $string['index:header'] = 'SITS Marks Transfer History';
@@ -75,23 +77,29 @@ $string['index:student'] = 'Student';
 $string['index:porticonumber'] = 'Portico number';
 $string['index:grade'] = 'Grade';
 $string['index:submissiondate'] = 'Submission date';
-$string['index:lastmarktransfer'] = 'Last Mark Transfer';
-$string['index:lastsublogtransfer'] = 'Last Submission Log Transfer';
+$string['index:lastmarktransfer'] = 'Mark Transferred';
+$string['index:lastsublogtransfer'] = 'Submission Date recorded in SITS';
 
 // Marks transfer dashboard page.
-$string['dashboard:header'] = 'SITS Marks Transfer Dashboard';
-$string['dashboard:moduledelivery'] = 'MODULE DELIVERY: {$a}';
+$string['dashboard:header'] = 'SITS assessment mapping and mark transfer';
+$string['dashboard:header:desc'] = 'Map SITS assessments to Moodle activites and transfer marks from Moodle to SITS.';
+$string['dashboard:moduledelivery'] = 'MODULE DELIVERY';
 $string['dashboard:academicyear'] = 'ACADEMIC YEAR: {$a}';
 $string['dashboard:level'] = 'LEVEL: {$a}';
 $string['dashboard:mapcode'] = 'MAP CODE: {$a}';
 $string['dashboard:seq'] = 'SEQ';
-$string['dashboard:title'] = 'TITLE';
-$string['dashboard:weight'] = 'WEIGHT';
+$string['dashboard:sits_assessment'] = 'SITS assessment';
+$string['dashboard:weight'] = 'Weight';
 $string['dashboard:asttype'] = 'AST TYPE';
-$string['dashboard:source'] = 'SOURCE';
+$string['dashboard:source'] = 'Source';
+$string['dashboard:moodle_activity'] = 'Moodle activity';
+$string['dashboard:marks_to_transfer'] = 'Marks to transfer';
+$string['dashboard:view_marks_to_transfer'] = 'View marks to transfer';
 $string['dashboard:actions'] = 'ACTIONS';
-$string['dashboard:transfermark'] = 'Transfer Mark';
+$string['dashboard:transfermarks'] = 'Transfer marks';
 $string['dashboard:changesource'] = 'Change Source';
+$string['dashboard:marks_transfer_in_progress'] = 'Marks transfer in progress';
+$string['dashboard:activity_button_label'] = '{$a} activity';
 
 // Select source page.
 $string['selectsource:header'] = 'Select Source';
@@ -117,7 +125,7 @@ $string['error:pastactivity'] = 'It looks like this course is from a previous ac
 $string['error:mapassessment'] = 'You do not have permission to map assessment.';
 $string['error:pushgradespermission'] = 'You do not have permission to transfer marks.';
 $string['error:nostudentgrades'] = 'No student marks found.';
-$string['error:nostudentfoundformapping'] = 'No students found for this assessment component.';
+$string['error:nostudentfoundformapping'] = 'No student found for this assessment component.';
 $string['error:emptyresponse'] = 'Empty response received when calling {$a}.';
 $string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Marks Transfer.';
 $string['error:duplicatedtask'] = 'There is already a transfer task in queue / processing for this assessment mapping.';
@@ -181,3 +189,10 @@ $string['email:subject'] = 'Marks Transfer Task {$a->status}: {$a->activityname}
 $string['email:content:success'] = 'Marks Transfer Task from {$a->activityname} to {$a->mab} has been {$a->status}.<br><br>You can check the marks transfer history for this task here: <a href="{$a->link}">{$a->activityname} - {$a->mab}</a>';
 $string['email:content:fail'] = 'Marks Transfer Task from {$a->activityname} to {$a->mab} has been {$a->status}.<br><br>Please try again later.';
 $string['email:unknown'] = 'unknown';
+
+// Confirmation Modal strings.
+$string['confirmmodal:header'] = 'Confirm mark transfer?';
+$string['confirmmodal:body:partone'] = '<strong>Caution:</strong> after a student mark has been transferred to SITS, it cannot be recalled or overwritten. Should you need to make a change to a transferred mark, you will need to do this in the usual way in Portico.';
+$string['confirmmodal:body:parttwo'] = 'Please be patient waiting for the marks transfer job to complete as a large set of marks can take some time. You can check the marks transfer history table for progress but will also receive an email notification once the marks transfer job has been completed.';
+$string['confirmmodal:confirm'] = 'Confirm';
+$string['confirmmodal:cancel'] = 'Cancel';

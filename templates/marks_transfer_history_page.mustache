@@ -1,0 +1,121 @@
+{{!
+    This file is part the Local SITS Grade Push plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/marks_transfer_history_page
+
+    Template for displaying the grade push history for an assessment.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * transfer-all-button-label - String, button label.
+    * latest-transferred-text - String, latest transferred datetime.
+    * module-delivery-tables - Array of module delivery tables.
+        * tabletitle - String, table title.
+        * students - Array of students.
+            * firstname - String, student first name.
+            * lastname - String, student last name.
+            * idnumber - String, student id number.
+            * marks - String, student marks.
+            * handindatetime - String, student hand in datetime.
+            * lastgradepushresultlabel - String, student last grade push result label.
+            * lastgradepushtime - String, student last grade push time.
+            * lastsublogpushresultlabel - String, student last submission log push result label.
+            * lastsublogpushtime - String, student last submission log push time.
+    * invalid-students - Array of invalid students.
+        * tabletitle - String, table title.
+        * students - Array of students.
+            * firstname - String, student first name.
+            * lastname - String, student last name.
+            * idnumber - String, student id number.
+            * marks - String, student marks.
+            * handindatetime - String, student hand in datetime.
+            * lastgradepushresultlabel - String, student last grade push result label.
+            * lastgradepushtime - String, student last grade push time.
+            * lastsublogpushresultlabel - String, student last submission log push result label.
+            * lastsublogpushtime - String, student last submission log push time.
+
+    Example context (json):
+    {
+        "transfer-all-button-label":"Transfer Marks",
+        "latest-transferred-text":"Last transferred 29/01/2024 at 11:00:49 pm",
+        "module-delivery-tables":[{
+            "tabletitle":"PHAY0063-2022-T1-A7P-001 Coursework 4000 word written case studies (50%)",
+            "mappingid":"21",
+            "students":[{
+                    "firstname":"Test",
+                    "lastname":"User",
+                    "idnumber":"1234567",
+                    "marks":"0",
+                    "handindatetime":"2019-01-01 00:00:00",
+                    "lastgradepushresultlabel":"<span class=\"badge badge-success\">Success</span> ",
+                    "lastgradepushtime":"2019-01-01 00:00:00",
+                    "lastsublogpushresultlabel":"<span class=\"badge badge-success\">Success</span> ",
+                    "lastsublogpushtime":"2019-01-01 00:00:00"
+            }]
+        }],
+        "invalid-students":[{
+            "tabletitle":"Students not valid for the mapped assessment components",
+            "students":[{
+                    "firstname":"Invalid",
+                    "lastname":"Student",
+                    "idnumber":"7654321",
+                    "marks":"-",
+                    "handindatetime":"-",
+                    "lastgradepushresultlabel":"",
+                    "lastgradepushtime":"-",
+                    "lastsublogpushresultlabel":"",
+                    "lastsublogpushtime":"-"
+            }]
+        }]
+    }
+}}
+
+<!--Transfer marks button-->
+<div class="text-left py-3">
+    {{> local_sitsgradepush/transfer_all_button }}
+</div>
+
+<!--Latest transferred datetime-->
+<p>{{latest-transferred-text}}</p>
+
+<!--Module delivery tables-->
+{{#module-delivery-tables}}
+    {{> local_sitsgradepush/marks_transfer_history_table }}
+    {{^students}}
+        <p class="alert alert-info">{{#str}} error:nostudentfoundformapping, local_sitsgradepush {{/str}}</p>
+    {{/students}}
+{{/module-delivery-tables}}
+
+<!--Invalid students-->
+{{#invalid-students}}
+    {{> local_sitsgradepush/marks_transfer_history_table }}
+{{/invalid-students}}
+
+<!--Confirmation modal-->
+{{> local_sitsgradepush/confirmation_modal }}
+
+{{#js}}
+    require(['jquery'], function($) {
+        $('.js-btn-transfer-all-marks').on('click', function() {
+            $('#js-transfer-modal-button').attr('data-async', $(this).attr('data-async'));
+        });
+    });
+{{/js}}

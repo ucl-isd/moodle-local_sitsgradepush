@@ -38,6 +38,9 @@ require_login();
 // Course module ID.
 $coursemoduleid = required_param('id', PARAM_INT);
 
+// Initiate grade push and show push result.
+$pushgrade = optional_param('pushgrade', 0, PARAM_INT);
+
 // Get manager and check course module exists.
 if (!$coursemodule = get_coursemodule_from_id(null, $coursemoduleid)) {
     throw new moodle_exception('course module not found.', 'local_sitsgradepush');
@@ -56,11 +59,11 @@ $modulecontext = context_module::instance($coursemoduleid);
 $PAGE->set_cm($coursemodule);
 $PAGE->set_context($modulecontext);
 $PAGE->set_url($url);
-$PAGE->set_title('SITS Grade Push');
+$PAGE->set_title(get_string('pluginname', 'local_sitsgradepush'));
 $PAGE->activityheader->disable();
 
 // Set the breadcrumbs.
-$PAGE->navbar->add('SITS Grade Push',
+$PAGE->navbar->add(get_string('pluginname', 'local_sitsgradepush'),
     new moodle_url('/local/sitsgradepush/index.php', $param));
 
 // Page header.
@@ -78,26 +81,38 @@ $manager = manager::get_manager();
 // Get page content.
 $content = $manager->get_assessment_data($coursemoduleid);
 
-$mappingids = [];
+// Check if asynchronous grade push is enabled.
+$async = get_config('local_sitsgradepush', 'async');
 
 if (!empty($content)) {
-    // Display grade push records for each mapping.
-    foreach ($content['mappings'] as $mapping) {
-        $mappingids[] = $mapping->id;
-        echo $renderer->render_assessment_push_status_table($mapping, $coursemodule->course);
+    // Transfer marks if it is a sync transfer and pushgrade is set.
+    if (!$async && $pushgrade == 1) {
+        // Loop through each mapping.
+        foreach ($content['mappings'] as $mapping) {
+            // Skip if there is no student in the mapping.
+            if (empty($mapping->students)) {
+                continue;
+            }
+            // Push grades for each student in the mapping.
+            foreach ($mapping->students as $student) {
+                $manager->push_grade_to_sits($mapping, $student->userid);
+                $manager->push_submission_log_to_sits($mapping, $student->userid);
+            }
+        }
+
+        // Refresh data after completed all pushes.
+        $content = $manager->get_assessment_data($coursemoduleid);
     }
 
-    // Display invalid students.
-    if (!empty($content['invalidstudents']->students)) {
-        echo $renderer->render_assessment_push_status_table($content['invalidstudents'], $coursemodule->course);
-    }
+    // Render the page.
+    echo $renderer->render_marks_transfer_history_page($content, $coursemodule->course);
 } else {
     echo '<p class="alert alert-info">' . get_string('error:assessmentisnotmapped', 'local_sitsgradepush') . '</p>';
 }
 echo '</div>';
 
 // Initialize javascript.
-$PAGE->requires->js_call_amd('local_sitsgradepush/sitsgradepush', 'init', [$coursemodule->course, $coursemoduleid, $mappingids]);
+$PAGE->requires->js_call_amd('local_sitsgradepush/sitsgradepush', 'init', [$coursemodule->course, $coursemoduleid]);
 
 // And the page footer.
 echo $OUTPUT->footer();

@@ -41,20 +41,6 @@ $functions = [
         'type' => 'write',
         'loginrequired' => true,
     ],
-    'local_sitsgradepush_get_transfer_students' => [
-        'classname' => 'local_sitsgradepush\external\get_transfer_students',
-        'description' => 'Get transfer students for a given assessment mapping',
-        'ajax' => true,
-        'type' => 'read',
-        'loginrequired' => true,
-    ],
-    'local_sitsgradepush_transfer_mark_for_student' => [
-        'classname' => 'local_sitsgradepush\external\transfer_mark_for_student',
-        'description' => 'Transfer mark for a given student',
-        'ajax' => true,
-        'type' => 'write',
-        'loginrequired' => true,
-    ],
     'local_sitsgradepush_get_assessments_update' => [
         'classname' => 'local_sitsgradepush\external\get_assessments_update',
         'description' => 'Get assessment updates for a given course / course module',

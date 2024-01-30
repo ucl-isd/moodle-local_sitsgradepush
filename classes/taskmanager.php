@@ -178,23 +178,18 @@ class taskmanager {
      * Get the last push task time.
      *
      * @param int $assessmentmappingid Assessment mapping ID
-     * @return string|null Last push task time
+     * @return int|null Last push task time
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public static function get_last_push_task_time(int $assessmentmappingid) {
-        // Add last task details to the mapping if any.
-        $time = null;
+    public static function get_last_push_task_time(int $assessmentmappingid): ?int {
         if ($lasttask = self::get_last_finished_push_task($assessmentmappingid)) {
-            $time = get_string(
-                'label:lastpushtext',
-                'local_sitsgradepush', [
-                'statustext' => $lasttask->statustext,
-                'date' => date('d/m/Y', $lasttask->timeupdated),
-                'time' => date('g:i:s a', $lasttask->timeupdated), ]);
+            if (!empty($lasttask->timeupdated)) {
+                return $lasttask->timeupdated;
+            }
         }
 
-        return $time;
+        return null;
     }
 
     /**
@@ -371,7 +366,7 @@ class taskmanager {
             $email->activityname = $coursemodule->name;
             $url = new \moodle_url(
                 '/local/sitsgradepush/index.php',
-                ['id' => $coursemodule->id, 'modname' => $coursemodule->modname]
+                ['id' => $coursemodule->id]
             );
             $email->link = $url->out(false);
         }

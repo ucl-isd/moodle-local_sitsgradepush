@@ -55,14 +55,16 @@ export const mapAssessment = async(courseid, coursemoduleid, mabid, partid = nul
  * For updating the dashboard page and activity marks transfer page.
  *
  * @param {int} courseid
+ * @param {int} coursemoduleid
  * @return {Promise<unknown>}
  */
-export const getAssessmentsUpdate = async(courseid) => {
+export const getAssessmentsUpdate = async(courseid, coursemoduleid = 0) => {
     return new Promise((resolve, reject) => {
         Ajax.call([{
             methodname: 'local_sitsgradepush_get_assessments_update',
             args: {
                 'courseid': courseid,
+                'coursemoduleid': coursemoduleid,
             },
         }])[0].done(function(response) {
             resolve(response);
@@ -74,46 +76,24 @@ export const getAssessmentsUpdate = async(courseid) => {
 };
 
 /**
- * Get the students information for a given assessment mapping.
- * For synchronous marks transfer.
+ * Update the progress bar.
  *
- * @param {int} assessmentmappingid
- * @return {Promise}
+ * @param {HTMLElement} container
+ * @param {int} progress
+ * @return {void}
  */
-export const getTransferStudents = (assessmentmappingid) => {
-    return new Promise((resolve, reject) => {
-        Ajax.call([{
-            methodname: 'local_sitsgradepush_get_transfer_students',
-            args: {'assessmentmappingid': assessmentmappingid},
-        }])[0].done(function(response) {
-            resolve(response);
-        }).fail(function(err) {
-            window.console.log(err);
-            reject(err);
-        });
-    });
-};
+export const updateProgressBar = (container, progress) => {
+    // Get the progress bar.
+    let progressLabel = container.querySelector('small');
+    let progressBar = container.querySelector('.progress-bar');
 
-/**
- * Transfer mark for a student.
- *
- * @param {int} assessmentmappingid
- * @param {int} userid
- * @return {Promise}
- */
-export const transferMarkForStudent = (assessmentmappingid, userid) => {
-    return new Promise((resolve, reject) => {
-        Ajax.call([{
-            methodname: 'local_sitsgradepush_transfer_mark_for_student',
-            args: {
-                'assessmentmappingid': assessmentmappingid,
-                'userid': userid
-            },
-        }])[0].done(function(response) {
-            resolve(response);
-        }).fail(function(err) {
-            window.console.log(err);
-            reject(err);
-        });
-    });
+    if (progressLabel && progressBar) {
+        if (progress === null) {
+            progress = 0;
+        }
+        // Update the progress bar.
+        progressLabel.innerHTML = 'Progress: ' + progress + '%';
+        progressBar.setAttribute('aria-valuenow', progress);
+        progressBar.style.width = progress + '%';
+    }
 };
