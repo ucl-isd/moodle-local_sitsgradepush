@@ -51,7 +51,7 @@ class adhoctask extends adhoc_task {
 
             // Run task.
             taskmanager::run_task($data->taskid);
-            taskmanager::send_email_notification($data->taskid, true);
+            taskmanager::send_email_notification($data->taskid);
         } catch (\Exception $e) {
             // Log error.
             $errlogid = logger::log('Push task failed: ' . $e->getMessage());
@@ -60,7 +60,7 @@ class adhoctask extends adhoc_task {
             taskmanager::update_task_status($data->taskid, taskmanager::PUSH_TASK_STATUS_FAILED, $errlogid);
 
             // Email the user.
-            taskmanager::send_email_notification($data->taskid, false);
+            taskmanager::send_email_notification($data->taskid);
         }
     }
 }

@@ -701,11 +701,12 @@ class manager {
      *
      * @param \stdClass $assessmentmapping
      * @param int $userid
+     * @param int|null $taskid
      * @return bool
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid): bool {
+    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid, int $taskid = null): bool {
         try {
             // Check if last push was succeeded, exit if succeeded.
             if ($this->last_push_succeeded($assessmentmapping->id, $userid, self::PUSH_GRADE)) {
@@ -730,7 +731,7 @@ class manager {
                 $this->check_response($response, $request);
 
                 // Save transfer log.
-                $this->save_transfer_log(self::PUSH_GRADE, $assessmentmapping->id, $userid, $request, $response);
+                $this->save_transfer_log(self::PUSH_GRADE, $assessmentmapping->id, $userid, $request, $response, $taskid);
 
                 return true;
             }
@@ -747,10 +748,11 @@ class manager {
      *
      * @param \stdClass $assessmentmapping
      * @param int $userid
+     * @param int|null $taskid
      * @return bool
      * @throws \dml_exception
      */
-    public function push_submission_log_to_sits(\stdClass $assessmentmapping, int $userid): bool {
+    public function push_submission_log_to_sits(\stdClass $assessmentmapping, int $userid, ?int $taskid = null): bool {
         try {
             // Check if submission log push is enabled.
             if (!get_config('local_sitsgradepush', 'sublogpush')) {
@@ -778,12 +780,12 @@ class manager {
 
                 // Save push log.
                 $this->save_transfer_log(
-                    self::PUSH_SUBMISSION_LOG, $assessmentmapping->id, $userid, $request, $response);
+                    self::PUSH_SUBMISSION_LOG, $assessmentmapping->id, $userid, $request, $response, $taskid);
 
                 return true;
             }
         } catch (\moodle_exception $e) {
-            $this->mark_push_as_failed(self::PUSH_SUBMISSION_LOG, $assessmentmapping->id, $userid, $e);
+            $this->mark_push_as_failed(self::PUSH_SUBMISSION_LOG, $assessmentmapping->id, $userid, $taskid, $e);
             return false;
         }
 
@@ -1364,12 +1366,14 @@ class manager {
      * @param int $userid
      * @param mixed $request
      * @param array $response
+     * @param int|null $taskid
      * @param int|null $errorlogid
      * @return void
      * @throws \dml_exception
      */
     private function save_transfer_log(
-        string $type, int $assessmentmappingid, int $userid, mixed $request, array $response, int $errorlogid = null): void {
+        string $type, int $assessmentmappingid, int $userid, mixed $request, array $response, ?int $taskid, int $errorlogid = null)
+    : void {
         global $USER, $DB;
         $insert = new \stdClass();
         $insert->type = $type;
@@ -1379,6 +1383,7 @@ class manager {
         $insert->requestbody = ($request instanceof irequest) ? $request->get_request_body() : null;
         $insert->response = json_encode($response);
         $insert->errlogid = $errorlogid;
+        $insert->taskid = $taskid;
         $insert->usermodified = $USER->id;
         $insert->timecreated = time();
 
@@ -1453,12 +1458,13 @@ class manager {
      * @param string $requestidentifier
      * @param int $assessmentmappingid
      * @param int $userid
+     * @param int|null $taskid
      * @param \moodle_exception $exception
      * @return void
      * @throws \dml_exception
      */
     private function mark_push_as_failed(
-        string $requestidentifier, int $assessmentmappingid, int $userid, \moodle_exception $exception): void {
+        string $requestidentifier, int $assessmentmappingid, int $userid, ?int $taskid, \moodle_exception $exception): void {
         // Failed response.
         $response = [
             "code" => "-1",
@@ -1469,6 +1475,6 @@ class manager {
         $errorlogid = $exception->debuginfo ?: null;
 
         // Add failed transfer log.
-        $this->save_transfer_log($requestidentifier, $assessmentmappingid, $userid, null, $response, intval($errorlogid));
+        $this->save_transfer_log($requestidentifier, $assessmentmappingid, $userid, null, $response, $taskid, intval($errorlogid));
     }
 }

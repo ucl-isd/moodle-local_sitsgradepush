@@ -84,8 +84,8 @@ class taskmanager {
                 $i = 0;
                 // Push mark and submission log for each student in the mapping.
                 foreach ($mapping->students as $student) {
-                    $manager->push_grade_to_sits($mapping, $student->userid);
-                    $manager->push_submission_log_to_sits($mapping, $student->userid);
+                    $manager->push_grade_to_sits($mapping, $student->userid, $task->id);
+                    $manager->push_submission_log_to_sits($mapping, $student->userid, $task->id);
                     $i++;
 
                     // Calculate progress.
@@ -328,64 +328,73 @@ class taskmanager {
      * Email user the result of the task.
      *
      * @param int $taskid
-     * @param bool $success
      * @return void
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function send_email_notification($taskid, bool $success) : void {
-        global $DB, $PAGE;
-
-        // Define email object for the subject and content.
-        $email = new \stdClass();
-        $email->status = $success ? get_string('task:status:completed', 'local_sitsgradepush') :
-            get_string('task:status:failed', 'local_sitsgradepush');
-        $email->activityname = get_string('email:unknown', 'local_sitsgradepush');
-        $email->mab = get_string('email:unknown', 'local_sitsgradepush');
-
-        // Get the task first.
-        if (!$task = $DB->get_record(manager::TABLE_TASKS, ['id' => $taskid])) {
-            throw new \moodle_exception('error:tasknotfound', 'local_sitsgradepush');
-        }
+    public static function send_email_notification(int $taskid) : void {
+        global $DB, $PAGE, $OUTPUT;
 
         // Get the content of the task.
-        $sql = 'SELECT am.id, am.coursemoduleid, CONCAT(cg.mapcode, "-", cg.mabseq) AS mab
-                FROM {' . manager::TABLE_ASSESSMENT_MAPPING . '} am
+        $sql = 'SELECT
+                t.id as taskid,
+                t.userid,
+                am.id as assessmentmappingid,
+                am.coursemoduleid,
+                CONCAT(cg.mapcode, "-", cg.mabseq) AS mab,
+                cg.mabname
+                FROM {' . manager::TABLE_TASKS . '} t
+                JOIN {' . manager::TABLE_ASSESSMENT_MAPPING . '} am ON t.assessmentmappingid = am.id
                 JOIN {' . manager::TABLE_COMPONENT_GRADE . '} cg ON am.componentgradeid = cg.id
-                WHERE am.id = :assessmentmappingid';
+                WHERE t.id = :taskid';
 
         $params = [
-            'assessmentmappingid' => $task->assessmentmappingid,
+            'taskid' => $taskid,
         ];
 
         // Task content found.
         if ($result = $DB->get_record_sql($sql, $params)) {
+            // Get the course module information.
             $coursemodule = get_coursemodule_from_id(null, $result->coursemoduleid);
-            $email->mab = $result->mab;
-            $email->activityname = $coursemodule->name;
-            $url = new \moodle_url(
-                '/local/sitsgradepush/index.php',
-                ['id' => $coursemodule->id]
-            );
-            $email->link = $url->out(false);
-        }
 
-        // Email user the result of the task.
-        if ($success) {
-            $content = get_string('email:content:success', 'local_sitsgradepush', $email);
+            // Transfer history page link.
+            $url = new \moodle_url('/local/sitsgradepush/index.php', ['id' => $coursemodule->id]);
+
+            // Get the user who scheduled the task.
+            $user = $DB->get_record('user', ['id' => $result->userid]);
+            $PAGE->set_context(context_user::instance($user->id));
+
+            // Get transfer records for the task.
+            $transferrecords = $DB->get_records(manager::TABLE_TRANSFER_LOG, ['taskid' => $taskid, 'type' => manager::PUSH_GRADE]);
+
+            // Separate succeeded and failed transfer records.
+            $succeededcount = 0;
+            $failedcount = 0;
+            foreach ($transferrecords as $transferrecord) {
+                $transfer = new \stdClass();
+                $response = json_decode($transferrecord->response);
+                if ($response->code == "0") {
+                    $succeededcount++;
+                } else {
+                    $failedcount++;
+                }
+            }
+
+            // Render the email content.
+            $content = $OUTPUT->render_from_template('local_sitsgradepush/notification_email', [
+                'user_name' => fullname($user),
+                'activity_name' => $coursemodule->name,
+                'map_code' => $result->mab,
+                'sits_assessment' => $result->mabname,
+                'activity_url' => $url->out(false),
+                'support_url' => get_config('local_sitsgradepush', 'suppuort_page_url') ?? '',
+                'succeeded_count' => $succeededcount,
+                'failed_count' => $failedcount,
+            ]);
+            email_to_user($user, $user, get_string('email:subject', 'local_sitsgradepush'), $content);
         } else {
-            $content = get_string('email:content:fail', 'local_sitsgradepush', $email);
+            throw new \moodle_exception('error:tasknotfound', 'local_sitsgradepush');
         }
-
-        // Make status' first letter uppercase for subject.
-        $email->status = ucfirst($email->status);
-        $subject = get_string('email:subject', 'local_sitsgradepush', $email);
-
-        // Get the user who scheduled the task.
-        $user = $DB->get_record('user', ['id' => $task->userid]);
-
-        $PAGE->set_context(context_user::instance($user->id));
-        email_to_user($user, $user, $subject, $content);
     }
 }

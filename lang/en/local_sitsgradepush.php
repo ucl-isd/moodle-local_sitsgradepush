@@ -50,6 +50,8 @@ $string['settings:userprofilefield'] = 'User Profile Field';
 $string['settings:userprofilefield:desc'] = 'User profile field for export staff';
 $string['settings:sync_threshold'] = 'Sync Threshold';
 $string['settings:sync_threshold:desc'] = 'The threshold to allow for running synchronous mark transfer task';
+$string['settings:support_page_url'] = 'Support Page URL';
+$string['settings:support_page_url:desc'] = 'Used in the notification email to provide a link to the support page';
 $string['label:gradepushassessmentselect'] = 'Select SITS assessment to link to';
 $string['label:jumpto'] = 'Jump to';
 $string['label:pushall'] = 'Transfer All';
@@ -99,7 +101,6 @@ $string['dashboard:actions'] = 'ACTIONS';
 $string['dashboard:transfermarks'] = 'Transfer marks';
 $string['dashboard:changesource'] = 'Change Source';
 $string['dashboard:marks_transfer_in_progress'] = 'Marks transfer in progress';
-$string['dashboard:activity_button_label'] = '{$a} activity';
 
 // Select source page.
 $string['selectsource:header'] = 'Select Source';
@@ -114,7 +115,6 @@ $string['error:invalid_source_type'] = 'Invalid source type. {$a}';
 $string['existingactivity:header'] = 'Select Existing Activity';
 $string['existingactivity:no_match_row'] = 'No matching rows found.';
 $string['existingactivity:navbar'] = 'Existing Activity';
-
 
 // Error strings.
 $string['error:assessmentmapping'] = 'Assessment mapping is not found. ID: {$a}';
@@ -185,10 +185,18 @@ $string['privacy:metadata:local_sitsgradepush_tasks:status'] = 'The status of th
 $string['privacy:metadata:local_sitsgradepush_tasks:info'] = 'Additional information about the transfer task.';
 
 // Email strings.
-$string['email:subject'] = 'Marks Transfer Task {$a->status}: {$a->activityname} - {$a->mab}';
-$string['email:content:success'] = 'Marks Transfer Task from {$a->activityname} to {$a->mab} has been {$a->status}.<br><br>You can check the marks transfer history for this task here: <a href="{$a->link}">{$a->activityname} - {$a->mab}</a>';
-$string['email:content:fail'] = 'Marks Transfer Task from {$a->activityname} to {$a->mab} has been {$a->status}.<br><br>Please try again later.';
-$string['email:unknown'] = 'unknown';
+$string['email:subject'] = 'Marks Transfer Completed';
+$string['email:username'] = 'Dear {$a},';
+$string['email:part_one'] = 'The marks transfer task has been completed. Below are the details of the task:';
+$string['email:activity_name'] = 'Activity name:';
+$string['email:map_code'] = 'Map code:';
+$string['email:sits_assessment'] = 'SITS assessment:';
+$string['email:summary'] = 'Summary:';
+$string['email:no_of_succeeded_transfers'] = '<strong>Number of succeeded transfers:</strong> {$a}';
+$string['email:no_of_failed_transfers'] = '<strong>Number of failed transfers:</strong> {$a}';
+$string['email:transfer_history_text'] = 'Click <a href="{$a}">here</a> to see the marks transfer records.';
+$string['email:support_text'] = 'To get more information or assistance related to marks transfer, please visit our <a href="{$a}">Support Page</a>.';
+$string['email:best_regards'] = 'Best regards, <br>DLE Team';
 
 // Confirmation Modal strings.
 $string['confirmmodal:header'] = 'Confirm mark transfer?';

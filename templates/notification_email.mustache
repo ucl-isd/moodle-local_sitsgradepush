@@ -1,0 +1,67 @@
+{{!
+    This file is part the Local SITS Grade Push plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/email_notification
+
+    Template for notification email.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * user_name - String, User who initiated the transfer.
+    * activity_name - String, moodle activity name.
+    * map_code - String, SITS map code & sequence number.
+    * sits_assessment - String, SITS assessment component name.
+    * activity_url - String, moodle activity's URL.
+    * support_url - String, support page's URL.
+    * succeededcount - Integer, number of succeeded transfers.
+    * failedcount - Integer, number of failed transfers.
+
+    Example context (json):
+    {
+        "user_name": "Romanoff Natasha",
+        "activity_name": "Coursework 4000 word written case studies (50%)",
+        "map_code": "PHAY0063A7P-001",
+        "sits_assessment": "Coursework 4000 word written case studies (50%)",
+        "activity_url": "https://localhost/moodle/mod/assign/view.php?id=2",
+        "support_url": "https://wiki.ucl.ac.uk/markstransfer/support.php",
+        "succeeded_count": 10,
+        "failed_count": 2
+    }
+}}
+
+<div style="font-family: Arial, sans-serif;">
+    <h2>{{#str}} email:subject, local_sitsgradepush {{/str}}</h2>
+    <p>{{#str}} email:username, local_sitsgradepush, {{user_name}} {{/str}}</p>
+    <p>{{#str}} email:part_one, local_sitsgradepush {{/str}}</p>
+    <ul>
+        <li><strong>{{#str}} email:activity_name, local_sitsgradepush {{/str}}</strong> {{activity_name}}</li>
+        <li><strong>{{#str}} email:map_code, local_sitsgradepush {{/str}}</strong> {{map_code}}</li>
+        <li><strong>{{#str}} email:sits_assessment, local_sitsgradepush {{/str}}</strong> {{sits_assessment}}</li>
+    </ul>
+    <h3>{{#str}} email:summary, local_sitsgradepush {{/str}}</h3>
+    <ul>
+        <li>{{#str}} email:no_of_succeeded_transfers, local_sitsgradepush, {{succeeded_count}} {{/str}}</li>
+        <li>{{#str}} email:no_of_failed_transfers, local_sitsgradepush, {{failed_count}} {{/str}}</li>
+    </ul>
+    <p>{{#str}} email:transfer_history_text, local_sitsgradepush, {{activity_url}} {{/str}}</p>
+    <p>{{#str}} email:support_text, local_sitsgradepush, {{support_url}} {{/str}}</p>
+    <p>{{#str}} email:best_regards, local_sitsgradepush {{/str}}</p>
+</div>

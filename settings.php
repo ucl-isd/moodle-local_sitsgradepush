@@ -131,6 +131,15 @@ if ($hassiteconfig) {
                 '',
                 $options)
         );
+
+        // Set the support page URL.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/suppuort_page_url',
+            get_string('settings:support_page_url', 'local_sitsgradepush'),
+            get_string('settings:support_page_url:desc', 'local_sitsgradepush'),
+            'https://wiki.ucl.ac.uk/pages/viewpage.action?pageId=306185189',
+            PARAM_URL,
+            50
+        ));
     }
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');

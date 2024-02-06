@@ -381,5 +381,20 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023121900, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2024020100) {
+
+        // Define field taskid to be added to local_sitsgradepush_tfr_log.
+        $table = new xmldb_table('local_sitsgradepush_tfr_log');
+        $field = new xmldb_field('taskid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'usermodified');
+
+        // Conditionally launch add field taskid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024020100, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
