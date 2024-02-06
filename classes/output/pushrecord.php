@@ -74,6 +74,12 @@ class pushrecord {
     /** @var string Last submission log push time */
     public string $lastsublogpushtime = '-';
 
+    /** @var bool Is grade pushed */
+    public bool $isgradepushed = false;
+
+    /** @var bool Is submission log pushed */
+    public bool $issublogpushed = false;
+
     /** @var manager|null Grade push manager */
     protected ?manager $manager;
 
@@ -103,6 +109,12 @@ class pushrecord {
             // Set transfer records.
             $this->set_transfer_records($mapping->id, $student->id);
         }
+
+        // Set is pushed.
+        $this->set_is_grade_pushed();
+
+        // Set is submission log pushed.
+        $this->set_is_submission_log_pushed();
     }
 
     /**
@@ -185,6 +197,28 @@ class pushrecord {
                     $this->lastsublogpushtime = $timecreated;
                 }
             }
+        }
+    }
+
+    /**
+     * Set is grade pushed.
+     *
+     * @return void
+     */
+    protected function set_is_grade_pushed(): void {
+        if (!is_null($this->lastgradepushresult) && $this->lastgradepusherrortype == 0) {
+            $this->isgradepushed = true;
+        }
+    }
+
+    /**
+     * Set is submission log pushed.
+     *
+     * @return void
+     */
+    protected function set_is_submission_log_pushed(): void {
+        if (!is_null($this->lastsublogpushresult) && $this->lastsublogpusherrortype == 0) {
+            $this->issublogpushed = true;
         }
     }
 }

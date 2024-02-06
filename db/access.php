@@ -38,4 +38,9 @@ $capabilities = [
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => [],
     ],
+    'local/sitsgradepush:showsubmissionlogcolumn' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [],
+    ],
 ];

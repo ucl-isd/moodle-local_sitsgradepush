@@ -1,0 +1,54 @@
+{{!
+    This file is part the Local SITS Grade Push plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/confirmation_modal
+
+    Template for displaying a confirmation modal when transfer button is clicked.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-assessmentmappingid - String, assessment mapping id.
+    * data-async - Integer, async value.
+
+    Context variables required for this template:
+    * none
+
+    Example context (json):
+    {}
+}}
+
+<div class="modal fade" id="transferModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmation-modal">{{#str}} confirmmodal:header, local_sitsgradepush {{/str}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>{{#str}} confirmmodal:body:partone, local_sitsgradepush {{/str}}</p>
+                <p>{{#str}} confirmmodal:body:parttwo, local_sitsgradepush {{/str}}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{{#str}} confirmmodal:cancel, local_sitsgradepush {{/str}}</button>
+                <button id="js-transfer-modal-button" data-assessmentmappingid="" data-async="" type="button" class="btn btn-primary" data-dismiss="modal">{{#str}} confirmmodal:confirm, local_sitsgradepush {{/str}}</button>
+            </div>
+        </div>
+    </div>
+</div>

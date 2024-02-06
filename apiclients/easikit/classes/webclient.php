@@ -16,6 +16,9 @@
 
 namespace sitsapiclient_easikit;
 
+defined('MOODLE_INTERNAL') || die();
+require_once($CFG->libdir . '/filelib.php');
+
 use cache;
 use curl;
 use local_sitsgradepush\api\irequest;

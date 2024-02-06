@@ -61,7 +61,7 @@ class errormanager {
         self::ERROR_UNKNOWN => 'Failed',
         self::ERROR_STUDENT_NOT_ENROLLED => 'Student not enrolled',
         self::ERROR_RECORD_TYPE_INVALID => 'Record type invalid',
-        self::ERROR_RECORD_NOT_EXIST => 'Record not exist',
+        self::ERROR_RECORD_NOT_EXIST => 'Record does not exist',
         self::ERROR_RECORD_INVALID_STATE => 'Record state invalid',
         self::ERROR_NO_MARK_SCHEME => 'No mark scheme',
         self::ERROR_ATTEMPT_NUMBER_BLANK => 'Attempt number blank',

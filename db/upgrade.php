@@ -367,5 +367,19 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023112400, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2023121900) {
+        // Define field progress to be added to local_sitsgradepush_tasks.
+        $table = new xmldb_table('local_sitsgradepush_tasks');
+        $field = new xmldb_field('progress', XMLDB_TYPE_INTEGER, '3', null, null, null, null, 'assessmentmappingid');
+
+        // Conditionally launch add field progress.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2023121900, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

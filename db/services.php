@@ -41,6 +41,11 @@ $functions = [
         'type' => 'write',
         'loginrequired' => true,
     ],
+    'local_sitsgradepush_get_assessments_update' => [
+        'classname' => 'local_sitsgradepush\external\get_assessments_update',
+        'description' => 'Get assessment updates for a given course / course module',
+        'ajax' => true,
+        'type' => 'read',
+        'loginrequired' => true,
+    ],
 ];
-
-

@@ -69,6 +69,9 @@ class manager {
     /** @var string DB table for storing error log */
     const TABLE_ERROR_LOG = 'local_sitsgradepush_err_log';
 
+    /** @var string DB table for storing push tasks */
+    const TABLE_TASKS = 'local_sitsgradepush_tasks';
+
     /** @var string[] Fields mapping - Local DB component grades table fields to returning SITS fields */
     const MAPPING_COMPONENT_GRADE = [
         'modcode' => 'MOD_CODE',
@@ -86,20 +89,8 @@ class manager {
     /** @var string[] Allowed activity types */
     const ALLOWED_ACTIVITIES = ['assign', 'quiz', 'turnitintooltwo'];
 
-    /** @var int Push task status - requested*/
-    const PUSH_TASK_STATUS_REQUESTED = 0;
-
-    /** @var int Push task status - queued*/
-    const PUSH_TASK_STATUS_QUEUED = 1;
-
-    /** @var int Push task status - processing*/
-    const PUSH_TASK_STATUS_PROCESSING = 2;
-
-    /** @var int Push task status - completed*/
-    const PUSH_TASK_STATUS_COMPLETED = 3;
-
-    /** @var int Push task status - failed*/
-    const PUSH_TASK_STATUS_FAILED = -1;
+    /** @var string Existing activity */
+    const SOURCE_EXISTING_ACTIVITY = 'existing';
 
     /** @var null Manager instance */
     private static $instance = null;
@@ -155,6 +146,29 @@ class manager {
         try {
             if (!empty($modocc)) {
                 foreach ($modocc as $occ) {
+                    // Get the cache.
+                    $key = implode('_',
+                        [
+                            cachemanager::CACHE_AREA_COMPONENTGRADES,
+                            $occ->mod_code,
+                            $occ->mod_occ_mav,
+                            $occ->mod_occ_psl_code,
+                            $occ->mod_occ_year_code,
+                        ]
+                    );
+
+                    // Replace '/' with '_' for simple key.
+                    $key = str_replace('/', '_', $key);
+
+                    // This cache is not really used.
+                    // It is only used to check if the component grades have been fetched for this module occurrence.
+                    $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key);
+
+                    // Skip if cache exists.
+                    if (!empty($cache)) {
+                        continue;
+                    }
+
                     // Get component grades from SITS.
                     $request = $this->apiclient->build_request(self::GET_COMPONENT_GRADE, $occ);
                     $response = $this->apiclient->send_request($request);
@@ -164,6 +178,9 @@ class manager {
 
                     // Filter out unwanted component grades by marking scheme.
                     $response = $this->filter_out_invalid_component_grades($response);
+
+                    // Set cache expiry to 30 days.
+                    cachemanager::set_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key, $response, 30 * 24 * 60 * 60);
 
                     // Save component grades to DB.
                     $this->save_component_grades($response);
@@ -231,13 +248,10 @@ class manager {
      * @throws \dml_exception
      */
     public function get_component_grade_options(int $courseid, mixed $coursemoduleid): array {
-        $options = [];
-
         // Get module occurrences from portico enrolments block.
         $modocc = \block_portico_enrolments\manager::get_modocc_mappings($courseid);
 
         // Fetch component grades from SITS.
-        // TODO: Could do some caching here.
         $this->fetch_component_grades_from_sits($modocc);
         $modocccomponentgrades = $this->get_local_component_grades($modocc);
 
@@ -722,7 +736,7 @@ class manager {
             }
         } catch (\moodle_exception $e) {
             $this->mark_push_as_failed(self::PUSH_GRADE, $assessmentmapping->id, $userid, $e);
-            throw $e;
+            return false;
         }
 
         return false;
@@ -770,6 +784,7 @@ class manager {
             }
         } catch (\moodle_exception $e) {
             $this->mark_push_as_failed(self::PUSH_SUBMISSION_LOG, $assessmentmapping->id, $userid, $e);
+            return false;
         }
 
         return false;
@@ -854,13 +869,17 @@ class manager {
     /**
      * Get the assessment data.
      *
-     * @param assessment $assessment
-     * @return array
+     * @param int $coursemoduleid
+     * @param int|null $assessmentmappingid
+     * @return array|\stdClass
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_assessment_data(assessment $assessment): array {
+    public function get_assessment_data(int $coursemoduleid, int $assessmentmappingid = null): array|\stdClass {
+        // Get the assessment.
+        $assessment = assessmentfactory::get_assessment($coursemoduleid);
+
         $assessmentdata = [];
         $assessmentdata['studentsnotrecognized'] = [];
         $students = $assessment->get_all_participants();
@@ -872,18 +891,32 @@ class manager {
             return [];
         }
 
+        // Only process the mapping that matches the assessment mapping ID if assessmentmappingid is given.
+        if ($assessmentmappingid) {
+            $mappings = array_filter($mappings, function ($mapping) use ($assessmentmappingid) {
+                return $mapping->id == $assessmentmappingid;
+            });
+        }
+
         // Fetch students from SITS.
         foreach ($mappings as $mapping) {
             $mabkey = $mapping->mapcode . '-' . $mapping->mabseq;
             $studentsfromsits[$mabkey] =
                 array_column($this->get_students_from_sits($mapping), 'code');
             $assessmentdata['mappings'][$mabkey] = $mapping;
+            $assessmentdata['mappings'][$mabkey]->markscount = 0;
 
+            // Students here is all the participants in that assessment.
             foreach ($students as $key => $student) {
                 $studentrecord = new pushrecord($student, $coursemodule->id, $mapping);
-                // Add students who have push records of this mapping to the mapping's students array.
+                // Add participants who have push records of this mapping or
+                // are in the studentsfromsits array to the mapping's students array.
                 if ($studentrecord->componentgrade == $mabkey || in_array($studentrecord->idnumber, $studentsfromsits[$mabkey])) {
                     $assessmentdata['mappings'][$mabkey]->students[] = $studentrecord;
+                    if ($studentrecord->marks != '-' &&
+                        !($studentrecord->isgradepushed && $studentrecord->lastgradepushresult === 'success')) {
+                        $assessmentdata['mappings'][$mabkey]->markscount++;
+                    }
                     unset($students[$key]);
                 }
             }
@@ -905,7 +938,12 @@ class manager {
             }
         }
 
-        return $assessmentdata;
+        // Only return the mapping that matches the assessment mapping ID if assessmentmappingid is given.
+        if ($assessmentmappingid) {
+            return reset($assessmentdata['mappings']);
+        } else {
+            return $assessmentdata;
+        }
     }
 
     /**
@@ -1012,169 +1050,6 @@ class manager {
         }
 
         return false;
-    }
-
-    /**
-     * Schedule push task.
-     *
-     * @param int $assessmentmappingid Assessment mapping id
-     * @return bool|int
-     * @throws \dml_exception
-     */
-    public function schedule_push_task(int $assessmentmappingid): bool|int {
-        global $DB, $USER;
-
-        // Check if the assessment mapping exists.
-        $mapping = $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['id' => $assessmentmappingid]);
-        if (!$mapping) {
-            throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $assessmentmappingid);
-        }
-
-        // Check if there is already in one of the following status: added, queued, processing.
-        if (self::get_pending_task_in_queue($mapping->id)) {
-            throw new \moodle_exception('error:duplicatedtask', 'local_sitsgradepush');
-        }
-
-        // Check course module exists.
-        if (!$DB->record_exists('course_modules', ['id' => $mapping->coursemoduleid])) {
-            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $mapping->coursemoduleid);
-        }
-
-        // Check if the assessment component exists.
-        if (!$DB->record_exists('local_sitsgradepush_mab', ['id' => $mapping->componentgradeid])) {
-            throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mapping->componentgradeid);
-        }
-
-        // Create and insert the task.
-        $task = new \stdClass();
-        $task->userid = $USER->id;
-        $task->timescheduled = time();
-        $task->assessmentmappingid = $assessmentmappingid;
-
-        return $DB->insert_record('local_sitsgradepush_tasks', $task);
-    }
-
-    /**
-     * Get push task in status requested, queued or processing for a course module.
-     *
-     * @param int $assessmentmappingid Assessment mapping id
-     * @return \stdClass|bool false if no task found, otherwise return the task object with button label.
-     * @throws \coding_exception|\dml_exception
-     */
-    public function get_pending_task_in_queue(int $assessmentmappingid): bool|\stdClass {
-        global $DB;
-
-        $sql = 'SELECT *
-                FROM {local_sitsgradepush_tasks}
-                WHERE assessmentmappingid = :assessmentmappingid AND status IN (:status1, :status2, :status3)
-                ORDER BY id DESC';
-        $params = [
-            'assessmentmappingid' => $assessmentmappingid,
-            'status1' => self::PUSH_TASK_STATUS_REQUESTED,
-            'status2' => self::PUSH_TASK_STATUS_QUEUED,
-            'status3' => self::PUSH_TASK_STATUS_PROCESSING,
-        ];
-
-        // Add button label to the task object.
-        if ($result = $DB->get_record_sql($sql, $params)) {
-            switch ($result->status) {
-                case self::PUSH_TASK_STATUS_REQUESTED:
-                    $result->buttonlabel = get_string('task:status:requested', 'local_sitsgradepush');
-                    break;
-                case self::PUSH_TASK_STATUS_QUEUED:
-                    $result->buttonlabel = get_string('task:status:queued', 'local_sitsgradepush');
-                    break;
-                case self::PUSH_TASK_STATUS_PROCESSING:
-                    $result->buttonlabel = get_string('task:status:processing', 'local_sitsgradepush');
-                    break;
-            }
-
-            return $result;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Get last finished push task for a course module.
-     *
-     * @param int $assessmentmappingid Assessment mapping id
-     * @return false|mixed Returns false if no task found, otherwise return the task object with status text.
-     * @throws \dml_exception|\coding_exception
-     */
-    public function get_last_finished_push_task(int $assessmentmappingid): mixed {
-        global $DB;
-
-        // Get the last task for the course module.
-        $sql = 'SELECT *
-                FROM {local_sitsgradepush_tasks}
-                WHERE assessmentmappingid = :assessmentmappingid AND status IN (:status1, :status2)
-                ORDER BY id DESC
-                LIMIT 1';
-
-        $params = [
-            'assessmentmappingid' => $assessmentmappingid,
-            'status1' => self::PUSH_TASK_STATUS_COMPLETED,
-            'status2' => self::PUSH_TASK_STATUS_FAILED,
-        ];
-
-        // Add status text to the task object.
-        if ($task = $DB->get_record_sql($sql, $params)) {
-            switch ($task->status) {
-                case self::PUSH_TASK_STATUS_COMPLETED:
-                    $task->statustext = get_string('task:status:completed', 'local_sitsgradepush');
-                    break;
-                case self::PUSH_TASK_STATUS_FAILED:
-                    $task->statustext = get_string('task:status:failed', 'local_sitsgradepush');
-                    break;
-            }
-
-            return $task;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Returns number of running tasks.
-     *
-     * @return int
-     * @throws \dml_exception
-     */
-    public function get_number_of_running_tasks(): int {
-        global $DB;
-        return $DB->count_records('local_sitsgradepush_tasks', ['status' => self::PUSH_TASK_STATUS_PROCESSING]);
-    }
-
-    /**
-     * Returns number of pending tasks.
-     *
-     * @param int $status
-     * @param int $limit
-     * @return array
-     * @throws \dml_exception
-     */
-    public function get_push_tasks(int $status, int $limit): array {
-        global $DB;
-        return $DB->get_records('local_sitsgradepush_tasks', ['status' => $status], 'timescheduled ASC', '*', 0, $limit);
-    }
-
-    /**
-     * Update push task status.
-     *
-     * @param int $id
-     * @param int $status
-     * @param int|null $errlogid
-     * @return void
-     * @throws \dml_exception
-     */
-    public function update_push_task_status(int $id, int $status, int $errlogid = null): void {
-        global $DB;
-        $task = $DB->get_record('local_sitsgradepush_tasks', ['id' => $id]);
-        $task->status = $status;
-        $task->timeupdated = time();
-        $task->errlogid = $errlogid;
-        $DB->update_record('local_sitsgradepush_tasks', $task);
     }
 
     /**
@@ -1352,6 +1227,11 @@ class manager {
             throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $coursemoduleid);
         }
 
+        // Do not allow mapping activity which is not from current academic year.
+        if (!$this->is_current_academic_year_activity($coursemodule->course)) {
+            throw new \moodle_exception('error:pastactivity', 'local_sitsgradepush');
+        }
+
         // A component grade can only be mapped to one activity, so there is only one mapping record for each component grade.
         if (!empty($mapping = $this->is_component_grade_mapped($componentgradeid))) {
             // Check if this mapping has grades pushed.
@@ -1400,7 +1280,7 @@ class manager {
         }
 
         // Get the assessment object.
-        $assessment = assessmentfactory::get_assessment($coursemodule);
+        $assessment = assessmentfactory::get_assessment($coursemoduleid);
         if (empty($assessment)) {
             throw new \moodle_exception('error:assessmentnotfound', 'local_sitsgradepush', '', $coursemoduleid);
         }
@@ -1428,6 +1308,52 @@ class manager {
         }
 
         return $activities;
+    }
+
+    /**
+     * Get data required for page update, e.g. progress bars, last transfer time.
+     *
+     * @param int $courseid
+     * @param int $couresmoduleid
+     * @return array
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function get_data_for_page_update($courseid, $couresmoduleid = 0): array {
+        global $DB;
+        $results = [];
+
+        $conditions = [
+            'courseid' => $courseid,
+        ];
+
+        if ($couresmoduleid) {
+            $conditions['coursemoduleid'] = $couresmoduleid;
+        }
+
+        // Get assessment mappings.
+        $mappings = $DB->get_records(self::TABLE_ASSESSMENT_MAPPING, $conditions);
+        if (empty($mappings)) {
+            return [];
+        }
+
+        foreach ($mappings as $mapping) {
+            // Get assessment data.
+            $assessmentdata = $this->get_assessment_data($mapping->coursemoduleid, $mapping->id);
+
+            // Check if there is a pending / running task for this mapping.
+            $task = taskmanager::get_pending_task_in_queue($mapping->id);
+            $result = new \stdClass();
+            $result->assessmentmappingid = $mapping->id;
+            $result->courseid = $courseid;
+            $result->coursemoduleid = $mapping->coursemoduleid;
+            $result->markscount = $assessmentdata->markscount;
+            $result->task = !empty($task) ? $task : null;
+            $result->lasttransfertime = taskmanager::get_last_push_task_time($mapping->id);
+            $results[] = $result;
+        }
+
+        return $results;
     }
 
     /**

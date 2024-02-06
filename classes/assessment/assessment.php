@@ -92,8 +92,8 @@ abstract class assessment implements iassessment {
             $this->coursemodule->course, 'mod', $this->coursemodule->modname, $this->coursemodule->instance, $userid)) {
             foreach ($grade->items as $item) {
                 foreach ($item->grades as $grade) {
-                    if (isset($grade->grade)) {
-                        $result = $grade->grade;
+                    if ($grade->grade) {
+                        $result = $grade->str_grade;
                     }
                 }
             }

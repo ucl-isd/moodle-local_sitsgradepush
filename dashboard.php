@@ -83,6 +83,8 @@ $result = $manager->get_component_grade_options($courseid, null);
 // Render the dashboard.
 if (!empty($result)) {
     echo '<div id="sitsgradepush-dasboard-container" class="sitsgradepush-dasboard">';
+    echo '<h2>' . get_string('dashboard:header', 'local_sitsgradepush') . '</h2>
+          <p>' . get_string('dashboard:header:desc', 'local_sitsgradepush') . '</p>';
     echo $renderer->render_dashboard($result, $courseid);
     echo '</div>';
 } else {
@@ -90,7 +92,7 @@ if (!empty($result)) {
 }
 
 // Initialise the javascript.
-$PAGE->requires->js_call_amd('local_sitsgradepush/dashboard', 'init', []);
+$PAGE->requires->js_call_amd('local_sitsgradepush/dashboard', 'init', [$courseid]);
 
 // Page footer.
 echo $OUTPUT->footer();
