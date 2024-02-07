@@ -854,7 +854,8 @@ class manager {
         }
 
         // Get the latest record for each push type, e.g. grade push, submission log push.
-        $sql = "SELECT t1.id, t1.type, t1.request, t1.response, t1.timecreated, t1.errlogid, errlog.errortype, errlog.message
+        $sql = "SELECT t1.id, t1.type, t1.request, t1.response, t1.requestbody, t1.timecreated, t1.errlogid,
+                errlog.errortype, errlog.message
                 FROM {" . self::TABLE_TRANSFER_LOG . "} t1
                 INNER JOIN (
                     SELECT type, assessmentmappingid, MAX(timecreated) AS latest_time

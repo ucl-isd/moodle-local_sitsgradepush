@@ -80,6 +80,12 @@ class pushrecord {
     /** @var bool Is submission log pushed */
     public bool $issublogpushed = false;
 
+    /** @var bool Is marks updated after transfer */
+    public bool $marksupdatedaftertransfer = false;
+
+    /** @var string Transferred mark */
+    public string $transferredmark = '-';
+
     /** @var manager|null Grade push manager */
     protected ?manager $manager;
 
@@ -188,6 +194,12 @@ class pushrecord {
                     $this->componentgrade = $matches[1];
                 }
                 if ($log->type == manager::PUSH_GRADE) {
+                    // Check if marks updated after transfer.
+                    if ($response->code == '0') {
+                        $requestbody = json_decode($log->requestbody);
+                        $this->transferredmark = $requestbody->actual_mark;
+                        $this->marksupdatedaftertransfer = $this->marks != $requestbody->actual_mark;
+                    }
                     $this->lastgradepushresult = $result;
                     $this->lastgradepusherrortype = $errortype;
                     $this->lastgradepushtime = $timecreated;
