@@ -185,7 +185,7 @@ $string['privacy:metadata:local_sitsgradepush_tasks:status'] = 'The status of th
 $string['privacy:metadata:local_sitsgradepush_tasks:info'] = 'Additional information about the transfer task.';
 
 // Email strings.
-$string['email:subject'] = 'Marks Transfer task Completed';
+$string['email:subject'] = 'Marks Transfer task Completed - {$a}';
 $string['email:username'] = 'Dear {$a},';
 $string['email:part_one'] = 'The following marks transfer task has now been completed:';
 $string['email:activity_name'] = 'Moodle Activity:';

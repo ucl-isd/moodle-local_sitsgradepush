@@ -392,7 +392,7 @@ class taskmanager {
                 'succeeded_count' => $succeededcount,
                 'failed_count' => $failedcount,
             ]);
-            email_to_user($user, $user, get_string('email:subject', 'local_sitsgradepush'), $content);
+            email_to_user($user, $user, get_string('email:subject', 'local_sitsgradepush', $result->mab), $content);
         } else {
             throw new \moodle_exception('error:tasknotfound', 'local_sitsgradepush');
         }
