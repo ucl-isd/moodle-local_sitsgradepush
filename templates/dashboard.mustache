@@ -129,6 +129,7 @@
     <table class="module-delivery-table table table-bordered mb-5">
         <thead class="thead-light">
         <tr class="small">
+            <th>{{#str}} dashboard:seq, local_sitsgradepush {{/str}}</th>
             <th>{{#str}} dashboard:sits_assessment, local_sitsgradepush {{/str}}</th>
             <th>{{#str}} dashboard:weight, local_sitsgradepush {{/str}}</th>
             <th>{{#str}} dashboard:moodle_activity, local_sitsgradepush {{/str}}</th>
@@ -138,11 +139,9 @@
         <tbody>
         {{#componentgrades}}
             <tr>
-                <th scope="row">
-                    <span class="badge badge-dark">{{mabseq}}</span>
-                    {{mabname}}
-                </th>
-                <td>{{mabperc}}</td>
+                <td>{{mabseq}}</td>
+                <td>{{mabname}}</td>
+                <td>{{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}</td>
                 <td>
                     {{#assessmentmapping}}
                         <p>

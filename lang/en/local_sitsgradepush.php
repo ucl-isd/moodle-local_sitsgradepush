@@ -93,6 +93,7 @@ $string['dashboard:mapcode'] = 'MAP CODE: {$a}';
 $string['dashboard:seq'] = 'SEQ';
 $string['dashboard:sits_assessment'] = 'SITS assessment';
 $string['dashboard:weight'] = 'Weight';
+$string['dashboard:mab_perc'] = '{$a}%';
 $string['dashboard:asttype'] = 'AST TYPE';
 $string['dashboard:source'] = 'Source';
 $string['dashboard:moodle_activity'] = 'Moodle activity';
