@@ -81,7 +81,7 @@ $string['index:grade'] = 'Mark';
 $string['index:submissiondate'] = 'Submission date';
 $string['index:lastmarktransfer'] = 'Mark Transferred';
 $string['index:lastsublogtransfer'] = 'Submission Date recorded in SITS';
-$string['index:mark_changed_to'] = 'Mark changed to {$a}';
+$string['index:mark_changed_to'] = 'Mark changed to {$a} after transfer';
 
 // Marks transfer dashboard page.
 $string['dashboard:header'] = 'SITS assessment mapping and mark transfer';
