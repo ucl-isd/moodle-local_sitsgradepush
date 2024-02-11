@@ -81,6 +81,7 @@ $string['index:grade'] = 'Mark';
 $string['index:submissiondate'] = 'Submission date';
 $string['index:lastmarktransfer'] = 'Mark Transferred';
 $string['index:lastsublogtransfer'] = 'Submission Date recorded in SITS';
+$string['index:mark_changed_to'] = 'Mark changed to {$a}';
 
 // Marks transfer dashboard page.
 $string['dashboard:header'] = 'SITS assessment mapping and mark transfer';
@@ -92,6 +93,7 @@ $string['dashboard:mapcode'] = 'MAP CODE: {$a}';
 $string['dashboard:seq'] = 'SEQ';
 $string['dashboard:sits_assessment'] = 'SITS assessment';
 $string['dashboard:weight'] = 'Weight';
+$string['dashboard:mab_perc'] = '{$a}%';
 $string['dashboard:asttype'] = 'AST TYPE';
 $string['dashboard:source'] = 'Source';
 $string['dashboard:moodle_activity'] = 'Moodle activity';

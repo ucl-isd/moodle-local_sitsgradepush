@@ -83,7 +83,7 @@ class getcomponentgrade extends request {
                     'MAB_SEQ' => $value['sequence_number'],
                     'AST_CODE' => $value['assessment_component_type']['code'],
                     'MAB_PERC' => $matches[1],
-                    'MAB_NAME' => $value['name'],
+                    'MAB_NAME' => preg_replace('/\s*\(\d+%?\)$/', '', $value['name']),
                     'MKS_CODE' => $value['mark_scheme']['code'],
                     'APA_ROMC' => $value['schedule']['location']['room']['identifier'],
                 ];

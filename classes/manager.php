@@ -140,35 +140,35 @@ class manager {
      * Fetch component grades data (MAB) from SITS.
      *
      * @param array $modocc module occurrences of the current course.
-     * @return bool
+     * @return void
      */
-    public function fetch_component_grades_from_sits(array $modocc): bool {
-        try {
-            if (!empty($modocc)) {
-                foreach ($modocc as $occ) {
-                    // Get the cache.
-                    $key = implode('_',
-                        [
-                            cachemanager::CACHE_AREA_COMPONENTGRADES,
-                            $occ->mod_code,
-                            $occ->mod_occ_mav,
-                            $occ->mod_occ_psl_code,
-                            $occ->mod_occ_year_code,
-                        ]
-                    );
+    public function fetch_component_grades_from_sits(array $modocc): void {
+        if (!empty($modocc)) {
+            foreach ($modocc as $occ) {
+                // Get the cache.
+                $key = implode('_',
+                    [
+                        cachemanager::CACHE_AREA_COMPONENTGRADES,
+                        $occ->mod_code,
+                        $occ->mod_occ_mav,
+                        $occ->mod_occ_psl_code,
+                        $occ->mod_occ_year_code,
+                    ]
+                );
 
-                    // Replace '/' with '_' for simple key.
-                    $key = str_replace('/', '_', $key);
+                // Replace '/' with '_' for simple key.
+                $key = str_replace('/', '_', $key);
 
-                    // This cache is not really used.
-                    // It is only used to check if the component grades have been fetched for this module occurrence.
-                    $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key);
+                // This cache is not really used.
+                // It is only used to check if the component grades have been fetched for this module occurrence.
+                $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key);
 
-                    // Skip if cache exists.
-                    if (!empty($cache)) {
-                        continue;
-                    }
+                // Skip if cache exists.
+                if (!empty($cache)) {
+                    continue;
+                }
 
+                try {
                     // Get component grades from SITS.
                     $request = $this->apiclient->build_request(self::GET_COMPONENT_GRADE, $occ);
                     $response = $this->apiclient->send_request($request);
@@ -179,20 +179,16 @@ class manager {
                     // Filter out unwanted component grades by marking scheme.
                     $response = $this->filter_out_invalid_component_grades($response);
 
-                    // Set cache expiry to 30 days.
-                    cachemanager::set_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key, $response, 30 * 24 * 60 * 60);
+                    // Set cache expiry to 1 hour.
+                    cachemanager::set_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key, $response, 3600);
 
                     // Save component grades to DB.
                     $this->save_component_grades($response);
+                } catch (\moodle_exception $e) {
+                    $this->apierrors[] = $e->getMessage();
                 }
-
-                return true;
             }
-        } catch (\moodle_exception $e) {
-            $this->apierrors[] = $e->getMessage();
         }
-
-        return false;
     }
 
     /**
@@ -854,7 +850,8 @@ class manager {
         }
 
         // Get the latest record for each push type, e.g. grade push, submission log push.
-        $sql = "SELECT t1.id, t1.type, t1.request, t1.response, t1.timecreated, t1.errlogid, errlog.errortype, errlog.message
+        $sql = "SELECT t1.id, t1.type, t1.request, t1.response, t1.requestbody, t1.timecreated, t1.errlogid,
+                errlog.errortype, errlog.message
                 FROM {" . self::TABLE_TRANSFER_LOG . "} t1
                 INNER JOIN (
                     SELECT type, assessmentmappingid, MAX(timecreated) AS latest_time

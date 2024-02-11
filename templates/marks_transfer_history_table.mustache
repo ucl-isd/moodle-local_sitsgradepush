@@ -42,7 +42,9 @@
                 "firstname":"Test",
                 "lastname":"User",
                 "idnumber":"1234567",
-                "marks":"0",
+                "marksupdatedaftertransfer":"true",
+                "transferredmark":"77",
+                "marks":"66",
                 "handindatetime":"2019-01-01 00:00:00",
                 "lastgradepushresultlabel":"<span class=\"badge badge-success\">Success</span> ",
                 "lastgradepushtime":"2019-01-01 00:00:00",
@@ -80,7 +82,12 @@
         <tr>
             <th scope="row">{{firstname}} {{lastname}}</th>
             <td>{{idnumber}}</td>
-            <td>{{marks}}</td>
+            <td>{{^marksupdatedaftertransfer}}{{marks}}{{/marksupdatedaftertransfer}}
+            {{#marksupdatedaftertransfer}}
+                {{transferredmark}}<br>
+                <span class="badge badge-danger">{{#str}} index:mark_changed_to, local_sitsgradepush, {{marks}} {{/str}}</span>
+            {{/marksupdatedaftertransfer}}
+            </td>
             <td>{{handindatetime}}</td>
             <td>{{{lastgradepushresultlabel}}}{{lastgradepushtime}}</td>
             {{#showsublogcolumn}}
