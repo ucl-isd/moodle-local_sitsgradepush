@@ -732,7 +732,7 @@ class manager {
                 return true;
             }
         } catch (\moodle_exception $e) {
-            $this->mark_push_as_failed(self::PUSH_GRADE, $assessmentmapping->id, $userid, $e);
+            $this->mark_push_as_failed(self::PUSH_GRADE, $assessmentmapping->id, $userid, $taskid, $e);
             return false;
         }
 
