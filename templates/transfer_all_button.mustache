@@ -23,7 +23,6 @@
 
     Data attributes required for JS:
     * data-assessmentmappingid - String, assessment mapping id.
-    * data-async - Integer, async value.
 
     Context variables required for this template:
     * transfer-all-button-label - String, button label.
@@ -32,6 +31,6 @@
     {"transfer-all-button-label":"Transfer Marks"}
 }}
 
-<button class="btn btn-primary js-btn-transfer-all-marks" id="push-all-button" data-toggle="modal" data-target="#transferModal" data-assessmentmappingid="all" data-async="{{async}}">
+<button class="btn btn-primary js-btn-transfer-all-marks" id="push-all-button" data-toggle="modal" data-target="#transferModal" data-assessmentmappingid="all">
     <i class="fa-solid fa-cloud-arrow-up mr-2"></i> {{transfer-all-button-label}}
 </button>

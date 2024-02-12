@@ -133,7 +133,6 @@ class renderer extends plugin_renderer_base {
             'transfer-all-button-label' => get_string('label:pushgrade', 'local_sitsgradepush'),
             'latest-transferred-text' => $this->get_latest_tranferred_text($assessmentdata['mappings']),
             'invalid-students' => !empty($assessmentdata['invalidstudents']->students) ? $assessmentdata['invalidstudents'] : null,
-            'async' => get_config('local_sitsgradepush', 'async'),
         ]);
     }
 

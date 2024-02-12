@@ -1,8 +1,10 @@
-import {schedulePushTask, getAssessmentsUpdate, updateProgressBar} from "./sitsgradepush_helper";
+import {getAssessmentsUpdate, schedulePushTask, updateProgressBar} from "./sitsgradepush_helper";
 import notification from 'core/notification';
 
 let updatePageIntervalId = null; // The interval ID for updating the progress.
 let updatePageDelay = 15000; // The delay for updating the page.
+let taskRunning = false;
+let shouldRefresh = false;
 
 /**
  * Initialize the course module marks transfer page (index.php).
@@ -64,73 +66,65 @@ function initConfirmationModal(courseid, coursemoduleid) {
 
     // Add event listener to the confirmation modal.
     confirmTransferButton.addEventListener("click", async function() {
-        // Check if it is an async push button.
-        let async = confirmTransferButton.getAttribute('data-async');
-        if (async === "1") {
-            let promises = [];
+        let promises = [];
 
-            // Find all valid assessment mapping IDs.
-            let mappingtables = document.querySelectorAll('.sitsgradepush-history-table');
+        // Find all valid assessment mapping IDs.
+        let mappingtables = document.querySelectorAll('.sitsgradepush-history-table');
 
-            // Number of assessment mappings.
-            let total = mappingtables.length - 1; // Exclude the invalid students table.
-            let count = 0;
+        // Number of assessment mappings.
+        let total = mappingtables.length - 1; // Exclude the invalid students table.
+        let count = 0;
 
-            // Schedule a task to push grades to SITS for each assessment mapping.
-            mappingtables.forEach(function(table) {
-                let mappingid = table.getAttribute('data-assessmentmappingid');
-                let markscount = table.getAttribute('data-markscount');
-                if (mappingid !== null && markscount > 0) {
-                    let promise = schedulePushTask(mappingid)
-                        .then(function(result) {
-                            if (result.success) {
-                                count = count + 1;
-                            } else {
-                                // Create an error message row.
-                                let errormessageid = "error-message-" + mappingid;
-                                let errormessagerow = document.createElement("div");
-                                errormessagerow.setAttribute("id", errormessageid);
-                                errormessagerow.setAttribute("class", "error-message-row");
-                                errormessagerow.innerHTML =
-                                    '<div class="alert alert-danger" role="alert">' + result.message + '</div>';
+        // Schedule a task to push grades to SITS for each assessment mapping.
+        mappingtables.forEach(function(table) {
+            let mappingid = table.getAttribute('data-assessmentmappingid');
+            let markscount = table.getAttribute('data-markscount');
+            if (mappingid !== null && markscount > 0) {
+                let promise = schedulePushTask(mappingid)
+                    .then(function(result) {
+                        if (result.success) {
+                            count = count + 1;
+                        } else {
+                            // Create an error message row.
+                            let errormessageid = "error-message-" + mappingid;
+                            let errormessagerow = document.createElement("div");
+                            errormessagerow.setAttribute("id", errormessageid);
+                            errormessagerow.setAttribute("class", "error-message-row");
+                            errormessagerow.innerHTML =
+                                '<div class="alert alert-danger" role="alert">' + result.message + '</div>';
 
-                                // Find the closest row to the assessment mapping.
-                                let currentrow = document.getElementById(errormessageid);
+                            // Find the closest row to the assessment mapping.
+                            let currentrow = document.getElementById(errormessageid);
 
-                                // Remove the error message row if it exists.
-                                if (currentrow !== null) {
-                                    currentrow.remove();
-                                }
-
-                                // Insert the error message above the table.
-                                table.parentNode.insertBefore(errormessagerow, table);
+                            // Remove the error message row if it exists.
+                            if (currentrow !== null) {
+                                currentrow.remove();
                             }
-                            return result.success;
-                        })
-                        .catch(function(error) {
-                            window.console.error(error);
-                        });
 
-                    promises.push(promise);
-                }
-            });
+                            // Insert the error message above the table.
+                            table.parentNode.insertBefore(errormessagerow, table);
+                        }
+                        return result.success;
+                    })
+                    .catch(function(error) {
+                        window.console.error(error);
+                    });
 
-            // Wait for all the push tasks to be scheduled.
-            await Promise.all(promises);
+                promises.push(promise);
+            }
+        });
 
-            // Update the page.
-            await updateTasksInfo(courseid, coursemoduleid);
+        // Wait for all the push tasks to be scheduled.
+        await Promise.all(promises);
 
-            // Display a notification.
-            await notification.addNotification({
-                message: count + ' of ' + total + ' push tasks have been scheduled.',
-                type: (count === total) ? 'success' : 'warning'
-            });
-        } else {
-            // Redirect to the legacy synchronous push page.
-            // Will improve it when we have a more concrete plan for the sync push.
-            window.location.href = '/local/sitsgradepush/index.php?id=' + coursemoduleid + '&pushgrade=1';
-        }
+        // Update the page.
+        await updateTasksInfo(courseid, coursemoduleid);
+
+        // Display a notification.
+        await notification.addNotification({
+            message: count + ' of ' + total + ' push tasks have been scheduled.',
+            type: (count === total) ? 'success' : 'warning'
+        });
     });
 }
 
@@ -166,26 +160,56 @@ async function updateTasksInfo(courseid, coursemoduleid) {
  * @param {object[]} assessments
  */
 function updateProgress(assessments) {
+    // Check if there is any running task.
+    taskRunning = hasRunningTask(assessments);
+
+    // If there is any running task, mark page should be refreshed.
+    if (taskRunning) {
+        shouldRefresh = true;
+    }
+
+    // Refresh the page if there is no running task and should be refreshed.
+    if (shouldRefresh && !taskRunning) {
+        shouldRefresh = false;
+        location.reload();
+    }
+
+    // Get the push button element.
+    let pushbutton = document.getElementById('push-all-button');
+    if (pushbutton) {
+        // Disable the push button if there is any running task, otherwise enable it.
+        pushbutton.disabled = taskRunning;
+    } else {
+        window.console.log('Push button not found');
+    }
+
     assessments.forEach(assessment => {
         let progressContainer = document.getElementById('progress-container-' + assessment.assessmentmappingid);
         if (!progressContainer) {
             window.console.log('Progress container not found for assessment mapping ID: ' + assessment.assessmentmappingid);
             return;
         }
-        let pushbutton = document.getElementById('push-all-button');
         if (assessment.task === null) {
-            // Enable the push button if there is no task running.
-            if (pushbutton) {
-                pushbutton.disabled = false;
-            }
             // Hide the progress container if there is no task in progress.
             progressContainer.style.display = 'none';
         } else {
-            if (pushbutton) {
-                pushbutton.disabled = true;
-            }
             progressContainer.style.display = 'block';
             updateProgressBar(progressContainer, assessment.task.progress);
         }
     });
+}
+
+/**
+ * Check if there is a running task.
+ *
+ * @param {object[]} assessments
+ * @return {boolean}
+ */
+function hasRunningTask(assessments) {
+    for (let i = 0; i < assessments.length; i++) {
+        if (assessments[i].task !== null) {
+            return true;
+        }
+    }
+    return false;
 }

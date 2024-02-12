@@ -111,11 +111,3 @@
 
 <!--Confirmation modal-->
 {{> local_sitsgradepush/confirmation_modal }}
-
-{{#js}}
-    require(['jquery'], function($) {
-        $('.js-btn-transfer-all-marks').on('click', function() {
-            $('#js-transfer-modal-button').attr('data-async', $(this).attr('data-async'));
-        });
-    });
-{{/js}}
