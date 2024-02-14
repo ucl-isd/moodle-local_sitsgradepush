@@ -23,6 +23,7 @@
 
     Data attributes required for JS:
     * data-assessmentmappingid - String, assessment mapping id.
+    * data-sync - Integer, sync.
 
     Context variables required for this template:
     * none
@@ -46,7 +47,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">{{#str}} confirmmodal:cancel, local_sitsgradepush {{/str}}</button>
-                <button id="js-transfer-modal-button" data-assessmentmappingid="" type="button" class="btn btn-primary" data-dismiss="modal">{{#str}} confirmmodal:confirm, local_sitsgradepush {{/str}}</button>
+                <button id="js-transfer-modal-button" data-assessmentmappingid="" data-sync="" type="button" class="btn btn-primary" data-dismiss="modal">{{#str}} confirmmodal:confirm, local_sitsgradepush {{/str}}</button>
             </div>
         </div>
     </div>

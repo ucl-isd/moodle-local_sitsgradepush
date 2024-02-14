@@ -66,65 +66,73 @@ function initConfirmationModal(courseid, coursemoduleid) {
 
     // Add event listener to the confirmation modal.
     confirmTransferButton.addEventListener("click", async function() {
-        let promises = [];
+        // Check if it is an async push button.
+        let sync = confirmTransferButton.getAttribute('data-sync');
+        if (sync === "1") {
+            // Do sync push.
+            window.location.href = '/local/sitsgradepush/index.php?id=' + coursemoduleid + '&pushgrade=1';
+        } else {
+            // Do async push.
+            let promises = [];
 
-        // Find all valid assessment mapping IDs.
-        let mappingtables = document.querySelectorAll('.sitsgradepush-history-table');
+            // Find all valid assessment mapping IDs.
+            let mappingtables = document.querySelectorAll('.sitsgradepush-history-table');
 
-        // Number of assessment mappings.
-        let total = mappingtables.length - 1; // Exclude the invalid students table.
-        let count = 0;
+            // Number of assessment mappings.
+            let total = mappingtables.length - 1; // Exclude the invalid students table.
+            let count = 0;
 
-        // Schedule a task to push grades to SITS for each assessment mapping.
-        mappingtables.forEach(function(table) {
-            let mappingid = table.getAttribute('data-assessmentmappingid');
-            let markscount = table.getAttribute('data-markscount');
-            if (mappingid !== null && markscount > 0) {
-                let promise = schedulePushTask(mappingid)
-                    .then(function(result) {
-                        if (result.success) {
-                            count = count + 1;
-                        } else {
-                            // Create an error message row.
-                            let errormessageid = "error-message-" + mappingid;
-                            let errormessagerow = document.createElement("div");
-                            errormessagerow.setAttribute("id", errormessageid);
-                            errormessagerow.setAttribute("class", "error-message-row");
-                            errormessagerow.innerHTML =
-                                '<div class="alert alert-danger" role="alert">' + result.message + '</div>';
+            // Schedule a task to push grades to SITS for each assessment mapping.
+            mappingtables.forEach(function(table) {
+                let mappingid = table.getAttribute('data-assessmentmappingid');
+                let markscount = table.getAttribute('data-markscount');
+                if (mappingid !== null && markscount > 0) {
+                    let promise = schedulePushTask(mappingid)
+                        .then(function(result) {
+                            if (result.success) {
+                                count = count + 1;
+                            } else {
+                                // Create an error message row.
+                                let errormessageid = "error-message-" + mappingid;
+                                let errormessagerow = document.createElement("div");
+                                errormessagerow.setAttribute("id", errormessageid);
+                                errormessagerow.setAttribute("class", "error-message-row");
+                                errormessagerow.innerHTML =
+                                    '<div class="alert alert-danger" role="alert">' + result.message + '</div>';
 
-                            // Find the closest row to the assessment mapping.
-                            let currentrow = document.getElementById(errormessageid);
+                                // Find the closest row to the assessment mapping.
+                                let currentrow = document.getElementById(errormessageid);
 
-                            // Remove the error message row if it exists.
-                            if (currentrow !== null) {
-                                currentrow.remove();
+                                // Remove the error message row if it exists.
+                                if (currentrow !== null) {
+                                    currentrow.remove();
+                                }
+
+                                // Insert the error message above the table.
+                                table.parentNode.insertBefore(errormessagerow, table);
                             }
+                            return result.success;
+                        })
+                        .catch(function(error) {
+                            window.console.error(error);
+                        });
 
-                            // Insert the error message above the table.
-                            table.parentNode.insertBefore(errormessagerow, table);
-                        }
-                        return result.success;
-                    })
-                    .catch(function(error) {
-                        window.console.error(error);
-                    });
+                    promises.push(promise);
+                }
+            });
 
-                promises.push(promise);
-            }
-        });
+            // Wait for all the push tasks to be scheduled.
+            await Promise.all(promises);
 
-        // Wait for all the push tasks to be scheduled.
-        await Promise.all(promises);
+            // Update the page.
+            await updateTasksInfo(courseid, coursemoduleid);
 
-        // Update the page.
-        await updateTasksInfo(courseid, coursemoduleid);
-
-        // Display a notification.
-        await notification.addNotification({
-            message: count + ' of ' + total + ' push tasks have been scheduled.',
-            type: (count === total) ? 'success' : 'warning'
-        });
+            // Display a notification.
+            await notification.addNotification({
+                message: count + ' of ' + total + ' push tasks have been scheduled.',
+                type: (count === total) ? 'success' : 'warning'
+            });
+        }
     });
 }
 

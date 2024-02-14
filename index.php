@@ -81,7 +81,35 @@ $manager = manager::get_manager();
 // Get page content.
 $content = $manager->get_assessment_data($coursemoduleid);
 
+// Check sync threshold.
+$syncthreshold = get_config('local_sitsgradepush', 'sync_threshold');
+
+// Get total number of marks to be pushed.
+$totalmarkscount = 0;
+foreach ($content['mappings'] as $mapping) {
+    $totalmarkscount += $mapping->markscount;
+}
+
 if (!empty($content)) {
+    // Transfer marks if it is a sync transfer and pushgrade is set.
+    if ($totalmarkscount <= $syncthreshold && $pushgrade == 1) {
+        // Loop through each mapping.
+        foreach ($content['mappings'] as $mapping) {
+            // Skip if there is no student in the mapping.
+            if (empty($mapping->students)) {
+                continue;
+            }
+            // Push grades for each student in the mapping.
+            foreach ($mapping->students as $student) {
+                $manager->push_grade_to_sits($mapping, $student->userid);
+                $manager->push_submission_log_to_sits($mapping, $student->userid);
+            }
+        }
+
+        // Refresh data after completed all pushes.
+        $content = $manager->get_assessment_data($coursemoduleid);
+    }
+
     // Render the page.
     echo $renderer->render_marks_transfer_history_page($content, $coursemodule->course);
 } else {
