@@ -196,7 +196,10 @@ class pushrecord {
                 }
 
                 // Get <MAP CODE>-<MAB SEQ> from request url.
-                if (preg_match('#moodle/(.*?)/student#', $log->request, $matches)) {
+                // The Easikit Get Student API will remove the students whose marks had been transferred successfully.
+                // Here we use the request url of a successful transfer log to get the assessment component <MAP CODE>-<MAB SEQ>,
+                // so that we can display the transfer status of mark transfer in the corresponding assessment component mapping.
+                if (!empty($log->request) && preg_match('#moodle/(.*?)/student#', $log->request, $matches)) {
                     $this->componentgrade = $matches[1];
                 }
                 if ($log->type == manager::PUSH_GRADE) {
