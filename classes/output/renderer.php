@@ -338,6 +338,10 @@ class renderer extends plugin_renderer_base {
 
         // Get the latest transferred time among all transfer records.
         foreach ($mappings as $mapping) {
+            // Skip if there is no student.
+            if (empty($mapping->students)) {
+                continue;
+            }
             foreach ($mapping->students as $student) {
                 if ($student->lastgradepushtime && $student->lastgradepushtime > $lasttasktime) {
                     $lasttasktime = $student->lastgradepushtime;
