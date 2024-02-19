@@ -17,6 +17,7 @@ namespace local_sitsgradepush;
 
 use core_course\customfield\course_handler;
 use DirectoryIterator;
+use grade_item;
 use local_sitsgradepush\api\client_factory;
 use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
@@ -479,16 +480,13 @@ class manager {
         global $DB;
 
         // Validate component grade.
-        $this->validate_component_grade($data->componentgradeid, $data->coursemoduleid);
+        $coursemodule = $this->validate_component_grade($data->componentgradeid, $data->coursemoduleid);
 
         if ($mapping = $this->is_component_grade_mapped($data->componentgradeid)) {
             // Checked in the above validation, the current mapping to this component grade
             // can be deleted as it does not have push records nor mapped to the current activity.
             $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mapping->id]);
         }
-
-        // Get the course module.
-        $coursemodule = get_coursemodule_from_id('', $data->coursemoduleid);
 
         // Insert new mapping.
         $record = new \stdClass();
@@ -1233,19 +1231,39 @@ class manager {
      *
      * @param int $componentgradeid
      * @param int $coursemoduleid
-     * @return bool
+     * @return \stdClass
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function validate_component_grade(int $componentgradeid, int $coursemoduleid): bool {
+    public function validate_component_grade(int $componentgradeid, int $coursemoduleid): \stdClass {
         // Check if the component grade exists.
         if (!$componentgrade = $this->get_local_component_grade_by_id($componentgradeid)) {
             throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $componentgradeid);
         }
 
         // Check if the course module exists.
-        if (!$coursemodule = $this->get_course_module($coursemoduleid)) {
+        if (!$coursemodule = get_coursemodule_from_id('', $coursemoduleid)) {
             throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $coursemoduleid);
+        }
+
+        // Get grade type of the course module.
+        $gradeitems = grade_item::fetch_all([
+            'itemtype' => 'mod',
+            'itemmodule' => $coursemodule->modname,
+            'iteminstance' => $coursemodule->instance,
+            'courseid' => $coursemodule->course,
+        ]);
+
+        // Grade items not found.
+        if (empty($gradeitems)) {
+            throw new \moodle_exception('error:grade_items_not_found', 'local_sitsgradepush');
+        }
+
+        // Check the grade type of the course module is supported.
+        foreach ($gradeitems as $gradeitem) {
+            if ($gradeitem->gradetype == GRADE_TYPE_SCALE) {
+                throw new \moodle_exception('error:gradetype_not_supported', 'local_sitsgradepush', '', 'scale');
+            }
         }
 
         // Do not allow mapping activity which is not from current academic year.
@@ -1281,7 +1299,7 @@ class manager {
             }
         }
 
-        return true;
+        return $coursemodule;
     }
 
     /**
@@ -1340,7 +1358,7 @@ class manager {
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function get_data_for_page_update($courseid, $couresmoduleid = 0): array {
+    public function get_data_for_page_update(int $courseid, int $couresmoduleid = 0): array {
         global $DB;
         $results = [];
 

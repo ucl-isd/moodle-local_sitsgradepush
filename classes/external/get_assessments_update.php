@@ -50,7 +50,7 @@ class get_assessments_update extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Result of request', VALUE_REQUIRED),
-            'assessments' => new external_value(PARAM_RAW, 'Assessments Latest Status', VALUE_REQUIRED),
+            'assessments' => new external_value(PARAM_RAW, 'Assessments Latest Status', VALUE_OPTIONAL),
             'message' => new external_value(PARAM_TEXT, 'Error message', VALUE_OPTIONAL),
         ]);
     }
