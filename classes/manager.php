@@ -796,7 +796,7 @@ class manager {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_required_data_for_pushing (\stdClass $assessmentmapping, int $userid): \stdClass {
+    public function get_required_data_for_pushing(\stdClass $assessmentmapping, int $userid): \stdClass {
         global $USER;
 
         // Get SPR_CODE from SITS.
@@ -830,7 +830,7 @@ class manager {
      * @return array
      * @throws \dml_exception
      */
-    public function get_transfer_logs (int $assessmentmappingid, int $userid, string $type = null): array {
+    public function get_transfer_logs(int $assessmentmappingid, int $userid, string $type = null): array {
         global $DB;
 
         // Initialize params.
@@ -1409,8 +1409,8 @@ class manager {
      * @throws \dml_exception
      */
     private function save_transfer_log(
-        string $type, int $assessmentmappingid, int $userid, mixed $request, array $response, ?int $taskid, int $errorlogid = null)
-    : void {
+        string $type, int $assessmentmappingid, int $userid, mixed $request, array $response, ?int $taskid, int $errorlogid = null
+    ): void {
         global $USER, $DB;
         $insert = new \stdClass();
         $insert->type = $type;

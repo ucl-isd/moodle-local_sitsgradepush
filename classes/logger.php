@@ -37,7 +37,7 @@ class logger {
      * @return bool|int
      * @throws \dml_exception
      */
-    public static function log (string $message, string $requesturl = null, string $data = null, string $response = null) {
+    public static function log(string $message, string $requesturl = null, string $data = null, string $response = null) {
         global $DB, $USER;
 
         // Create the insert object.
@@ -61,7 +61,7 @@ class logger {
      * @return bool|int
      * @throws \dml_exception
      */
-    public static function log_request_error (string $message, irequest $request, string $response = null) {
+    public static function log_request_error(string $message, irequest $request, string $response = null) {
         global $DB, $USER;
 
         // Create the insert object.

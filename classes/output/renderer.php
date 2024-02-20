@@ -62,7 +62,7 @@ class renderer extends plugin_renderer_base {
      * @return string Rendered HTML
      * @throws \moodle_exception
      */
-    public function render_button(string $id, string $name, string $disabled = '', string $class = '') : string {
+    public function render_button(string $id, string $name, string $disabled = '', string $class = ''): string {
         return $this->output->render_from_template(
             'local_sitsgradepush/button',
             ['id' => $id, 'name' => $name, 'disabled' => $disabled, 'class' => $class]
@@ -78,7 +78,7 @@ class renderer extends plugin_renderer_base {
      * @return string
      * @throws \moodle_exception
      */
-    public function render_link(string $id, string $name, string $url) : string {
+    public function render_link(string $id, string $name, string $url): string {
         return $this->output->render_from_template('local_sitsgradepush/link', ['id' => $id, 'name' => $name, 'url' => $url]);
     }
 
@@ -90,7 +90,7 @@ class renderer extends plugin_renderer_base {
      * @return string Rendered HTML
      * @throws \moodle_exception
      */
-    public function render_marks_transfer_history_page(array $assessmentdata, int $courseid) : string {
+    public function render_marks_transfer_history_page(array $assessmentdata, int $courseid): string {
         // Check if the user has the capability to see the submission log column.
         $showsublogcolumn = has_capability('local/sitsgradepush:showsubmissionlogcolumn', \context_course::instance($courseid));
 
@@ -155,7 +155,7 @@ class renderer extends plugin_renderer_base {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function render_dashboard(array $moduledeliveries, int $courseid) : string {
+    public function render_dashboard(array $moduledeliveries, int $courseid): string {
         // Set default value for the select module delivery dropdown list.
         $options[] = (object) ['value' => 'none', 'name' => 'NONE'];
 
@@ -305,7 +305,7 @@ class renderer extends plugin_renderer_base {
      * @param int|null $errortype
      * @return string
      */
-    private function get_label_html(int $errortype = null) : string {
+    private function get_label_html(int $errortype = null): string {
         // This is for old data that does not have the error type.
         if (is_null($errortype)) {
             return '<span class="badge badge-danger">'.errormanager::get_error_label(errormanager::ERROR_UNKNOWN).'</span> ';

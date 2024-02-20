@@ -65,7 +65,7 @@ class turnitintooltwo extends assessment {
      *
      * @return int|null
      */
-    public function get_start_date() : ?int {
+    public function get_start_date(): ?int {
         if ($this->partid) {
             // Return the start date of this part.
             return $this->turnitinparts[$this->partid]->dtstart;
@@ -80,7 +80,7 @@ class turnitintooltwo extends assessment {
      *
      * @return int|null
      */
-    public function get_end_date() : ?int {
+    public function get_end_date(): ?int {
         if ($this->partid) {
             // Return the end date of the part currently pointing to.
             return $this->turnitinparts[$this->partid]->dtdue;
