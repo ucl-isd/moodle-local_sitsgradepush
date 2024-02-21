@@ -89,7 +89,9 @@
                             "markstotransfer": "1",
                             "statusicon": "<i class=\"fa-regular fa-file-lines\" data-toggle=\"tooltip\" data-placement=\"top\" title=\"Push records exist\"></i>",
                             "selectsourceurl": "http://test.m4.local:4001/local/sitsgradepush/select_source.php?courseid=2&mabid=22",
-                            "transferhistoryurl": "http://test.m4.local:4001/local/sitsgradepush/index.php?id=22"
+                            "transferhistoryurl": "http://test.m4.local:4001/local/sitsgradepush/index.php?id=22",
+                            "taskrunning": false,
+                            "taskprogress": "0"
                         }
                     }
                 },
@@ -161,9 +163,9 @@
                                 class="marks-col-field"
                                 data-assessmentmappingid="{{id}}"
                                 data-markscount="{{markstotransfer}}"
-                                data-task-running=""
+                                data-task-running="{{taskrunning}}"
                         >
-                            <div class="marks-container">
+                            <div class="marks-container {{#taskrunning}}hidden{{/taskrunning}}">
                                 <p>
                                     <a href="{{transferhistoryurl}}" class="marks-count" target="_blank">{{markstotransfer}}</a>
                                 </p>
@@ -171,11 +173,11 @@
                                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
                                 </button>
                             </div>
-                            <div class="task-status-container hidden">
+                            <div class="task-status-container {{^taskrunning}}hidden{{/taskrunning}}">
                                 <a href="{{transferhistoryurl}}" target="_blank" class="badge badge-warning p-2"><i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
-                                <small>Progress: 0%</small>
+                                <small>Progress: {{taskprogress}}%</small>
                                 <div class="progress">
-                                    <div class="progress-bar bg-success" role="progressbar" aria-valuenow="0" style="width: 0%" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{taskprogress}}" style="width: {{taskprogress}}%" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </div>
                         </div>

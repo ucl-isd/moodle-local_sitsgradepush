@@ -96,6 +96,7 @@ class renderer extends plugin_renderer_base {
 
         $mappingtables = [];
         $totalmarkscount = 0;
+        $runningtasks = [];
         foreach ($assessmentdata['mappings'] as $mapping) {
             $students = null;
             // Modify the timestamp format and add the label for the last push result.
@@ -123,6 +124,15 @@ class renderer extends plugin_renderer_base {
             $mappingtable->tabletitle = $mapping->formattedname;
             $mappingtable->students = $students;
             $mappingtable->showsublogcolumn = $showsublogcolumn;
+            $mappingtable->taskrunning = false;
+            $mappingtable->taskprogress = 0;
+
+            // Check if there is a task running for the assessment mapping.
+            if ($taskrunning = taskmanager::get_pending_task_in_queue($mapping->id)) {
+                $runningtasks[$mapping->id] = $taskrunning;
+                $mappingtable->taskrunning = true;
+                $mappingtable->taskprogress = $taskrunning->progress ?: 0;
+            }
             $mappingtables[] = $mappingtable;
         }
 
@@ -130,6 +140,7 @@ class renderer extends plugin_renderer_base {
         if (!empty($assessmentdata['invalidstudents']->students)) {
             $assessmentdata['invalidstudents']->tabletitle = $assessmentdata['invalidstudents']->formattedname;
             $assessmentdata['invalidstudents']->showsublogcolumn = $showsublogcolumn;
+            $assessmentdata['invalidstudents']->taskrunning = false;
         }
 
         // Sync threshold.
@@ -142,6 +153,7 @@ class renderer extends plugin_renderer_base {
             'latest-transferred-text' => $this->get_latest_tranferred_text($assessmentdata['mappings']),
             'invalid-students' => !empty($assessmentdata['invalidstudents']->students) ? $assessmentdata['invalidstudents'] : null,
             'sync' => $totalmarkscount <= $syncthreshold ? 1 : 0,
+            'taskrunning' => !empty($runningtasks),
         ]);
     }
 
@@ -212,6 +224,12 @@ class renderer extends plugin_renderer_base {
                         $assessmentmapping->url = $coursemoduleurl->out(false);
                         $transferhistoryurl = new \moodle_url('/local/sitsgradepush/index.php', ['id' => $coursemodule->id]);
                         $assessmentmapping->transferhistoryurl = $transferhistoryurl->out(false);
+
+                        // Check if there is a task running for the assessment mapping.
+                        $taskrunning = taskmanager::get_pending_task_in_queue($componentgrade->assessmentmappingid);
+                        $assessmentmapping->taskrunning = !empty($taskrunning);
+                        $assessmentmapping->taskprogress = $taskrunning ? $taskrunning->progress : 0;
+
                         $componentgrade->assessmentmapping = $assessmentmapping;
                     } else {
                         throw new \moodle_exception('error:invalidcoursemoduleid', 'local_sitsgradepush');
