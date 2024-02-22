@@ -952,35 +952,57 @@ class manager {
      * @return mixed
      */
     private function sort_grade_push_history_table(array $data) {
-        $tempdataarray = [];
+        // Initialize an array to hold different types of records.
+        $tempdataarray = [
+            'transfererror' => [],
+            'updatedaftertransfer' => [],
+            'sublogerror' => [],
+            'other' => [],
+            'notyetpushed' => [],
+        ];
 
-        // Filter out different types of records.
+        // Organize records into different arrays based on their types.
         foreach ($data as $record) {
-            if ($record->lastgradepushresult == 'failed' || $record->lastsublogpushresult == 'failed') {
-                // Failed records.
-                $tempdataarray['error'][] = $record;
-            } else if (is_null($record->lastgradepushresult) && is_null($record->lastsublogpushresult)) {
-                // Records that have not been pushed.
-                $tempdataarray['notyetpushed'][] = $record;
-            } else {
-                // All other records.
-                $tempdataarray['other'][] = $record;
+            switch (true) {
+                case $record->lastgradepushresult == 'failed':
+                    // Mark transfer failed.
+                    $tempdataarray['transfererror'][] = $record;
+                    break;
+                case $record->marksupdatedaftertransfer:
+                    // Marks updated after transfer.
+                    $tempdataarray['updatedaftertransfer'][] = $record;
+                    break;
+                case $record->lastsublogpushresult == 'failed':
+                    // Submission log push failed.
+                    $tempdataarray['sublogerror'][] = $record;
+                    break;
+                case !$record->isgradepushed && !$record->issublogpushed:
+                    // Not yet pushed.
+                    $tempdataarray['notyetpushed'][] = $record;
+                    break;
+                default:
+                    // All other records, including successful transfers and submission log pushes.
+                    $tempdataarray['other'][] = $record;
             }
         }
 
-        // Sort error records by lastgradepusherrortype and then by lastsublogpusherrortype.
-        // As 'student SPR not found' error type has the highest negative number, this error type will be at the top.
-        if (!empty($tempdataarray['error'])) {
-            usort($tempdataarray['error'], function ($a, $b) {
-                if ($b->lastgradepusherrortype == $a->lastgradepusherrortype) {
-                    return $b->lastsublogpusherrortype <=> $a->lastsublogpusherrortype;
-                }
-                return $b->lastgradepusherrortype <=> $a->lastgradepusherrortype;
-            });
+        // Sort errors by error types.
+        foreach (['transfererror', 'sublogerror'] as $errortype) {
+            if (!empty($tempdataarray[$errortype])) {
+                usort($tempdataarray[$errortype], function ($a, $b) use ($errortype) {
+                    if ($errortype === 'transfererror') {
+                        return $b->lastgradepusherrortype <=> $a->lastgradepusherrortype;
+                    } else {
+                        return $b->lastsublogpusherrortype <=> $a->lastsublogpusherrortype;
+                    }
+                });
+            }
         }
 
-        // Merge all arrays.
-        return array_merge($tempdataarray['error'] ?? [], $tempdataarray['other'] ?? [], $tempdataarray['notyetpushed'] ?? []);
+        // Merge all arrays and return the sorted result.
+        return array_merge(
+            ...array_values($tempdataarray)
+        );
     }
 
     /**

@@ -62,8 +62,11 @@ class pushrecord {
     /** @var int Last grade push error type */
     public int $lastgradepusherrortype = 0;
 
-    /** @var string Last grade push time */
-    public string $lastgradepushtime = '-';
+    /** @var string Last grade push time string */
+    public string $lastgradepushtimestring = '-';
+
+    /** @var int Last grade push time */
+    public int $lastgradepushtime = 0;
 
     /** @var string|null Last submission log push result */
     public ?string $lastsublogpushresult = null;
@@ -71,8 +74,11 @@ class pushrecord {
     /** @var int Last submission log push error type */
     public int $lastsublogpusherrortype = 0;
 
-    /** @var string Last submission log push time */
-    public string $lastsublogpushtime = '-';
+    /** @var string Last submission log push time string */
+    public string $lastsublogpushtimestring = '-';
+
+    /** @var int Last submission log push time */
+    public int $lastsublogpushtime = 0;
 
     /** @var bool Is grade pushed */
     public bool $isgradepushed = false;
@@ -188,9 +194,12 @@ class pushrecord {
                 } else {
                     $errortype = $log->errortype ?: errormanager::ERROR_UNKNOWN;
                 }
-                $timecreated = date('Y-m-d H:i:s', $log->timecreated);
+
                 // Get <MAP CODE>-<MAB SEQ> from request url.
-                if (preg_match('#moodle/(.*?)/student#', $log->request, $matches)) {
+                // The Easikit Get Student API will remove the students whose marks had been transferred successfully.
+                // Here we use the request url of a successful transfer log to get the assessment component <MAP CODE>-<MAB SEQ>,
+                // so that we can display the transfer status of mark transfer in the corresponding assessment component mapping.
+                if (!empty($log->request) && preg_match('#moodle/(.*?)/student#', $log->request, $matches)) {
                     $this->componentgrade = $matches[1];
                 }
                 if ($log->type == manager::PUSH_GRADE) {
@@ -202,11 +211,13 @@ class pushrecord {
                     }
                     $this->lastgradepushresult = $result;
                     $this->lastgradepusherrortype = $errortype;
-                    $this->lastgradepushtime = $timecreated;
+                    $this->lastgradepushtimestring = date('Y-m-d H:i:s', $log->timecreated);;
+                    $this->lastgradepushtime = $log->timecreated;
                 } else if ($log->type == manager::PUSH_SUBMISSION_LOG) {
                     $this->lastsublogpushresult = $result;
                     $this->lastsublogpusherrortype = $errortype;
-                    $this->lastsublogpushtime = $timecreated;
+                    $this->lastsublogpushtimestring = date('Y-m-d H:i:s', $log->timecreated);;
+                    $this->lastsublogpushtime = $log->timecreated;
                 }
             }
         }

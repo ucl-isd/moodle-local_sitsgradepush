@@ -95,6 +95,7 @@ class renderer extends plugin_renderer_base {
         $showsublogcolumn = has_capability('local/sitsgradepush:showsubmissionlogcolumn', \context_course::instance($courseid));
 
         $mappingtables = [];
+        $totalmarkscount = 0;
         foreach ($assessmentdata['mappings'] as $mapping) {
             $students = null;
             // Modify the timestamp format and add the label for the last push result.
@@ -112,6 +113,10 @@ class renderer extends plugin_renderer_base {
                 $students = $mapping->students;
             }
 
+            // Get the total marks count.
+            $totalmarkscount += $mapping->markscount;
+
+            // Add the mapping table.
             $mappingtable = new \stdClass();
             $mappingtable->mappingid = $mapping->id;
             $mappingtable->markscount = $mapping->markscount ?? 0;
@@ -127,13 +132,16 @@ class renderer extends plugin_renderer_base {
             $assessmentdata['invalidstudents']->showsublogcolumn = $showsublogcolumn;
         }
 
+        // Sync threshold.
+        $syncthreshold = get_config('local_sitsgradepush', 'sync_threshold');
+
         // Render the table.
         return $this->output->render_from_template('local_sitsgradepush/marks_transfer_history_page', [
             'module-delivery-tables' => $mappingtables,
             'transfer-all-button-label' => get_string('label:pushgrade', 'local_sitsgradepush'),
             'latest-transferred-text' => $this->get_latest_tranferred_text($assessmentdata['mappings']),
             'invalid-students' => !empty($assessmentdata['invalidstudents']->students) ? $assessmentdata['invalidstudents'] : null,
-            'async' => get_config('local_sitsgradepush', 'async'),
+            'sync' => $totalmarkscount <= $syncthreshold ? 1 : 0,
         ]);
     }
 
@@ -323,21 +331,30 @@ class renderer extends plugin_renderer_base {
      * @param array $mappings
      * @return string
      * @throws \coding_exception
-     * @throws \dml_exception
      */
     public function get_latest_tranferred_text(array $mappings): string {
         $lasttasktext = '';
         $lasttasktime = 0;
+
+        // Get the latest transferred time among all transfer records.
         foreach ($mappings as $mapping) {
-            $lasttask = taskmanager::get_last_finished_push_task($mapping->id);
-            if ($lasttask && $lasttask->timeupdated && $lasttask->timeupdated > $lasttasktime) {
-                $lasttasktime = $lasttask->timeupdated;
-                $lasttasktext = get_string(
-                            'label:lastpushtext',
-                            'local_sitsgradepush', [
-                            'date' => date('d/m/Y', $lasttasktime),
-                            'time' => date('g:i:s a', $lasttasktime), ]);
+            // Skip if there is no student.
+            if (empty($mapping->students)) {
+                continue;
             }
+            foreach ($mapping->students as $student) {
+                if ($student->lastgradepushtime && $student->lastgradepushtime > $lasttasktime) {
+                    $lasttasktime = $student->lastgradepushtime;
+                }
+            }
+        }
+
+        if ($lasttasktime > 0) {
+            $lasttasktext = get_string(
+                'label:lastpushtext',
+                'local_sitsgradepush', [
+                'date' => date('d/m/Y', $lasttasktime),
+                'time' => date('g:i:s a', $lasttasktime), ]);
         }
 
         return $lasttasktext;
