@@ -38,7 +38,7 @@ class pushtask extends scheduled_task {
      * @return string
      * @throws \coding_exception
      */
-    public function get_name() : string {
+    public function get_name(): string {
         return get_string('task:pushtask:name', 'local_sitsgradepush');
     }
 

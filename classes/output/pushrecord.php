@@ -137,7 +137,7 @@ class pushrecord {
      * @return void
      * @throws \moodle_exception
      */
-    protected function set_grade (int $coursemoduleid, int $studentid): void {
+    protected function set_grade(int $coursemoduleid, int $studentid): void {
         $grade = $this->manager->get_student_grade($coursemoduleid, $studentid);
         if (isset($grade)) {
             $this->marks = $grade;
@@ -149,7 +149,7 @@ class pushrecord {
      * @param \stdClass $student
      * @return void
      */
-    protected function set_student_info (\stdClass $student): void {
+    protected function set_student_info(\stdClass $student): void {
         $this->userid = $student->id;
         $this->idnumber = $student->idnumber;
         $this->firstname = $student->firstname;
@@ -165,7 +165,7 @@ class pushrecord {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    protected function set_submission (int $coursemoduleid, int $studentid): void {
+    protected function set_submission(int $coursemoduleid, int $studentid): void {
 
         // Get submission.
         $submission = submissionfactory::get_submission($coursemoduleid, $studentid);

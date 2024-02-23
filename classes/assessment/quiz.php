@@ -40,7 +40,7 @@ class quiz extends assessment {
      *
      * @return int|null
      */
-    public function get_start_date() : ?int {
+    public function get_start_date(): ?int {
         return $this->moduleinstance->timeopen;
     }
 
@@ -49,7 +49,7 @@ class quiz extends assessment {
      *
      * @return int|null
      */
-    public function get_end_date() : ?int {
+    public function get_end_date(): ?int {
         return $this->moduleinstance->timeclose;
     }
 }

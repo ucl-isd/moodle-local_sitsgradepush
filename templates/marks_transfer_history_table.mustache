@@ -38,6 +38,8 @@
         "mappingid":"21",
         "markscount":"1",
         "showsublogcolumn":true,
+        "taskrunning":false,
+        "taskprogress":"0",
         "students":[{
                 "firstname":"Test",
                 "lastname":"User",
@@ -55,12 +57,12 @@
 }}
 <div class="sitsgradepush-history-table-container">
 <h5>{{tabletitle}}</h5>
-<div id="progress-container-{{mappingid}}" class="alert alert-success hidden progress-container">
+<div id="progress-container-{{mappingid}}" class="alert alert-success progress-container {{^taskrunning}}hidden{{/taskrunning}}">
     <div>
         <h3>{{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</h3>
-        <small>{{#str}} progress, local_sitsgradepush {{/str}} 0%</small>
+        <small>{{#str}} progress, local_sitsgradepush {{/str}} {{taskprogress}}%</small>
         <div class="progress">
-            <div class="progress-bar bg-success" role="progressbar" aria-valuenow="0" style="width: 0%" aria-valuemin="0" aria-valuemax="100"></div>
+            <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{taskprogress}}" style="width: {{taskprogress}}%" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
     </div>
 </div>

@@ -333,7 +333,7 @@ class taskmanager {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function send_email_notification(int $taskid) : void {
+    public static function send_email_notification(int $taskid): void {
         global $DB, $PAGE, $OUTPUT;
 
         // Get the content of the task.
