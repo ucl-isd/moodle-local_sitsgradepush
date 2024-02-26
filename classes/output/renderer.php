@@ -200,8 +200,6 @@ class renderer extends plugin_renderer_base {
 
                     // No course module ID means the MAB is not mapped to any activity.
                     if (empty($componentgrade->coursemoduleid)) {
-                        // Disable the change source button and push grade button if the MAB is not mapped to any activity.
-                        $componentgrade->disablechangesourcebutton = ' disabled';
                         continue;
                     }
 
@@ -228,7 +226,11 @@ class renderer extends plugin_renderer_base {
                         // Check if there is a task running for the assessment mapping.
                         $taskrunning = taskmanager::get_pending_task_in_queue($componentgrade->assessmentmappingid);
                         $assessmentmapping->taskrunning = !empty($taskrunning);
-                        $assessmentmapping->taskprogress = $taskrunning ? $taskrunning->progress : 0;
+                        $assessmentmapping->taskprogress = $taskrunning && $taskrunning->progress ? $taskrunning->progress : 0;
+
+                        // Disable the change source button if there is a task running.
+                        $assessmentmapping->disablechangesource =
+                            !empty($taskrunning) || $this->manager->has_grades_pushed($componentgrade->assessmentmappingid);
 
                         $componentgrade->assessmentmapping = $assessmentmapping;
                     } else {

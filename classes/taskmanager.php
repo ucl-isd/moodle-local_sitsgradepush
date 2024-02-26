@@ -388,7 +388,7 @@ class taskmanager {
                 'map_code' => $result->mab,
                 'sits_assessment' => $result->mabname,
                 'activity_url' => $url->out(false),
-                'support_url' => get_config('local_sitsgradepush', 'suppuort_page_url') ?? '',
+                'support_url' => get_config('local_sitsgradepush', 'support_page_url') ?? '',
                 'succeeded_count' => $succeededcount,
                 'failed_count' => $failedcount,
             ]);

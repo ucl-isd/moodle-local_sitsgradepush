@@ -52,6 +52,11 @@ if ($manager->get_local_component_grade_by_id($mabid) === false) {
     throw new moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mabid);
 }
 
+// Check there is no task running and no marks transfer records.
+if (!$manager->can_change_source($mabid)) {
+    throw new moodle_exception('error:cannot_change_source', 'local_sitsgradepush');
+}
+
 // Make sure user is authenticated.
 require_login();
 

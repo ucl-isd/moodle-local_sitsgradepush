@@ -1396,6 +1396,23 @@ class manager {
     }
 
     /**
+     * Can the source be changed for a component grade.
+     *
+     * @param int $componentgradeid
+     * @return bool
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function can_change_source(int $componentgradeid): bool {
+        if ($assessementmapping = $this->is_component_grade_mapped($componentgradeid)) {
+            return !taskmanager::get_pending_task_in_queue($assessementmapping->id) &&
+                !$this->has_grades_pushed($assessementmapping->id);
+        } else {
+            return true;
+        }
+    }
+
+    /**
      * Save transfer log.
      *
      * @param string $type

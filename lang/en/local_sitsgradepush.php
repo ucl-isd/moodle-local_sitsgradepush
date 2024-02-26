@@ -147,6 +147,7 @@ $string['error:marks_transfer_failed'] = 'Marks transfer failed.';
 $string['error:submission_log_transfer_failed'] = 'Submission Transfer failed.';
 $string['error:grade_items_not_found'] = 'Grade items not found.';
 $string['error:gradetype_not_supported'] = 'Marking {$a} are not currently supported.';
+$string['error:cannot_change_source'] = 'Cannot change source due to existing transfer records or running tasks for this assessment component.';
 $string['form:alert_no_mab_found'] = 'No assessment components found';
 $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Marks Transfer.';
 

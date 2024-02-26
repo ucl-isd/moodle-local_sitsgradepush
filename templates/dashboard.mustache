@@ -91,7 +91,8 @@
                             "selectsourceurl": "http://test.m4.local:4001/local/sitsgradepush/select_source.php?courseid=2&mabid=22",
                             "transferhistoryurl": "http://test.m4.local:4001/local/sitsgradepush/index.php?id=22",
                             "taskrunning": false,
-                            "taskprogress": "0"
+                            "taskprogress": "0",
+                            "disablechangesource": false
                         }
                     }
                 },
@@ -150,11 +151,15 @@
                             <span class="badge badge-info">{{type}}</span>
                             <a href="{{url}}" target="_blank">{{name}}</a>
                         </p>
+                        <a id="change-source-button-{{id}}" href="{{selectsourceurl}}" class="btn btn-secondary btn-sm change-source {{#disablechangesource}}hidden{{/disablechangesource}}">
+                            {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
+                        </a>
                     {{/assessmentmapping}}
+                    {{^assessmentmapping}}
                     <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
-                        {{#assessmentmapping}}{{#str}} dashboard:changesource, local_sitsgradepush {{/str}}{{/assessmentmapping}}
-                        {{^assessmentmapping}}{{#str}} selectsource:header, local_sitsgradepush {{/str}}{{/assessmentmapping}}
+                        {{#str}} selectsource:header, local_sitsgradepush {{/str}}
                     </a>
+                    {{/assessmentmapping}}
                 </td>
                 <td class="marks-col">
                     {{#assessmentmapping}}

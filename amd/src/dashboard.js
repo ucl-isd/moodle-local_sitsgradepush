@@ -130,7 +130,8 @@ async function pushMarks(assessmentmappingid) {
 
         // Check if the push task is successfully scheduled.
         if (result.success) {
-            updateAssessments(globalCourseid);
+            // Update the UI once a task is scheduled successfully.
+            updateUIOnTaskScheduling(assessmentmappingid);
         }
         let message = '';
         if (!result.success && result.message) {
@@ -197,6 +198,27 @@ async function pushAllMarks(page) {
 
     // Update the page information.
     updateAssessments(globalCourseid);
+}
+
+/**
+ * Update the UI once a task is scheduled successfully.
+ * e.g. hide change source button, show progress bar.
+ *
+ * @param {int} assessmentmappingid
+ */
+function updateUIOnTaskScheduling(assessmentmappingid) {
+    // Find the change source button.
+    let changeSourceButton = document.getElementById('change-source-button-' + assessmentmappingid);
+    if (changeSourceButton) {
+        // Hide the change source button.
+        changeSourceButton.style.display = 'none';
+    }
+
+    // Hide the transfer button and show the progress bar immediately.
+    let assessments = [
+        {task: {progress: 0}, assessmentmappingid: assessmentmappingid, markscount: 0},
+    ];
+    updateMarksColumn(assessments);
 }
 
 /**
