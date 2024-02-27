@@ -35,6 +35,7 @@
     * jump-to-label - String, jump to label.
     * jump-to-options - Array, array of jump to options.
         * name - String, module delivery name.
+    * currentacademicyear - Boolean, indicate if the course is in the current academic year.
     * module-delivery-tables - Array, array of module delivery tables.
         * tableid - String, table id.
         * modcode - String, module code.
@@ -66,6 +67,7 @@
                 "name": "PHAY0063-2022-T1-A7P-001 Coursework 4000 word written case studies (50%)"
             }
         ],
+        "currentacademicyear":true,
         "module-delivery-tables":
         [
             {
@@ -153,10 +155,13 @@
                             <span class="badge badge-info">{{type}}</span>
                             <a href="{{url}}" target="_blank">{{name}}</a>
                         </p>
+                    {{#currentacademicyear}}
                         <a id="change-source-button-{{id}}" href="{{selectsourceurl}}" class="btn btn-secondary btn-sm change-source {{#disablechangesource}}hidden{{/disablechangesource}}">
                             {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
                         </a>
+                    {{/currentacademicyear}}
                     {{/assessmentmapping}}
+                    {{#currentacademicyear}}
                     {{^assessmentmapping}}
                         {{#available}}
                             <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
@@ -167,6 +172,7 @@
                             {{{unavailablereasons}}}
                         {{/available}}
                     {{/assessmentmapping}}
+                    {{/currentacademicyear}}
                 </td>
                 <td class="marks-col">
                     {{#assessmentmapping}}
@@ -181,9 +187,11 @@
                                 <p>
                                     <a href="{{transferhistoryurl}}" class="marks-count" target="_blank">{{markstotransfer}}</a>
                                 </p>
+                            {{#currentacademicyear}}
                                 <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}hidden{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
                                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
                                 </button>
+                            {{/currentacademicyear}}
                             </div>
                             <div class="task-status-container {{^taskrunning}}hidden{{/taskrunning}}">
                                 <a href="{{transferhistoryurl}}" target="_blank" class="badge badge-warning p-2"><i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
@@ -207,7 +215,9 @@
 {{/module-delivery-tables}}
 
 <div class="text-right py-3">
+{{#currentacademicyear}}
     {{> local_sitsgradepush/transfer_all_button }}
+{{/currentacademicyear}}
 </div>
 
 {{! Modal }}

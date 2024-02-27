@@ -27,6 +27,7 @@
     Context variables required for this template:
     * transfer-all-button-label - String, button label.
     * latest-transferred-text - String, latest transferred datetime.
+    * currentacademicyear - Boolean, indicate if the course is in the current academic year.
     * module-delivery-tables - Array of module delivery tables.
         * tabletitle - String, table title.
         * students - Array of students.
@@ -54,6 +55,7 @@
 
     Example context (json):
     {
+        "currentacademicyear":true,
         "transfer-all-button-label":"Transfer Marks",
         "latest-transferred-text":"Last transferred 29/01/2024 at 11:00:49 pm",
         "module-delivery-tables":[{
@@ -96,7 +98,9 @@
 
 <!--Transfer marks button-->
 <div class="text-left py-3">
-    {{> local_sitsgradepush/transfer_all_button }}
+    {{#currentacademicyear}}
+        {{> local_sitsgradepush/transfer_all_button }}
+    {{/currentacademicyear}}
 </div>
 
 <!--Latest transferred datetime-->

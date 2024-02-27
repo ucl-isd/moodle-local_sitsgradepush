@@ -47,6 +47,11 @@ if (!$course = get_course($courseid)) {
 // Get the component grades.
 $manager = manager::get_manager();
 
+// Check if the course is in the current academic year.
+if (!$manager->is_current_academic_year_activity($courseid)) {
+    throw new moodle_exception('error:pastactivity', 'local_sitsgradepush');
+}
+
 // Check MAB exists.
 if (!$mab = $manager->get_local_component_grade_by_id($mabid)) {
     throw new moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mabid);

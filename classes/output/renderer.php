@@ -94,6 +94,9 @@ class renderer extends plugin_renderer_base {
         // Check if the user has the capability to see the submission log column.
         $showsublogcolumn = has_capability('local/sitsgradepush:showsubmissionlogcolumn', \context_course::instance($courseid));
 
+        // Check if the course is in the current academic year.
+        $iscurrentacademicyear = $this->manager->is_current_academic_year_activity($courseid);
+
         $mappingtables = [];
         $totalmarkscount = 0;
         $runningtasks = [];
@@ -148,6 +151,7 @@ class renderer extends plugin_renderer_base {
 
         // Render the table.
         return $this->output->render_from_template('local_sitsgradepush/marks_transfer_history_page', [
+            'currentacademicyear' => $iscurrentacademicyear,
             'module-delivery-tables' => $mappingtables,
             'transfer-all-button-label' => get_string('label:pushgrade', 'local_sitsgradepush'),
             'latest-transferred-text' => $this->get_latest_tranferred_text($assessmentdata['mappings']),
@@ -170,6 +174,9 @@ class renderer extends plugin_renderer_base {
     public function render_dashboard(array $moduledeliveries, int $courseid): string {
         // Set default value for the select module delivery dropdown list.
         $options[] = (object) ['value' => 'none', 'name' => 'NONE'];
+
+        // Check if the course is in the current academic year.
+        $iscurrentacademicyear = $this->manager->is_current_academic_year_activity($courseid);
 
         $moduledeliverytables = [];
         // Prepare the content for each module delivery table.
@@ -254,6 +261,7 @@ class renderer extends plugin_renderer_base {
         return $this->output->render_from_template(
             'local_sitsgradepush/dashboard',
             [
+                'currentacademicyear' => $iscurrentacademicyear,
                 'module-delivery-tables' => $moduledeliverytables,
                 'jump-to-options' => $options,
                 'jump-to-label' => get_string('label:jumpto', 'local_sitsgradepush'),
