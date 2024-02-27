@@ -80,6 +80,8 @@
                         "astcode": "CN01",
                         "mabperc": "50",
                         "mabname": "Coursework 4000 word written case studies (50%)",
+                        "available": true,
+                        "unavailablereasons": "",
                         "assessmentmapping":
                         {
                             "id": "39",
@@ -156,9 +158,14 @@
                         </a>
                     {{/assessmentmapping}}
                     {{^assessmentmapping}}
-                    <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
-                        {{#str}} selectsource:header, local_sitsgradepush {{/str}}
-                    </a>
+                        {{#available}}
+                            <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
+                                {{#str}} selectsource:header, local_sitsgradepush {{/str}}
+                            </a>
+                        {{/available}}
+                        {{^available}}
+                            {{{unavailablereasons}}}
+                        {{/available}}
                     {{/assessmentmapping}}
                 </td>
                 <td class="marks-col">

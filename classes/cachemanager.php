@@ -36,6 +36,9 @@ class cachemanager {
     /** @var string Cache area for storing students in an assessment component.*/
     const CACHE_AREA_COMPONENTGRADES = 'componentgrades';
 
+    /** @var string Cache area for storing marking schemes.*/
+    const CACHE_AREA_MARKINGSCHEMES = 'markingschemes';
+
     /**
      * Get cache.
      *

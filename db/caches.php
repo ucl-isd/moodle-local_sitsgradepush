@@ -36,4 +36,9 @@ $definitions = [
         'simplekeys' => true,
         'simpledata' => false,
     ],
+    'markingschemes' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => false,
+    ],
 ];
