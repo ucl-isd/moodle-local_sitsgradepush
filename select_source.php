@@ -47,9 +47,25 @@ if (!$course = get_course($courseid)) {
 // Get the component grades.
 $manager = manager::get_manager();
 
+// Check if the course is in the current academic year.
+if (!$manager->is_current_academic_year_activity($courseid)) {
+    throw new moodle_exception('error:pastactivity', 'local_sitsgradepush');
+}
+
 // Check MAB exists.
-if ($manager->get_local_component_grade_by_id($mabid) === false) {
+if (!$mab = $manager->get_local_component_grade_by_id($mabid)) {
     throw new moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mabid);
+}
+
+// Check if the component grade is valid for mapping.
+list($mabvalid, $errormessages) = $manager->is_component_grade_valid_for_mapping($mab);
+if (!$mabvalid) {
+    throw new moodle_exception('error:mab_invalid_for_mapping', 'local_sitsgradepush', '', implode(', ', $errormessages));
+}
+
+// Check there is no task running and no marks transfer records.
+if (!$manager->can_change_source($mabid)) {
+    throw new moodle_exception('error:cannot_change_source', 'local_sitsgradepush');
 }
 
 // Make sure user is authenticated.

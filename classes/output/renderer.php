@@ -94,6 +94,9 @@ class renderer extends plugin_renderer_base {
         // Check if the user has the capability to see the submission log column.
         $showsublogcolumn = has_capability('local/sitsgradepush:showsubmissionlogcolumn', \context_course::instance($courseid));
 
+        // Check if the course is in the current academic year.
+        $iscurrentacademicyear = $this->manager->is_current_academic_year_activity($courseid);
+
         $mappingtables = [];
         $totalmarkscount = 0;
         $runningtasks = [];
@@ -148,6 +151,7 @@ class renderer extends plugin_renderer_base {
 
         // Render the table.
         return $this->output->render_from_template('local_sitsgradepush/marks_transfer_history_page', [
+            'currentacademicyear' => $iscurrentacademicyear,
             'module-delivery-tables' => $mappingtables,
             'transfer-all-button-label' => get_string('label:pushgrade', 'local_sitsgradepush'),
             'latest-transferred-text' => $this->get_latest_tranferred_text($assessmentdata['mappings']),
@@ -170,6 +174,9 @@ class renderer extends plugin_renderer_base {
     public function render_dashboard(array $moduledeliveries, int $courseid): string {
         // Set default value for the select module delivery dropdown list.
         $options[] = (object) ['value' => 'none', 'name' => 'NONE'];
+
+        // Check if the course is in the current academic year.
+        $iscurrentacademicyear = $this->manager->is_current_academic_year_activity($courseid);
 
         $moduledeliverytables = [];
         // Prepare the content for each module delivery table.
@@ -200,8 +207,6 @@ class renderer extends plugin_renderer_base {
 
                     // No course module ID means the MAB is not mapped to any activity.
                     if (empty($componentgrade->coursemoduleid)) {
-                        // Disable the change source button and push grade button if the MAB is not mapped to any activity.
-                        $componentgrade->disablechangesourcebutton = ' disabled';
                         continue;
                     }
 
@@ -228,7 +233,11 @@ class renderer extends plugin_renderer_base {
                         // Check if there is a task running for the assessment mapping.
                         $taskrunning = taskmanager::get_pending_task_in_queue($componentgrade->assessmentmappingid);
                         $assessmentmapping->taskrunning = !empty($taskrunning);
-                        $assessmentmapping->taskprogress = $taskrunning ? $taskrunning->progress : 0;
+                        $assessmentmapping->taskprogress = $taskrunning && $taskrunning->progress ? $taskrunning->progress : 0;
+
+                        // Disable the change source button if there is a task running.
+                        $assessmentmapping->disablechangesource =
+                            !empty($taskrunning) || $this->manager->has_grades_pushed($componentgrade->assessmentmappingid);
 
                         $componentgrade->assessmentmapping = $assessmentmapping;
                     } else {
@@ -252,6 +261,7 @@ class renderer extends plugin_renderer_base {
         return $this->output->render_from_template(
             'local_sitsgradepush/dashboard',
             [
+                'currentacademicyear' => $iscurrentacademicyear,
                 'module-delivery-tables' => $moduledeliverytables,
                 'jump-to-options' => $options,
                 'jump-to-label' => get_string('label:jumpto', 'local_sitsgradepush'),

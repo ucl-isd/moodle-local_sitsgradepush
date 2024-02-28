@@ -85,6 +85,7 @@ class manager {
         'mabperc' => 'MAB_PERC',
         'mabname' => 'MAB_NAME',
         'examroomcode' => 'APA_ROMC',
+        'mkscode' => 'MKS_CODE',
     ];
 
     /** @var string[] Allowed activity types */
@@ -177,9 +178,6 @@ class manager {
                     // Check response.
                     $this->check_response($response, $request);
 
-                    // Filter out unwanted component grades by marking scheme.
-                    $response = $this->filter_out_invalid_component_grades($response);
-
                     // Set cache expiry to 1 hour.
                     cachemanager::set_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key, $response, 3600);
 
@@ -199,12 +197,23 @@ class manager {
      */
     public function fetch_marking_scheme_from_sits() {
         try {
+            $key = 'markingschemes';
+            $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_MARKINGSCHEMES, $key);
+
+            // Return cache if exists.
+            if (!empty($cache)) {
+                return (array) $cache;
+            }
+
             // Get marking scheme from SITS.
             $request = $this->apiclient->build_request(self::GET_MARKING_SCHEMES, null);
             $response = $this->apiclient->send_request($request);
 
             // Check response.
             $this->check_response($response, $request);
+
+            // Set cache expiry to 1 hour.
+            cachemanager::set_cache(cachemanager::CACHE_AREA_MARKINGSCHEMES, $key, $response, 3600);
 
             return $response;
         } catch (\moodle_exception $e) {
@@ -213,27 +222,16 @@ class manager {
     }
 
     /**
-     * Filter out invalid component grades data (MAB) from SITS.
+     * Is the component grade's marking scheme supported.
      *
-     * @param array $componentgrades
-     * @return array
-     * @throws \dml_exception
+     * @param \stdClass $componentgrade
+     * @return bool
      */
-    public function filter_out_invalid_component_grades(array $componentgrades): array {
-        $filtered = [];
-
+    public function is_marking_scheme_supported(\stdClass $componentgrade): bool {
         $makingschemes = $this->fetch_marking_scheme_from_sits();
-        if (!empty($makingschemes)) {
-            foreach ($componentgrades as $componentgrade) {
-                if ($makingschemes[$componentgrade['MKS_CODE']]['MKS_MARKS'] == 'Y' &&
-                    $makingschemes[$componentgrade['MKS_CODE']]['MKS_IUSE'] == 'Y' &&
-                    $makingschemes[$componentgrade['MKS_CODE']]['MKS_TYPE'] == 'A') {
-                    $filtered[] = $componentgrade;
-                }
-            }
-        }
-
-        return $filtered;
+        return ($makingschemes[$componentgrade->mkscode]['MKS_MARKS'] == 'Y' &&
+            $makingschemes[$componentgrade->mkscode]['MKS_IUSE'] == 'Y' &&
+            $makingschemes[$componentgrade->mkscode]['MKS_TYPE'] == 'A');
     }
 
     /**
@@ -325,27 +323,17 @@ class manager {
                 'periodslotcode' => $occ->mod_occ_psl_code,
             ];
 
-            // Get AST codes.
-            if ($astcodes = self::get_moodle_ast_codes()) {
-                list($astcodessql, $astcodesparam) = $DB->get_in_or_equal($astcodes, SQL_PARAMS_NAMED, 'astcode');
-                $sql .= " AND astcode {$astcodessql}";
-                $params = array_merge($params, $astcodesparam);
-            }
-
             // Get component grades for all potential assessment types.
             $records = $DB->get_records_sql($sql, $params);
 
-            // Get ast codes that work with exam room code.
-            $astcodesworkwithexamroomcodes = self::get_moodle_ast_codes_work_with_exam_room_code();
-
-            // Get moodle exam room code.
-            $examroomcode = get_config('local_sitsgradepush', 'moodle_exam_room_code');
-
-            // Remove component grades that do not match the exam room code.
-            if (!empty($astcodesworkwithexamroomcodes) && !empty($examroomcode)) {
+            if (!empty($records)) {
                 foreach ($records as $record) {
-                    if (in_array($record->astcode, $astcodesworkwithexamroomcodes) && $record->examroomcode != $examroomcode) {
-                        unset($records[$record->id]);
+                    $record->unavailablereasons = '';
+                    // Check if the component grade is valid for mapping.
+                    list($valid, $unavailablereasons) = $this->is_component_grade_valid_for_mapping($record);
+                    $record->available = $valid;
+                    if (!$valid) {
+                        $record->unavailablereasons = implode('<br>', $unavailablereasons);
                     }
                 }
             }
@@ -378,6 +366,46 @@ class manager {
     }
 
     /**
+     * Check if the component grade is valid for mapping.
+     *
+     * @param \stdClass $componentgrade
+     * @return array
+     * @throws \dml_exception|\coding_exception
+     */
+    public function is_component_grade_valid_for_mapping(\stdClass $componentgrade): array {
+        // Get settings.
+        $assessmenttypecodes = self::get_moodle_ast_codes();
+        $assessmenttypecodeswithexamcode = self::get_moodle_ast_codes_work_with_exam_room_code();
+        $examroomcode = get_config('local_sitsgradepush', 'moodle_exam_room_code');
+
+        $valid = true;
+        $unavailablereasons = [];
+
+        // Check marking scheme.
+        if (!$this->is_marking_scheme_supported($componentgrade)) {
+            $valid = false;
+            $unavailablereasons[] = get_string('error:mks_scheme_not_supported', 'local_sitsgradepush');
+        }
+
+        // Check assessment type codes.
+        if (!empty($assessmenttypecodes) && !in_array($componentgrade->astcode, $assessmenttypecodes)) {
+            $valid = false;
+            $unavailablereasons[] = get_string('error:ast_code_not_supported', 'local_sitsgradepush');
+        }
+
+        // Check assessment type codes that works with exam room code.
+        if (!empty($assessmenttypecodeswithexamcode) && !empty($examroomcode)) {
+            if (in_array($componentgrade->astcode, $assessmenttypecodeswithexamcode) &&
+                $componentgrade->examroomcode != $examroomcode) {
+                $valid = false;
+                $unavailablereasons[] = get_string('error:ast_code_exam_room_code_not_matched', 'local_sitsgradepush');
+            }
+        }
+
+        return [$valid, $unavailablereasons];
+    }
+
+    /**
      * Save component grades from SITS to database.
      *
      * @param array $componentgrades
@@ -404,6 +432,7 @@ class manager {
                     $record->mabperc = $componentgrade['MAB_PERC'];
                     $record->mabname = $componentgrade['MAB_NAME'];
                     $record->examroomcode = $componentgrade['APA_ROMC'];
+                    $record->mkscode = $componentgrade['MKS_CODE'];
                     $record->timemodified = time();
 
                     $DB->update_record(self::TABLE_COMPONENT_GRADE, $record);
@@ -1393,6 +1422,23 @@ class manager {
         }
 
         return $results;
+    }
+
+    /**
+     * Can the source be changed for a component grade.
+     *
+     * @param int $componentgradeid
+     * @return bool
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function can_change_source(int $componentgradeid): bool {
+        if ($assessementmapping = $this->is_component_grade_mapped($componentgradeid)) {
+            return !taskmanager::get_pending_task_in_queue($assessementmapping->id) &&
+                !$this->has_grades_pushed($assessementmapping->id);
+        } else {
+            return true;
+        }
     }
 
     /**

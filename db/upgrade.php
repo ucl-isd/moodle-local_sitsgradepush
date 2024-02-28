@@ -396,5 +396,20 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2024020100, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2024022600) {
+
+        // Define field mkscode to be added to local_sitsgradepush_mab.
+        $table = new xmldb_table('local_sitsgradepush_mab');
+        $field = new xmldb_field('mkscode', XMLDB_TYPE_CHAR, '6', null, null, null, null, 'examroomcode');
+
+        // Conditionally launch add field mkscode.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024022600, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
