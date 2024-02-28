@@ -390,7 +390,7 @@ class manager {
         // Check assessment type codes.
         if (!empty($assessmenttypecodes) && !in_array($componentgrade->astcode, $assessmenttypecodes)) {
             $valid = false;
-            $unavailablereasons[] = get_string('error:ast_code_not_supported', 'local_sitsgradepush');
+            $unavailablereasons[] = get_string('error:ast_code_not_supported', 'local_sitsgradepush', $componentgrade->astcode);
         }
 
         // Check assessment type codes that works with exam room code.
