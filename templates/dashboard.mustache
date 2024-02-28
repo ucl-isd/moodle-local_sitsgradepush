@@ -129,13 +129,13 @@
         <hr>
         <div class="row">
             <div class="col-6">
-                <small>{{#str}} dashboard:moduledelivery, local_sitsgradepush {{/str}}</small>
-                <h3 class="mb-0">{{{ moduledelivery }}}</h3>
-                <small>{{#str}} dashboard:level, local_sitsgradepush, {{level}} {{/str}} {{graduatetype}}</small>
+                <small tabindex="0">{{#str}} dashboard:moduledelivery, local_sitsgradepush {{/str}}</small>
+                <h3 class="mb-0" tabindex="0">{{{ moduledelivery }}}</h3>
+                <small tabindex="0">{{#str}} dashboard:level, local_sitsgradepush, {{level}} {{/str}} {{graduatetype}}</small>
             </div>
             <div class="col-6">
-                <small>Map code<br></small>
-                <div class="h3">{{{ mapcode }}}</div>
+                <small tabindex="0">Map code<br></small>
+                <div class="h3" tabindex="0">{{{ mapcode }}}</div>
             </div>
         </div>
     </div>
@@ -152,17 +152,22 @@
         <tbody>
         {{#componentgrades}}
             <tr>
-                <td>{{mabseq}}</td>
-                <td>{{mabname}}</td>
-                <td>{{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}</td>
+                <td tabindex="0" aria-label="Sequence code {{mabseq}}">{{mabseq}}</td>
+                <td tabindex="0" aria-label="{{#str}} dashboard:sits_assessment, local_sitsgradepush {{/str}} {{mabname}}">{{mabname}}</td>
+                <td tabindex="0" aria-label="{{#str}} dashboard:weight, local_sitsgradepush {{/str}} {{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}">{{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}</td>
                 <td>
                     {{#assessmentmapping}}
                         <p>
                             <span class="badge badge-info">{{type}}</span>
-                            <a href="{{url}}" target="_blank">{{name}}</a>
+                            <a href="{{url}}" target="_blank" aria-label="{{type}}, {{name}}">{{name}}</a>
                         </p>
                     {{#currentacademicyear}}
-                        <a id="change-source-button-{{id}}" href="{{selectsourceurl}}" class="btn btn-secondary btn-sm change-source {{#disablechangesource}}hidden{{/disablechangesource}}">
+                        <a id="change-source-button-{{id}}"
+                           href="{{selectsourceurl}}"
+                           class="btn btn-secondary btn-sm change-source {{#disablechangesource}}hidden{{/disablechangesource}}"
+                           role="button"
+                           aria-label="{{#str}} dashboard:changesource, local_sitsgradepush {{/str}} for {{mabname}}"
+                        >
                             {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
                         </a>
                     {{/currentacademicyear}}
@@ -170,12 +175,16 @@
                     {{#currentacademicyear}}
                     {{^assessmentmapping}}
                         {{#available}}
-                            <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
+                            <a href="{{selectsourceurl}}"
+                               class="btn btn-secondary btn-sm"
+                               role="button"
+                               aria-label="{{#str}} selectsource:header, local_sitsgradepush {{/str}} for {{mabname}}"
+                            >
                                 {{#str}} selectsource:header, local_sitsgradepush {{/str}}
                             </a>
                         {{/available}}
                         {{^available}}
-                            {{{unavailablereasons}}}
+                            <div tabindex="0">{{{unavailablereasons}}}</div>
                         {{/available}}
                     {{/assessmentmapping}}
                     {{/currentacademicyear}}
@@ -191,17 +200,31 @@
                         >
                             <div class="marks-container {{#taskrunning}}hidden{{/taskrunning}}">
                                 <p>
-                                    <a href="{{transferhistoryurl}}" class="marks-count" target="_blank">{{markstotransfer}}</a>
+                                    <a href="{{transferhistoryurl}}"
+                                       class="marks-count"
+                                       target="_blank"
+                                       aria-label="{{markstotransfer}} number of marks to transfer, status page for {{name}}">
+                                        {{markstotransfer}}
+                                    </a>
                                 </p>
                             {{#currentacademicyear}}
-                                <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}hidden{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
+                                <button type="button"
+                                        class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}hidden{{/markstotransfer}}"
+                                        data-toggle="modal" data-target="#transferModal"
+                                        aria-label="{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}} for {{mabname}}"
+                                >
                                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
                                 </button>
                             {{/currentacademicyear}}
                             </div>
                             <div class="task-status-container {{^taskrunning}}hidden{{/taskrunning}}">
-                                <a href="{{transferhistoryurl}}" target="_blank" class="badge badge-warning p-2"><i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
-                                <small>Progress: {{taskprogress}}%</small>
+                                <a href="{{transferhistoryurl}}"
+                                   target="_blank"
+                                   class="badge badge-warning p-2"
+                                      aria-label="{{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}} for {{mabname}}, status page for {{name}}"
+                                >
+                                    <i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
+                                <small tabindex="0">Progress: {{taskprogress}}%</small>
                                 <div class="progress">
                                     <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{taskprogress}}" style="width: {{taskprogress}}%" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
