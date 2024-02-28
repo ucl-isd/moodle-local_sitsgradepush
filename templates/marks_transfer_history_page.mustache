@@ -95,7 +95,11 @@
         }]
     }
 }}
-
+{{^currentacademicyear}}
+    <div class="alert alert-warning" role="alert">
+        {{#str}} error:pastcourse, local_sitsgradepush {{/str}}
+    </div>
+{{/currentacademicyear}}
 <!--Transfer marks button-->
 <div class="text-left py-3">
     {{#currentacademicyear}}
