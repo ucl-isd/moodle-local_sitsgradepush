@@ -1,0 +1,20 @@
+---
+name: CI
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@master
+      env:
+        SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
+        SONAR_HOST_URL: https://www.sonarqube.ucl.ac.uk
+      with:
+        args: -Dsonar.projectKey=${{github.event.repository.name}}
