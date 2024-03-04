@@ -15,6 +15,6 @@ jobs:
       uses: sonarsource/sonarqube-scan-action@master
       env:
         SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
-        SONAR_HOST_URL: https://www.sonarqube.ucl.ac.uk
+        SONAR_HOST_URL: ${{vars.SONAR_HOST_URL}}
       with:
         args: -Dsonar.projectKey=${{github.event.repository.name}}
