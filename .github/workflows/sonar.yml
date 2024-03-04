@@ -1,5 +1,5 @@
 ---
-name: Sonarqube
+name: Sonarqube report
 on:
   workflow_dispatch:
   push:
