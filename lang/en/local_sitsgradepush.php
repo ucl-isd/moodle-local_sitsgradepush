@@ -71,6 +71,7 @@ $string['pushrecordsexist'] = 'Transfer records exist';
 $string['pushrecordsnotexist'] = 'No transfer records';
 $string['marks_transferred_successfully'] = 'Marks Transferred Successfully';
 $string['progress'] = 'Progress:';
+$string['select'] = 'Select';
 
 // Marks transfer activity index page.
 $string['index:header'] = 'SITS Marks Transfer Status';
@@ -97,6 +98,7 @@ $string['dashboard:asttype'] = 'AST TYPE';
 $string['dashboard:source'] = 'Source';
 $string['dashboard:moodle_activity'] = 'Moodle activity';
 $string['dashboard:marks_to_transfer'] = 'Marks to transfer';
+$string['dashboard:view_details'] = 'View details';
 $string['dashboard:view_marks_to_transfer'] = 'View marks to transfer';
 $string['dashboard:actions'] = 'ACTIONS';
 $string['dashboard:transfermarks'] = 'Transfer marks';
@@ -194,22 +196,28 @@ $string['privacy:metadata:local_sitsgradepush_tasks:status'] = 'The status of th
 $string['privacy:metadata:local_sitsgradepush_tasks:info'] = 'Additional information about the transfer task.';
 
 // Email strings.
-$string['email:subject'] = 'Marks Transfer task Completed - {$a}';
+$string['email:subject'] = 'Marks transfer task completed - {$a}';
 $string['email:username'] = 'Dear {$a},';
 $string['email:part_one'] = 'The following marks transfer task has now been completed:';
-$string['email:activity_name'] = 'Moodle Activity:';
+$string['email:activity_name'] = 'Moodle activity:';
 $string['email:map_code'] = 'MAP-SEQ code:';
 $string['email:sits_assessment'] = 'SITS assessment:';
 $string['email:summary'] = 'Summary:';
 $string['email:no_of_succeeded_transfers'] = '<strong>Number of Marks transferred succesfully:</strong> {$a}';
 $string['email:no_of_failed_transfers'] = '<strong>Number of Marks that have failed to transfer:</strong> {$a}';
-$string['email:transfer_history_text'] = 'Click <a href="{$a}">here</a> to see the marks transfer status for this activity.';
+$string['email:transfer_history_text'] = '<a href="{$a}">View marks transfer details</a> for this activity.';
 $string['email:support_text'] = 'For guidance on how to resolve, transfer failures please visit our <a href="{$a}">Support Page</a>.';
 $string['email:best_regards'] = 'Best regards, <br>Digital Education Team';
 
 // Confirmation Modal strings.
 $string['confirmmodal:header'] = 'Confirm mark transfer?';
-$string['confirmmodal:body:partone'] = '<strong>Caution:</strong> after a student mark has been transferred to SITS, it cannot be recalled or overwritten. Should you need to make a change to a transferred mark, you will need to do this in the usual way in Portico.';
-$string['confirmmodal:body:parttwo'] = 'Please be patient waiting for the marks transfer job to complete as a large set of marks can take some time. You can check the marks transfer status page for progress but will also receive an email notification once the marks transfer job has been completed.';
+$string['confirmmodal:warning'] = 'Warning';
+$string['confirmmodal:body:partone'] = '
+<p>After a student mark has been transferred to SITS, it cannot be recalled or overwritten.</p>
+<p>If you need to make a change to a transferred mark, you can to do this in the usual way in Portico.</p>
+';
+$string['confirmmodal:body:parttwo'] = '
+<p>Please be patient waiting for the marks transfer job to complete as a large set of marks can take some time.</p>
+<p>You will recieve an email once the task has completed, and can check the marks transfer status page for progress.</p>';
 $string['confirmmodal:confirm'] = 'Confirm';
 $string['confirmmodal:cancel'] = 'Cancel';

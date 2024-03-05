@@ -153,7 +153,7 @@
         {{#componentgrades}}
             <tr>
                 <td>{{mabseq}}</td>
-                <td>{{mabname}}</td>
+                <td scope="row">{{mabname}}</td>
                 <td>{{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}</td>
                 <td>
                     {{#assessmentmapping}}
@@ -164,6 +164,7 @@
                     {{#currentacademicyear}}
                         <a id="change-source-button-{{id}}" href="{{selectsourceurl}}" class="btn btn-secondary btn-sm change-source {{#disablechangesource}}hidden{{/disablechangesource}}">
                             {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
+                            <span class="sr-only"> for {{mabname}}</span>
                         </a>
                     {{/currentacademicyear}}
                     {{/assessmentmapping}}
@@ -172,6 +173,7 @@
                         {{#available}}
                             <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
                                 {{#str}} selectsource:header, local_sitsgradepush {{/str}}
+                                <span class="sr-only"> for {{mabname}}</span>
                             </a>
                         {{/available}}
                         {{^available}}
@@ -191,11 +193,13 @@
                         >
                             <div class="marks-container {{#taskrunning}}hidden{{/taskrunning}}">
                                 <p>
-                                    <a href="{{transferhistoryurl}}" class="marks-count" target="_blank">{{markstotransfer}}</a>
+                                    <a href="{{transferhistoryurl}}" class="marks-count" target="_blank"
+                                    >{{markstotransfer}} <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small></a>
                                 </p>
                             {{#currentacademicyear}}
                                 <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}hidden{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
                                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
+                                    <span class="sr-only">for {{mabname}}</span>
                                 </button>
                             {{/currentacademicyear}}
                             </div>

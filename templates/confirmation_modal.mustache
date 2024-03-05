@@ -42,8 +42,14 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>{{#str}} confirmmodal:body:partone, local_sitsgradepush {{/str}}</p>
-                <p>{{#str}} confirmmodal:body:parttwo, local_sitsgradepush {{/str}}</p>
+                <div class='alert alert-danger'>
+                    <p>
+                        <i class='fa-solid fa-triangle-exclamation text-danger my-2'></i>
+                        <strong>{{#str}} confirmmodal:body:warning, local_sitsgradepush {{/str}}</strong>
+                    </p>
+                    {{#str}} confirmmodal:body:partone, local_sitsgradepush {{/str}}
+                </div>
+                {{#str}} confirmmodal:body:parttwo, local_sitsgradepush {{/str}}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">{{#str}} confirmmodal:cancel, local_sitsgradepush {{/str}}</button>
