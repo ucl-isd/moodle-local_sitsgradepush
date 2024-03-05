@@ -193,8 +193,8 @@
                         >
                             <div class="marks-container {{#taskrunning}}hidden{{/taskrunning}}">
                                 <p>
-                                    <a href="{{transferhistoryurl}}" class="marks-count" target="_blank"
-                                    >{{markstotransfer}} <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small></a>
+                                    <a href="{{transferhistoryurl}}" target="_blank"
+                                    ><span class="marks-count">{{markstotransfer}}</span> <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small></a>
                                 </p>
                             {{#currentacademicyear}}
                                 <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}hidden{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
