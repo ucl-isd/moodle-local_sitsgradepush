@@ -214,10 +214,10 @@ $string['confirmmodal:header'] = 'Confirm mark transfer?';
 $string['confirmmodal:warning'] = 'Warning';
 $string['confirmmodal:body:partone'] = '
 <p>After a student mark has been transferred to SITS, it cannot be recalled or overwritten.</p>
-<p>If you need to make a change to a transferred mark, you can to do this in the usual way in Portico.</p>
+<p>If you need to make a change to a transferred mark, you can do this in the usual way in Portico.</p>
 ';
 $string['confirmmodal:body:parttwo'] = '
 <p>Please be patient waiting for the marks transfer job to complete as a large set of marks can take some time.</p>
-<p>You will recieve an email once the task has completed, and can check the marks transfer status page for progress.</p>';
+<p>You will receive an email once the task has completed, and can check the marks transfer status page for progress.</p>';
 $string['confirmmodal:confirm'] = 'Confirm';
 $string['confirmmodal:cancel'] = 'Cancel';
