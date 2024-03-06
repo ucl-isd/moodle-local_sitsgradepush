@@ -139,7 +139,7 @@
             </div>
         </div>
     </div>
-    <table class="module-delivery-table table table-bordered mb-5">
+    <table class="module-delivery-table table table-bordered mb-5" aria-describedby="{{tableid}}">
         <thead class="thead-light">
         <tr class="small">
             <th>{{#str}} dashboard:seq, local_sitsgradepush {{/str}}</th>
@@ -164,7 +164,7 @@
                     {{#currentacademicyear}}
                         <a id="change-source-button-{{id}}" href="{{selectsourceurl}}" class="btn btn-secondary btn-sm change-source {{#disablechangesource}}hidden{{/disablechangesource}}">
                             {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
-                            <span class="sr-only"> for {{mabname}}</span>
+                            <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
                         </a>
                     {{/currentacademicyear}}
                     {{/assessmentmapping}}
@@ -173,7 +173,7 @@
                         {{#available}}
                             <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
                                 {{#str}} selectsource:header, local_sitsgradepush {{/str}}
-                                <span class="sr-only"> for {{mabname}}</span>
+                                <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
                             </a>
                         {{/available}}
                         {{^available}}
@@ -194,12 +194,17 @@
                             <div class="marks-container {{#taskrunning}}hidden{{/taskrunning}}">
                                 <p>
                                     <a href="{{transferhistoryurl}}" target="_blank"
-                                    ><span class="marks-count">{{markstotransfer}}</span> <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small></a>
+                                    >
+                                        <span class="marks-count">{{markstotransfer}}</span>
+                                        <span class="sr-only"> {{#str}} dashboard:marks_to_transfer {{/str}} </span>
+                                        <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small>
+                                        <span class="sr-only">for {{mabseq}} {{mabname}}</span>
+                                    </a>
                                 </p>
                             {{#currentacademicyear}}
                                 <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}hidden{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
                                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
-                                    <span class="sr-only">for {{mabname}}</span>
+                                    <span class="sr-only">for {{mabseq}} {{mabname}}</span>
                                 </button>
                             {{/currentacademicyear}}
                             </div>
