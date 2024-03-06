@@ -64,15 +64,16 @@
                 <td>{{name}}</td>
                 <td>{{startdate}}</td>
                 <td>{{enddate}}</td>
-                <td style="text-align: center">
+                <td class="text-right">
                     <button type="button"
-                            class="btn btn-primary select-assessment-button"
+                            class="btn btn-primary btn-sm select-assessment-button"
                             data-mapcode="{{mapcode}}"
                             data-mabseq="{{mabseq}}"
                             data-courseid="{{courseid}}"
                             data-mabid="{{mabid}}"
                             data-coursemoduleid="{{coursemoduleid}}">
-                        <i class="fa-solid fa-plus"></i>
+                        <i class="fa-solid fa-plus mr-2"></i>{{#str}} select, local_sitsgradepush {{/str}}
+                        <span class="sr-only">{{name}}</span>
                     </button>
                 </td>
             </tr>
