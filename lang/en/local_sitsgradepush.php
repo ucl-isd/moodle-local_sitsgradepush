@@ -102,16 +102,16 @@ $string['dashboard:view_details'] = 'View details';
 $string['dashboard:view_marks_to_transfer'] = 'View marks to transfer';
 $string['dashboard:actions'] = 'ACTIONS';
 $string['dashboard:transfermarks'] = 'Transfer marks';
-$string['dashboard:changesource'] = 'Change Source';
+$string['dashboard:changesource'] = 'Change source';
 $string['dashboard:marks_transfer_in_progress'] = 'Marks transfer in progress';
 
 // Select source page.
-$string['selectsource:header'] = 'Select Source';
-$string['selectsource:title'] = 'SITS Marks Transfer - Select Source';
-$string['selectsource:existing'] = 'Select an Existing Activity';
-$string['selectsource:new'] = 'Create a New Activity';
-$string['selectsource:gradeitem'] = 'Select a Gradebook Item';
-$string['selectsource:mul_turnitin'] = 'Advanced Multiple Turnitin Activity Selector';
+$string['selectsource:header'] = 'Select source';
+$string['selectsource:title'] = 'SITS Marks Transfer - Select source';
+$string['selectsource:existing'] = 'Select an existing activity';
+$string['selectsource:new'] = 'Create a new activity';
+$string['selectsource:gradeitem'] = 'Select a Gradebook item';
+$string['selectsource:mul_turnitin'] = 'Advanced multiple Turnitin activity selector';
 $string['error:invalid_source_type'] = 'Invalid source type. {$a}';
 
 // Existing activity page.
