@@ -128,7 +128,7 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_configtext('local_sitsgradepush/support_page_url',
             get_string('settings:support_page_url', 'local_sitsgradepush'),
             get_string('settings:support_page_url:desc', 'local_sitsgradepush'),
-            'https://wiki.ucl.ac.uk/pages/viewpage.action?pageId=306185189',
+            'https://ucldata.atlassian.net/wiki/spaces/MoodleResourceCentre/pages/96567347/FAQs+errors+support#Error-labels-for-Mark-Transfer',
             PARAM_URL,
             50
         ));
