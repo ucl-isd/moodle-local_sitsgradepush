@@ -740,12 +740,12 @@ class manager {
             $data = $this->get_required_data_for_pushing($assessmentmapping, $userid);
 
             // Get grade.
-            $grade = $this->get_student_grade($assessmentmapping->coursemoduleid, $userid);
+            list($rawmarks, $equivalentgrade) = $this->get_student_grade($assessmentmapping->coursemoduleid, $userid);
 
             // Push if grade is found.
-            if (isset($grade)) {
-                $data->marks = $grade;
-                $data->grade = ''; // TODO: Where to get the grade?
+            if ($rawmarks) {
+                $data->marks = $rawmarks;
+                $data->grade = $equivalentgrade ?? '';
 
                 $request = $this->apiclient->build_request(self::PUSH_GRADE, $data);
                 $response = $this->apiclient->send_request($request);
@@ -934,7 +934,7 @@ class manager {
 
             // Students here is all the participants in that assessment.
             foreach ($students as $key => $student) {
-                $studentrecord = new pushrecord($student, $coursemodule->id, $mapping);
+                $studentrecord = new pushrecord($student, $coursemodule->id, $coursemodule->course, $mapping);
                 // Add participants who have push records of this mapping or
                 // are in the studentsfromsits array to the mapping's students array.
                 if ($studentrecord->componentgrade == $mabkey || in_array($studentrecord->idnumber, $studentsfromsits[$mabkey])) {
@@ -953,7 +953,7 @@ class manager {
         $invalidstudents->formattedname = get_string('invalidstudents', 'local_sitsgradepush');
         $invalidstudents->students = [];
         foreach ($students as $student) {
-            $invalidstudents->students[] = new pushrecord($student, $coursemodule->id);
+            $invalidstudents->students[] = new pushrecord($student, $coursemodule->id, $coursemodule->course);
         }
         $assessmentdata['invalidstudents'] = $invalidstudents;
 
@@ -1337,11 +1337,11 @@ class manager {
      * @param int $coursemoduleid
      * @param int $userid
      * @param int|null $partid
-     * @return string|null
+     * @return array|null
      * @throws \coding_exception
      * @throws \moodle_exception
      */
-    public function get_student_grade(int $coursemoduleid, int $userid, int $partid = null): ?string {
+    public function get_student_grade(int $coursemoduleid, int $userid, int $partid = null): ?array {
         $coursemodule = get_coursemodule_from_id('', $coursemoduleid);
         if (empty($coursemodule)) {
             throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $coursemoduleid);
@@ -1439,6 +1439,19 @@ class manager {
         } else {
             return true;
         }
+    }
+
+    /**
+     * Get formatted marks.
+     *
+     * @param int $courseid
+     * @param float $marks
+     * @return string
+     */
+    public function get_formatted_marks(int $courseid, float $marks): string {
+        // Get course grade decimal places setting.
+        $decimalplaces = grade_get_setting($courseid, 'decimalpoints');
+        return number_format($marks, $decimalplaces, '.', '');
     }
 
     /**

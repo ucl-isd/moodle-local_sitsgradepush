@@ -26,23 +26,23 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['error:stutalkdirect'] = 'Stutalk direct error: {$a->requestname}. HTTP code: {$a->httpstatuscode}';
+$string['error:stutalkdirect:accountinfo'] = 'Stutalk username of password is not set on config!';
+$string['error:stutalkdirectcurl'] = 'Stutalk CURL error: {$a}.';
 $string['pluginname'] = 'Stutalk Direct';
 $string['privacy:metadata'] = 'This plugin does not store any personal data.';
-$string['settings:generalsettingsheader'] = 'General Settings';
 $string['settings:endpoint_component_grade'] = 'SITS endpoint for component grades';
 $string['settings:endpoint_component_grade:desc'] = 'SITS endpoint for component grades';
-$string['settings:endpoint_student'] = 'SITS endpoint student';
-$string['settings:endpoint_student:desc'] = 'SITS endpoint for getting student\'s SPR_CODE';
+$string['settings:endpoint_getmarkingschemes'] = 'SITS endpoint get marking schemes';
+$string['settings:endpoint_getmarkingschemes:desc'] = 'SITS endpoint for getting marking schemes';
 $string['settings:endpoint_push_grade'] = 'SITS endpoint push grades';
 $string['settings:endpoint_push_grade:desc'] = 'SITS endpoint for pushing grades';
 $string['settings:endpoint_push_submission_log'] = 'SITS endpoint push submission log';
 $string['settings:endpoint_push_submission_log:desc'] = 'SITS endpoint for pushing submission log';
-$string['settings:endpoint_getmarkingschemes'] = 'SITS endpoint get marking schemes';
-$string['settings:endpoint_getmarkingschemes:desc'] = 'SITS endpoint for getting marking schemes';
-$string['settings:username'] = 'SITS Username';
-$string['settings:username:desc'] = 'Username used to connect to SITS';
+$string['settings:endpoint_student'] = 'SITS endpoint student';
+$string['settings:endpoint_student:desc'] = 'SITS endpoint for getting student\'s SPR_CODE';
+$string['settings:generalsettingsheader'] = 'General Settings';
 $string['settings:password'] = 'SITS Password';
 $string['settings:password:desc'] = 'Password used to connect to SITS';
-$string['error:stutalkdirect'] = 'Stutalk direct error: {$a->requestname}. HTTP code: {$a->httpstatuscode}';
-$string['error:stutalkdirectcurl'] = 'Stutalk CURL error: {$a}.';
-$string['error:stutalkdirect:accountinfo'] = 'Stutalk username of password is not set on config!';
+$string['settings:username'] = 'SITS Username';
+$string['settings:username:desc'] = 'Username used to connect to SITS';
