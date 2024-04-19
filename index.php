@@ -84,13 +84,13 @@ $content = $manager->get_assessment_data($coursemoduleid);
 // Check sync threshold.
 $syncthreshold = get_config('local_sitsgradepush', 'sync_threshold');
 
-// Get total number of marks to be pushed.
-$totalmarkscount = 0;
-foreach ($content['mappings'] as $mapping) {
-    $totalmarkscount += $mapping->markscount;
-}
-
 if (!empty($content)) {
+    // Get total number of marks to be pushed.
+    $totalmarkscount = 0;
+    foreach ($content['mappings'] as $mapping) {
+        $totalmarkscount += $mapping->markscount;
+    }
+
     // Transfer marks if it is a sync transfer and pushgrade is set.
     if ($totalmarkscount <= $syncthreshold && $pushgrade == 1) {
         // Loop through each mapping.

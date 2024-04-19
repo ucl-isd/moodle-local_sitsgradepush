@@ -26,7 +26,7 @@ use sitsapiclient_stutalkdirect\privacy\provider;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class privacy_provider_test extends \advanced_testcase {
+final class privacy_provider_test extends \advanced_testcase {
 
     protected function setUp(): void {
         parent::setUp();

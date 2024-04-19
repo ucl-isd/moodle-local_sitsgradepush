@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\assessment;
 
+use local_sitsgradepush\manager;
+
 /**
  * Parent class for assessment.
  *
@@ -26,11 +28,14 @@ namespace local_sitsgradepush\assessment;
  */
 abstract class assessment implements iassessment {
 
+    /** @var string Grade failed */
+    const GRADE_FAIL = 'F';
+
     /** @var \stdClass Course module object */
-    public $coursemodule;
+    public \stdClass $coursemodule;
 
     /** @var \stdClass Module instance object */
-    public $moduleinstance;
+    public \stdClass $moduleinstance;
 
     /**
      * Constructor.
@@ -73,6 +78,15 @@ abstract class assessment implements iassessment {
     /**
      * Get the course id.
      *
+     * @return int
+     */
+    public function get_course_id(): int {
+        return $this->coursemodule->course;
+    }
+
+    /**
+     * Get the course id.
+     *
      * @return string
      */
     public function get_module_type(): string {
@@ -84,22 +98,41 @@ abstract class assessment implements iassessment {
      *
      * @param int $userid
      * @param int|null $partid
-     * @return string|null
+     * @return array|null
      */
-    public function get_user_grade(int $userid, int $partid = null): ?string {
+    public function get_user_grade(int $userid, int $partid = null): ?array {
         $result = null;
         if ($grade = grade_get_grades(
             $this->coursemodule->course, 'mod', $this->coursemodule->modname, $this->coursemodule->instance, $userid)) {
             foreach ($grade->items as $item) {
                 foreach ($item->grades as $grade) {
                     if ($grade->grade) {
-                        $result = $grade->str_grade;
+                        if (is_numeric($grade->grade)) {
+                            $manager = manager::get_manager();
+                            $formattedmarks = $manager->get_formatted_marks($this->coursemodule->course, (float)$grade->grade);
+                            $equivalentgrade = $this->get_equivalent_grade_from_mark((float)$grade->grade);
+                            return [$grade->grade, $equivalentgrade, $formattedmarks];
+                        }
                     }
                 }
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Get the equivalent grade for a given mark.
+     *
+     * @param float $marks
+     * @return string|null
+     */
+    protected function get_equivalent_grade_from_mark(float $marks): ?string {
+        $equivalentgrade = null;
+        if ($marks == 0) {
+            $equivalentgrade = self::GRADE_FAIL;
+        }
+        return $equivalentgrade;
     }
 
     /**

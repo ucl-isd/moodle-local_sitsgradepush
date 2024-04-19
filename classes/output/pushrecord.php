@@ -32,6 +32,9 @@ class pushrecord {
     /** @var string SITS component grade */
     public string $componentgrade = '';
 
+    /** @var int Course id */
+    public int $courseid;
+
     /** @var string User id */
     public string $userid;
 
@@ -46,6 +49,12 @@ class pushrecord {
 
     /** @var string Student marks */
     public string $marks = '-';
+
+    /** @var string Student equivalent grade */
+    public string $equivalentgrade = '-';
+
+    /** @var string Student raw marks */
+    public string $rawmarks = '';
 
     /** @var string Student hand in date time */
     public string $handindatetime = '-';
@@ -100,13 +109,17 @@ class pushrecord {
      *
      * @param \stdClass $student
      * @param int $coursemoduleid
+     * @param int $courseid
      * @param \stdClass|null $mapping
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function __construct(\stdClass $student, int $coursemoduleid, \stdClass $mapping = null) {
+    public function __construct(\stdClass $student, int $coursemoduleid, int $courseid, \stdClass $mapping = null) {
         // Get manager.
         $this->manager = manager::get_manager();
+
+        // Set course id.
+        $this->courseid = $courseid;
 
         // Set student data.
         $this->set_student_info($student);
@@ -138,10 +151,10 @@ class pushrecord {
      * @throws \moodle_exception
      */
     protected function set_grade(int $coursemoduleid, int $studentid): void {
-        $grade = $this->manager->get_student_grade($coursemoduleid, $studentid);
-        if (isset($grade)) {
-            $this->marks = $grade;
-        }
+        list($rawmarks, $equivalentgrade, $formattedmarks) = $this->manager->get_student_grade($coursemoduleid, $studentid);
+        $this->rawmarks = $rawmarks ?? '-';
+        $this->equivalentgrade = $equivalentgrade ?? '-';
+        $this->marks = $formattedmarks ?? '-';
     }
 
     /**
@@ -206,8 +219,9 @@ class pushrecord {
                     // Check if marks updated after transfer.
                     if ($response->code == '0') {
                         $requestbody = json_decode($log->requestbody);
-                        $this->transferredmark = $requestbody->actual_mark;
-                        $this->marksupdatedaftertransfer = $this->marks != $requestbody->actual_mark;
+                        $this->transferredmark = $this->manager->get_formatted_marks($this->courseid, $requestbody->actual_mark);
+                        $this->marksupdatedaftertransfer =
+                            $this->is_marks_updated_after_transfer($this->rawmarks, $requestbody->actual_mark);
                     }
                     $this->lastgradepushresult = $result;
                     $this->lastgradepusherrortype = $errortype;
@@ -243,5 +257,20 @@ class pushrecord {
         if (!is_null($this->lastsublogpushresult) && $this->lastsublogpusherrortype == 0) {
             $this->issublogpushed = true;
         }
+    }
+
+    /**
+     * Check if the marks are updated after transfer.
+     *
+     * @param string $rawmarks
+     * @param string $transferredmarks
+     * @return bool
+     */
+    private function is_marks_updated_after_transfer(string $rawmarks, string $transferredmarks): bool {
+        // As some of the marks were not transferred in raw marks, e.g. 66.67 instead of 66.66666
+        // so need to format the raw marks to the same decimal places as the transferred marks for comparison.
+        // Future marks transfer will be all in 5 decimal places as raw marks is stored in 5 decimal places.
+        $transferredmarksdecimalplaces = (int) strpos(strrev($transferredmarks), ".");
+        return number_format((float)$rawmarks, $transferredmarksdecimalplaces, '.') != $transferredmarks;
     }
 }

@@ -54,10 +54,10 @@ interface iassessment {
      *
      * @param int $userid
      * @param int|null $partid
-     * @return string|null
+     * @return array|null
      * @package local_sitsgradepush
      */
-    public function get_user_grade(int $userid, int $partid = null): ?string;
+    public function get_user_grade(int $userid, int $partid = null): ?array;
 
     /**
      * Get the start date of the assessment.
