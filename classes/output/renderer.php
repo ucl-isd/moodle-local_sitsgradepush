@@ -177,10 +177,14 @@ class renderer extends plugin_renderer_base {
 
         // Check if the course is in the current academic year.
         $iscurrentacademicyear = $this->manager->is_current_academic_year_activity($courseid);
-
         $moduledeliverytables = [];
+
+        // For user tour.
+        $tableno = 0;
+
         // Prepare the content for each module delivery table.
         foreach ($moduledeliveries as $moduledelivery) {
+            $tableno++;
             // Set options for the select module delivery dropdown list.
             $tableid = sprintf(
                 '%s-%s-%s-%s',
@@ -247,6 +251,7 @@ class renderer extends plugin_renderer_base {
             }
 
             $moduledeliverytable = new \stdClass();
+            $moduledeliverytable->tableno = $tableno;
             $moduledeliverytable->tableid = $tableid;
             $moduledeliverytable->moduledelivery = $tableid;
             $moduledeliverytable->academicyear = $moduledelivery->academicyear;

@@ -72,6 +72,7 @@
         [
             {
                 "tableid": "PHAY0063-A7P-T1-2022",
+                "tableno": "1",
                 "moduledelivery": "PHAY0063-A7P-T1-2022",
                 "academicyear": "2022",
                 "componentgrades":
@@ -145,8 +146,8 @@
             <th>{{#str}} dashboard:seq, local_sitsgradepush {{/str}}</th>
             <th>{{#str}} dashboard:sits_assessment, local_sitsgradepush {{/str}}</th>
             <th>{{#str}} dashboard:weight, local_sitsgradepush {{/str}}</th>
-            <th>{{#str}} dashboard:moodle_activity, local_sitsgradepush {{/str}}</th>
-            <th>{{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}}</th>
+            <th id="moodleactivitycol-{{tableno}}">{{#str}} dashboard:moodle_activity, local_sitsgradepush {{/str}}</th>
+            <th id="markstotransfercol-{{tableno}}">{{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}}</th>
         </tr>
         </thead>
         <tbody>
