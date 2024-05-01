@@ -79,7 +79,7 @@ class sitsapiclient extends base {
 
         $section = $this->get_settings_section_name();
         $settings = new admin_settingpage($section, $this->displayname, 'moodle/site:config', $this->is_enabled() === false);
-        include($this->full_path('settings.php')); // This may also set $settings to null.
+        include_once($this->full_path('settings.php')); // This may also set $settings to null.
 
         if ($settings) {
             $ADMIN->add($parentnodename, $settings);
