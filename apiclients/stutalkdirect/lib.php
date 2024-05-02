@@ -56,7 +56,6 @@ class stutalkdirect extends client {
      * @throws \moodle_exception
      */
     public function build_request(string $action, \stdClass $data = null, submission $submission = null) {
-        $request = null;
         switch ($action) {
             case manager::GET_COMPONENT_GRADE:
                 $request = new getcomponentgrade($data);
@@ -72,6 +71,10 @@ class stutalkdirect extends client {
                 break;
             case manager::GET_MARKING_SCHEMES:
                 $request = new getmarkingschemes();
+                break;
+            default:
+                $request = null;
+                break;
         }
 
         return $request;

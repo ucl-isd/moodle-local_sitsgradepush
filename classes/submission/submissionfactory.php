@@ -51,8 +51,8 @@ class submissionfactory {
                 return new assign($coursemodule, $userid);
             case 'turnitintooltwo':
                 return new turnitintooltwo($coursemodule, $userid);
+            default:
+                throw new \moodle_exception('Mod name '. $coursemodule->modulename .' not found.');
         }
-
-        throw new \moodle_exception('Mod name '. $coursemodule->modulename .' not found.');
     }
 }

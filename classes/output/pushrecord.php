@@ -225,12 +225,12 @@ class pushrecord {
                     }
                     $this->lastgradepushresult = $result;
                     $this->lastgradepusherrortype = $errortype;
-                    $this->lastgradepushtimestring = date('Y-m-d H:i:s', $log->timecreated);;
+                    $this->lastgradepushtimestring = date('Y-m-d H:i:s', $log->timecreated);
                     $this->lastgradepushtime = $log->timecreated;
                 } else if ($log->type == manager::PUSH_SUBMISSION_LOG) {
                     $this->lastsublogpushresult = $result;
                     $this->lastsublogpusherrortype = $errortype;
-                    $this->lastsublogpushtimestring = date('Y-m-d H:i:s', $log->timecreated);;
+                    $this->lastsublogpushtimestring = date('Y-m-d H:i:s', $log->timecreated);
                     $this->lastsublogpushtime = $log->timecreated;
                 }
             }
