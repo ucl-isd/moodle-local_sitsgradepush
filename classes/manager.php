@@ -447,7 +447,7 @@ class manager {
                     $recordsinsert[] = $record;
                 }
             }
-            if (count($recordsinsert) > 0) {
+            if (!empty($recordsinsert)) {
                 $DB->insert_records(self::TABLE_COMPONENT_GRADE, $recordsinsert);
             }
         }

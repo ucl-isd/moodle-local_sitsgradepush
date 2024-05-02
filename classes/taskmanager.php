@@ -372,7 +372,6 @@ class taskmanager {
             $succeededcount = 0;
             $failedcount = 0;
             foreach ($transferrecords as $transferrecord) {
-                $transfer = new \stdClass();
                 $response = json_decode($transferrecord->response);
                 if ($response->code == "0") {
                     $succeededcount++;

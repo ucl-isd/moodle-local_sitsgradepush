@@ -67,7 +67,6 @@ class sitsapiclient extends base {
      */
     public function load_settings(part_of_admin_tree $adminroot, $parentnodename, $hassiteconfig) {
         $ADMIN = $adminroot;
-        $plugininfo = $this;
 
         if (!$this->is_installed_and_upgraded()) {
             return;

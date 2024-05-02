@@ -61,7 +61,7 @@ class pushgrade extends request {
         self::transform_data($data);
 
         // Set the fields mapping, params fields and data.
-        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS,  $data, self::METHOD);
+        parent::__construct(self::FIELDS_MAPPING, $endpointurl, self::ENDPOINT_PARAMS, $data, self::METHOD);
 
         // Set the request body.
         $this->set_body($data);

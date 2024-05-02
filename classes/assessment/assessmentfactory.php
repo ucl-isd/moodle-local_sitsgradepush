@@ -47,8 +47,8 @@ class assessmentfactory {
                 return new assign($coursemodule);
             case 'turnitintooltwo':
                 return new turnitintooltwo($coursemodule);
+            default:
+                throw new \moodle_exception('Mod name '. $coursemodule->modname .' not found.');
         }
-
-        throw new \moodle_exception('Mod name '. $coursemodule->modname .' not found.');
     }
 }

@@ -32,6 +32,10 @@ class pushtask extends scheduled_task {
 
     /** @var int default max concurrent tasks allowed */
     const MAX_CONCURRENT_TASKS = 10;
+
+    /** @var string date time format */
+    const DATE_TIME_FORMAT = 'Y-m-d H:i:s';
+
     /**
      * Get a descriptive name for this task.
      *
@@ -58,7 +62,7 @@ class pushtask extends scheduled_task {
 
         if ($runningtasks >= $concurrenttasksallowed) {
             // Too many tasks running, exit.
-            mtrace(date('Y-m-d H:i:s', time()) . ' : ' .
+            mtrace(date(self::DATE_TIME_FORMAT, time()) . ' : ' .
                 'Too many tasks running (' . $runningtasks . '/' . $concurrenttasksallowed . ')');
             return;
         }
@@ -68,7 +72,7 @@ class pushtask extends scheduled_task {
 
         if (empty($tasks)) {
             // No tasks to run, exit.
-            mtrace(date('Y-m-d H:i:s', time()) . ' : ' .
+            mtrace(date(self::DATE_TIME_FORMAT, time()) . ' : ' .
                 'No tasks to run.');
             return;
         }
@@ -79,7 +83,7 @@ class pushtask extends scheduled_task {
         // Run the tasks.
         foreach ($tasks as $task) {
             // Add adhoc task.
-            mtrace(date('Y-m-d H:i:s', time()) . ' : ' .
+            mtrace(date(self::DATE_TIME_FORMAT, time()) . ' : ' .
                 'Spawning adhoc task [#' . $task->id . '] (' . $count . '/' . $concurrenttasksallowed . ')');
 
             $adhoctask = new adhoctask();
