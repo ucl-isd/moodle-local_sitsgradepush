@@ -192,6 +192,7 @@ $string['sitsgradepush:mapassessment'] = 'Map assessment component to Moodle act
 $string['sitsgradepush:pushgrade'] = 'Transfer Marks to SITS';
 $string['sitsgradepush:showsubmissionlogcolumn'] = 'Show Submission Log column';
 $string['subplugintype_sitsapiclient'] = 'API client used for data integration.';
+$string['subplugintype_sitsapiclient_plural'] = 'API clients used for data integration.';
 $string['task:adhoctask'] = 'Adhoc Task';
 $string['task:pushtask:name'] = 'Schedule Transfer Task';
 $string['task:requested:success'] = 'Transfer task requested successfully';
