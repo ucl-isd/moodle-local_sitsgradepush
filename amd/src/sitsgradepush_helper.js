@@ -26,18 +26,20 @@ export const schedulePushTask = async(assessmentmappingid) => {
  * Map an assessment to a component grade.
  *
  * @param {int} courseid
- * @param {int} coursemoduleid
+ * @param {string} sourcetype
+ * @param {int} sourceid
  * @param {int} mabid
  * @param {int|null} partid
  * @return {Promise}
  */
-export const mapAssessment = async(courseid, coursemoduleid, mabid, partid = null) => {
+export const mapAssessment = async(courseid, sourcetype, sourceid, mabid, partid = null) => {
     return new Promise((resolve, reject) => {
         Ajax.call([{
             methodname: 'local_sitsgradepush_map_assessment',
             args: {
                 'courseid': courseid,
-                'coursemoduleid': coursemoduleid,
+                'sourcetype': sourcetype,
+                'sourceid': sourceid,
                 'mabid': mabid,
                 'partid': partid,
             },
@@ -55,16 +57,18 @@ export const mapAssessment = async(courseid, coursemoduleid, mabid, partid = nul
  * For updating the dashboard page and activity marks transfer page.
  *
  * @param {int} courseid
- * @param {int} coursemoduleid
+ * @param {string} sourcetype
+ * @param {int} sourceid
  * @return {Promise<unknown>}
  */
-export const getAssessmentsUpdate = async(courseid, coursemoduleid = 0) => {
+export const getAssessmentsUpdate = async(courseid, sourcetype = '', sourceid = 0) => {
     return new Promise((resolve, reject) => {
         Ajax.call([{
             methodname: 'local_sitsgradepush_get_assessments_update',
             args: {
                 'courseid': courseid,
-                'coursemoduleid': coursemoduleid,
+                'sourcetype': sourcetype,
+                'sourceid': sourceid,
             },
         }])[0].done(function(response) {
             resolve(response);

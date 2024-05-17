@@ -411,5 +411,37 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2024022600, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2024051300) {
+
+        // Rename field coursemoduleid on table local_sitsgradepush_mapping to sourceid.
+        $table = new xmldb_table('local_sitsgradepush_mapping');
+        $field = new xmldb_field('coursemoduleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, 'courseid');
+
+        // Launch rename field sourceid.
+        $dbman->rename_field($table, $field, 'sourceid');
+
+        // Define field sourcetype to be added to local_sitsgradepush_mapping.
+        $field = new xmldb_field('sourcetype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'mod', 'sourceid');
+
+        // Conditionally launch add field sourcetype.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Changing the default of field sourcetype on table local_sitsgradepush_mapping to drop it.
+        $field = new xmldb_field('sourcetype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null, 'sourceid');
+
+        // Launch change of default for field sourcetype.
+        $dbman->change_field_default($table, $field);
+
+        $field = new xmldb_field('moduletype', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'sourcetype');
+
+        // Launch change of nullability for field moduletype.
+        $dbman->change_field_notnull($table, $field);
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024051300, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

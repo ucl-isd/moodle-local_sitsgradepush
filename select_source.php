@@ -34,7 +34,6 @@ require_once('../../config.php');
 // Course ID.
 $courseid = required_param('courseid', PARAM_INT);
 $mabid = required_param('mabid', PARAM_INT);
-$source = required_param('source', PARAM_TEXT);
 
 // Get course context.
 $context = context_course::instance($courseid);
@@ -89,28 +88,16 @@ $PAGE->navbar->add(get_string('pluginname', 'local_sitsgradepush'),
     new moodle_url('/local/sitsgradepush/dashboard.php', ['id' => $courseid]));
 $PAGE->navbar->add(get_string('selectsource:header', 'local_sitsgradepush'),
     new moodle_url('/local/sitsgradepush/select_source.php', $param));
-if (!empty($source)) {
-    $param['source'] = $source;
-    $PAGE->navbar->add(get_string('existingactivity:navbar', 'local_sitsgradepush'),
-        new moodle_url('/local/sitsgradepush/select_source.php', $param));
-}
 
 // Page header.
 echo $OUTPUT->header();
 
-// Get renderer.
+// Render the page.
 $renderer = $PAGE->get_renderer('local_sitsgradepush');
+echo $renderer->render_select_source_page($courseid, $mab);
 
-switch ($source) {
-    case 'existing':
-        // Render the page.
-        echo $renderer->render_existing_activity_page($param);
-        // Initialise the javascript.
-        $PAGE->requires->js_call_amd('local_sitsgradepush/existing_activity', 'init', []);
-        break;
-    default:
-        throw new moodle_exception('error:invalid_source_type', 'local_sitsgradepush', '', $source);
-}
+// Include JS.
+$PAGE->requires->js_call_amd('local_sitsgradepush/select_source', 'init', []);
 
 // Page footer.
 echo $OUTPUT->footer();

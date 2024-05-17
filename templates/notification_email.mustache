@@ -26,7 +26,8 @@
 
     Context variables required for this template:
     * user_name - String, User who initiated the transfer.
-    * activity_name - String, moodle activity name.
+    * assessment_type - String, assessment type.
+    * assessment_name - String, assessment name.
     * map_code - String, SITS map code & sequence number.
     * sits_assessment - String, SITS assessment component name.
     * activity_url - String, moodle activity's URL.
@@ -37,7 +38,8 @@
     Example context (json):
     {
         "user_name": "Romanoff Natasha",
-        "activity_name": "Coursework 4000 word written case studies (50%)",
+        "assessment_type": "Assignment",
+        "assessment_name": "Coursework 4000 word written case studies (50%)",
         "map_code": "PHAY0063A7P-001",
         "sits_assessment": "Coursework 4000 word written case studies (50%)",
         "activity_url": "https://localhost/moodle/mod/assign/view.php?id=2",
@@ -52,7 +54,8 @@
     <p>{{#str}} email:username, local_sitsgradepush, {{user_name}} {{/str}}</p>
     <p>{{#str}} email:part_one, local_sitsgradepush {{/str}}</p>
     <ul>
-        <li><strong>{{#str}} email:activity_name, local_sitsgradepush {{/str}}</strong> {{activity_name}}</li>
+        <li><strong>{{#str}} email:assessment_type, local_sitsgradepush {{/str}}</strong> {{assessment_type}}</li>
+        <li><strong>{{#str}} email:assessment_name, local_sitsgradepush {{/str}}</strong> {{assessment_name}}</li>
         <li><strong>{{#str}} email:map_code, local_sitsgradepush {{/str}}</strong> {{map_code}}</li>
         <li><strong>{{#str}} email:sits_assessment, local_sitsgradepush {{/str}}</strong> {{sits_assessment}}</li>
     </ul>

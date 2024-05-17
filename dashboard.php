@@ -77,8 +77,8 @@ $renderer = $PAGE->get_renderer('local_sitsgradepush');
 // Get the component grades.
 $manager = manager::get_manager();
 
-// Get the component grades for each module delivery.
-$result = $manager->get_component_grade_options($courseid, null);
+// Get all component grade options for the current course.
+$result = $manager->get_component_grade_options($courseid);
 
 // Render the dashboard.
 if (!empty($result)) {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/sitsgradepush/db" VERSION="20240226" COMMENT="XMLDB file for Moodle local/sits_grade_push"
+<XMLDB PATH="local/sitsgradepush/db" VERSION="20240513" COMMENT="XMLDB file for Moodle local/sits_grade_push"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -8,8 +8,9 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="coursemoduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Course module id"/>
-        <FIELD NAME="moduletype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Module type"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID of source like course module id for activity and grade item id for gradebook item."/>
+        <FIELD NAME="sourcetype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Type of source like mod for course activity and gradeitem for gradebook item"/>
+        <FIELD NAME="moduletype" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Module type"/>
         <FIELD NAME="componentgradeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Id for SITS component grade in local_sits_component_grades"/>
         <FIELD NAME="reassessment" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="reassessmentseq" TYPE="int" LENGTH="3" NOTNULL="false" SEQUENCE="false"/>

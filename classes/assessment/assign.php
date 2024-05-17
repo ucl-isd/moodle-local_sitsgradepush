@@ -24,7 +24,8 @@ namespace local_sitsgradepush\assessment;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class assign extends assessment {
+class assign extends activity {
+
     /**
      * Get all participants.
      *
@@ -41,7 +42,7 @@ class assign extends assessment {
      * @return int|null
      */
     public function get_start_date(): ?int {
-        return $this->moduleinstance->allowsubmissionsfromdate;
+        return $this->sourceinstance->allowsubmissionsfromdate;
     }
 
     /**
@@ -50,6 +51,6 @@ class assign extends assessment {
      * @return int|null
      */
     public function get_end_date(): ?int {
-        return $this->moduleinstance->duedate;
+        return $this->sourceinstance->duedate;
     }
 }
