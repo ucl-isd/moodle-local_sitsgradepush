@@ -1094,6 +1094,13 @@ class manager {
             throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $componentgradeid);
         }
 
+        // Prevent new mapping for gradebook items and categories if the gradebook feature is disabled.
+        $gradebookenabled = get_config('local_sitsgradepush', 'gradebook_enabled');
+        if (!$gradebookenabled && ($sourcetype == assessmentfactory::SOURCETYPE_GRADE_ITEM ||
+                $sourcetype == assessmentfactory::SOURCETYPE_GRADE_CATEGORY)) {
+            throw new \moodle_exception('error:gradebook_disabled', 'local_sitsgradepush');
+        }
+
         // Get the assessment.
         $assessment = assessmentfactory::get_assessment($sourcetype, $sourceid);
 

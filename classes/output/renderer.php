@@ -245,10 +245,14 @@ class renderer extends plugin_renderer_base {
         // Get all valid activities.
         $activities = $this->manager->get_all_course_activities($courseid);
 
-        // Get grade book assessments, e.g. grade items, grade categories.
-        $gradebookassessments = $this->manager->get_gradebook_assessments($courseid);
+        if (get_config('local_sitsgradepush', 'gradebook_enabled')) {
+            // Get grade book assessments, e.g. grade items, grade categories.
+            $gradebookassessments = $this->manager->get_gradebook_assessments($courseid);
 
-        $assessments  = array_merge($activities, $gradebookassessments);
+            $assessments  = array_merge($activities, $gradebookassessments);
+        } else {
+            $assessments = $activities;
+        }
 
         // Create the select source page.
         foreach ($assessments as $assessment) {
