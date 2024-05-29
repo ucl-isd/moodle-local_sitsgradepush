@@ -76,4 +76,17 @@ class turnitintooltwo extends activity {
         // Return the end date of the first part.
         return $this->firstpart->dtdue;
     }
+
+    /**
+     * Check assessment is valid for mapping.
+     *
+     * @return bool
+     */
+    protected function check_assessment_validity(): bool {
+        // Check the Turnitin assignment only has one part.
+        if (count($this->turnitinparts) > 1) {
+            return false;
+        }
+        return parent::check_assessment_validity();
+    }
 }
