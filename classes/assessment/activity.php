@@ -153,7 +153,7 @@ abstract class activity extends assessment {
             'courseid' => $this->get_course_id(),
         ]);
 
-        return $gradeitems ?? [];
+        return !(empty($gradeitems)) ? $gradeitems : [];
     }
 
     /**
