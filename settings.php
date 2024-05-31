@@ -133,6 +133,14 @@ if ($hassiteconfig) {
             PARAM_URL,
             50
         ));
+
+        // Setting to enable/disable the gradebook transfer feature.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/gradebook_enabled',
+            get_string('settings:gradebook_enabled', 'local_sitsgradepush'),
+            get_string('settings:gradebook_enabled:desc', 'local_sitsgradepush'),
+            '1'
+        ));
     }
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');

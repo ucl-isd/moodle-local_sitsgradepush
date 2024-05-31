@@ -17,6 +17,7 @@
 namespace local_sitsgradepush;
 
 use context_user;
+use local_sitsgradepush\assessment\assessmentfactory;
 
 /**
  * Manager class which handles push task.
@@ -72,7 +73,8 @@ class taskmanager {
         self::update_task_status($task->id, self::PUSH_TASK_STATUS_PROCESSING);
 
         // Get the assessment data.
-        if ($mapping = $manager->get_assessment_data($assessmentmapping->coursemoduleid, $assessmentmapping->id)) {
+        if ($mapping = $manager->get_assessment_data(
+            $assessmentmapping->sourcetype, $assessmentmapping->sourceid, $assessmentmapping->id)) {
             if (!empty($mapping->students)) {
                 // Number of students in the mapping.
                 $numberofstudents = count($mapping->students);
@@ -250,11 +252,6 @@ class taskmanager {
             throw new \moodle_exception('error:duplicatedtask', 'local_sitsgradepush');
         }
 
-        // Check course module exists.
-        if (!$DB->record_exists('course_modules', ['id' => $mapping->coursemoduleid])) {
-            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $mapping->coursemoduleid);
-        }
-
         // Check if the assessment component exists.
         if (!$DB->record_exists('local_sitsgradepush_mab', ['id' => $mapping->componentgradeid])) {
             throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mapping->componentgradeid);
@@ -268,7 +265,7 @@ class taskmanager {
         $task->status = self::PUSH_TASK_STATUS_REQUESTED;
 
         // Check the number of students in the mapping.
-        $mapping = manager::get_manager()->get_assessment_data($mapping->coursemoduleid, $mapping->id);
+        $mapping = manager::get_manager()->get_assessment_data($mapping->sourcetype, $mapping->sourceid, $assessmentmappingid);
 
         // Check if the mapping has valid students for mark transfer.
         if (empty($mapping->students)) {
@@ -341,7 +338,8 @@ class taskmanager {
                 t.id as taskid,
                 t.userid,
                 am.id as assessmentmappingid,
-                am.coursemoduleid,
+                am.sourcetype,
+                am.sourceid,
                 CONCAT(cg.mapcode, "-", cg.mabseq) AS mab,
                 cg.mabname
                 FROM {' . manager::TABLE_TASKS . '} t
@@ -355,11 +353,8 @@ class taskmanager {
 
         // Task content found.
         if ($result = $DB->get_record_sql($sql, $params)) {
-            // Get the course module information.
-            $coursemodule = get_coursemodule_from_id(null, $result->coursemoduleid);
-
-            // Transfer history page link.
-            $url = new \moodle_url('/local/sitsgradepush/index.php', ['id' => $coursemodule->id]);
+            // Get the assessment.
+            $assessment = assessmentfactory::get_assessment($result->sourcetype, $result->sourceid);
 
             // Get the user who scheduled the task.
             $user = $DB->get_record('user', ['id' => $result->userid]);
@@ -383,10 +378,11 @@ class taskmanager {
             // Render the email content.
             $content = $OUTPUT->render_from_template('local_sitsgradepush/notification_email', [
                 'user_name' => fullname($user),
-                'activity_name' => $coursemodule->name,
+                'assessment_type' => $assessment->get_display_type_name(),
+                'assessment_name' => $assessment->get_assessment_name(),
                 'map_code' => $result->mab,
                 'sits_assessment' => $result->mabname,
-                'activity_url' => $url->out(false),
+                'activity_url' => $assessment->get_assessment_transfer_history_url(false),
                 'support_url' => get_config('local_sitsgradepush', 'support_page_url') ?? '',
                 'succeeded_count' => $succeededcount,
                 'failed_count' => $failedcount,

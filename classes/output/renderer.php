@@ -32,12 +32,6 @@ use plugin_renderer_base;
  */
 class renderer extends plugin_renderer_base {
 
-    /** @var string Push task status - has push records */
-    const PUSH_STATUS_ICON_HAS_PUSH_RECORDS = 'has_push_records';
-
-    /** @var string Push task status - no push records */
-    const PUSH_STATUS_ICON_NO_PUSH_RECORDS = 'no_push_records';
-
     /** @var manager|null Manager */
     private ?manager $manager;
 
@@ -50,36 +44,6 @@ class renderer extends plugin_renderer_base {
     public function __construct(moodle_page $page, $target) {
         parent::__construct($page, $target);
         $this->manager = manager::get_manager();
-    }
-
-    /**
-     * Render a simple button.
-     *
-     * @param string $id Button ID
-     * @param string $name Button name
-     * @param string $disabled Disabled attribute
-     * @param string $class Class attribute
-     * @return string Rendered HTML
-     * @throws \moodle_exception
-     */
-    public function render_button(string $id, string $name, string $disabled = '', string $class = ''): string {
-        return $this->output->render_from_template(
-            'local_sitsgradepush/button',
-            ['id' => $id, 'name' => $name, 'disabled' => $disabled, 'class' => $class]
-        );
-    }
-
-    /**
-     * Render a simple link.
-     *
-     * @param string $id
-     * @param string $name
-     * @param string $url
-     * @return string
-     * @throws \moodle_exception
-     */
-    public function render_link(string $id, string $name, string $url): string {
-        return $this->output->render_from_template('local_sitsgradepush/link', ['id' => $id, 'name' => $name, 'url' => $url]);
     }
 
     /**
@@ -205,48 +169,40 @@ class renderer extends plugin_renderer_base {
                     // Add the select source url.
                     $selectsourceurl = new \moodle_url(
                         '/local/sitsgradepush/select_source.php',
-                        ['courseid' => $courseid, 'mabid' => $componentgrade->id, 'source' => manager::SOURCE_EXISTING_ACTIVITY]
+                        ['courseid' => $courseid, 'mabid' => $componentgrade->id]
                     );
                     $componentgrade->selectsourceurl = $selectsourceurl->out(false);
 
-                    // No course module ID means the MAB is not mapped to any activity.
-                    if (empty($componentgrade->coursemoduleid)) {
+                    // No assessment mapping id means the MAB is not mapped to any activity.
+                    if (empty($componentgrade->assessmentmappingid)) {
                         continue;
                     }
 
                     // Get the assessment mapping status.
-                    if ($coursemodule = get_coursemodule_from_id('', $componentgrade->coursemoduleid)) {
-                        $assessmentdata = $this->manager->get_assessment_data(
-                            $componentgrade->coursemoduleid,
-                            $componentgrade->assessmentmappingid
-                        );
+                    $assessmentdata = $this->manager->get_assessment_data(
+                        $componentgrade->sourcetype,
+                        $componentgrade->sourceid,
+                        $componentgrade->assessmentmappingid
+                    );
 
-                        $assessmentmapping = new \stdClass();
-                        $assessmentmapping->markstotransfer = $assessmentdata->markscount ?? 0;
-                        $assessmentmapping->id = $componentgrade->assessmentmappingid;
-                        $assessmentmapping->type = get_module_types_names()[$coursemodule->modname];
-                        $assessmentmapping->name = $coursemodule->name;
-                        $coursemoduleurl = new \moodle_url(
-                            '/mod/' . $coursemodule->modname . '/view.php',
-                            ['id' => $coursemodule->id]
-                        );
-                        $assessmentmapping->url = $coursemoduleurl->out(false);
-                        $transferhistoryurl = new \moodle_url('/local/sitsgradepush/index.php', ['id' => $coursemodule->id]);
-                        $assessmentmapping->transferhistoryurl = $transferhistoryurl->out(false);
+                    $assessmentmapping = new \stdClass();
+                    $assessmentmapping->markstotransfer = $assessmentdata->markscount ?? 0;
+                    $assessmentmapping->id = $componentgrade->assessmentmappingid;
+                    $assessmentmapping->type = $assessmentdata->source->get_display_type_name();
+                    $assessmentmapping->name = $assessmentdata->source->get_assessment_name();
+                    $assessmentmapping->url = $assessmentdata->source->get_assessment_url(false);
+                    $assessmentmapping->transferhistoryurl = $assessmentdata->source->get_assessment_transfer_history_url(false);
 
-                        // Check if there is a task running for the assessment mapping.
-                        $taskrunning = taskmanager::get_pending_task_in_queue($componentgrade->assessmentmappingid);
-                        $assessmentmapping->taskrunning = !empty($taskrunning);
-                        $assessmentmapping->taskprogress = $taskrunning && $taskrunning->progress ? $taskrunning->progress : 0;
+                    // Check if there is a task running for the assessment mapping.
+                    $taskrunning = taskmanager::get_pending_task_in_queue($componentgrade->assessmentmappingid);
+                    $assessmentmapping->taskrunning = !empty($taskrunning);
+                    $assessmentmapping->taskprogress = $taskrunning && $taskrunning->progress ? $taskrunning->progress : 0;
 
-                        // Disable the change source button if there is a task running.
-                        $assessmentmapping->disablechangesource =
-                            !empty($taskrunning) || $this->manager->has_grades_pushed($componentgrade->assessmentmappingid);
+                    // Disable the change source button if there is a task running.
+                    $assessmentmapping->disablechangesource =
+                        !empty($taskrunning) || $this->manager->has_grades_pushed($componentgrade->assessmentmappingid);
 
-                        $componentgrade->assessmentmapping = $assessmentmapping;
-                    } else {
-                        throw new \moodle_exception('error:invalidcoursemoduleid', 'local_sitsgradepush');
-                    }
+                    $componentgrade->assessmentmapping = $assessmentmapping;
                 }
             }
 
@@ -276,60 +232,52 @@ class renderer extends plugin_renderer_base {
     }
 
     /**
-     * Render the select existing activity page.
+     * Render the select source page.
      *
-     * @param array $param Parameters containing course ID and MAB ID
-     * @return bool|string
-     * @throws \dml_exception
+     * @param int $courseid
+     * @param \stdClass $mab
+     * @return string
      * @throws \moodle_exception
      */
-    public function render_existing_activity_page(array $param): bool|string {
-        // Make sure we have the required parameters.
-        if (empty($param['courseid']) || empty($param['mabid'])) {
-            throw new \moodle_exception('error:missingparams', 'local_sitsgradepush');
+    public function render_select_source_page(int $courseid, \stdClass $mab): string {
+        $validassessments = [];
+
+        // Get all valid activities.
+        $activities = $this->manager->get_all_course_activities($courseid);
+
+        if (get_config('local_sitsgradepush', 'gradebook_enabled')) {
+            // Get grade book assessments, e.g. grade items, grade categories.
+            $gradebookassessments = $this->manager->get_gradebook_assessments($courseid);
+
+            $assessments  = array_merge($activities, $gradebookassessments);
+        } else {
+            $assessments = $activities;
         }
 
-        // Make sure the component grade exists.
-        if (empty($componentgrade = $this->manager->get_local_component_grade_by_id($param['mabid']))) {
-            throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $param['mabid']);
-        }
-
-        $formattedactivities = [];
-        // Get all activities in the course.
-        $activities = $this->manager->get_all_course_activities($param['courseid']);
-
-        // Remove the currently mapped activity from the list.
-        if ($assessmentmapping = $this->manager->is_component_grade_mapped($param['mabid'])) {
-            foreach ($activities as $key => $activity) {
-                if ($activity->get_coursemodule_id() == $assessmentmapping->coursemoduleid) {
-                    unset($activities[$key]);
-                }
-            }
-        }
-
-        foreach ($activities as $activity) {
-            // Skip activities mapped with the same map code.
-            if (!empty($mappings = $this->manager->get_assessment_mappings($activity->get_coursemodule_id()))) {
-                if (in_array($componentgrade->mapcode, array_column($mappings, 'mapcode'))) {
-                    continue;
-                }
+        // Create the select source page.
+        foreach ($assessments as $assessment) {
+            if (!$assessment->can_map_to_mab($mab->id)) {
+                continue;
             }
 
-            $tempactivity = new \stdClass();
-            $tempactivity->courseid = $param['courseid'];
-            $tempactivity->coursemoduleid = $activity->get_coursemodule_id();
-            $tempactivity->mabid = $param['mabid'];
-            $tempactivity->mapcode = $componentgrade->mapcode;
-            $tempactivity->mabseq = $componentgrade->mabseq;
-            $tempactivity->type = $activity->get_module_type();
-            $tempactivity->name = $activity->get_assessment_name();
-            $tempactivity->startdate = !empty($activity->get_start_date()) ? date('d/m/Y H:i:s', $activity->get_start_date()) : '-';
-            $tempactivity->enddate = !empty($activity->get_end_date()) ? date('d/m/Y H:i:s', $activity->get_end_date()) : '-';
-            $formattedactivities[] = $tempactivity;
+            $formattedassessment = new \stdClass();
+            $formattedassessment->courseid = $assessment->get_course_id();
+            $formattedassessment->mabid = $mab->id;
+            $formattedassessment->mapcode = $mab->mapcode;
+            $formattedassessment->mabseq = $mab->mabseq;
+            $formattedassessment->sourcetype = $assessment->get_type();
+            $formattedassessment->sourceid = $assessment->get_id();
+            $formattedassessment->type = $assessment->get_display_type_name();
+            $formattedassessment->name = $assessment->get_assessment_name();
+            $formattedassessment->startdate =
+                !empty($assessment->get_start_date()) ? date('d/m/Y H:i:s', $assessment->get_start_date()) : '-';
+            $formattedassessment->enddate =
+                !empty($assessment->get_end_date()) ? date('d/m/Y H:i:s', $assessment->get_end_date()) : '-';
+            $validassessments[] = $formattedassessment;
         }
 
-        return $this->output->render_from_template('local_sitsgradepush/select_source_existing',
-            ['activities' => $formattedactivities]);
+        return $this->output->render_from_template('local_sitsgradepush/select_source',
+            ['assessments' => $validassessments]);
     }
 
     /**

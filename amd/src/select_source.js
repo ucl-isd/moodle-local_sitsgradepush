@@ -1,7 +1,7 @@
 import {tableHelperInit} from './table_helper';
 import notification from "core/notification";
-import ModalFactory from 'core/modal_factory';
 import ModalEvents from 'core/modal_events';
+import ModalSaveCancel from 'core/modal_save_cancel';
 import {mapAssessment} from './sitsgradepush_helper';
 
 export const init = () => {
@@ -44,7 +44,8 @@ async function selectAssessment(button) {
     let mabseq = button.getAttribute('data-mabseq');
     let mabid = button.getAttribute('data-mabid');
     let courseid = button.getAttribute('data-courseid');
-    let coursemoduleid = button.getAttribute('data-coursemoduleid');
+    let sourcetype = button.getAttribute('data-sourcetype');
+    let sourceid = button.getAttribute('data-sourceid');
     let partid = button.getAttribute('data-partid');
 
     // Find the closest row to the button.
@@ -53,8 +54,7 @@ async function selectAssessment(button) {
     let name = currentrow.getElementsByTagName('td')[1].innerHTML;
     let endDate = currentrow.getElementsByTagName('td')[3].innerHTML;
 
-    let modal = await ModalFactory.create({
-        type: ModalFactory.types.SAVE_CANCEL,
+    const modal = await ModalSaveCancel.create({
         title: 'Confirmation',
         body: getModalBody(type, name, endDate, mapcode, mabseq),
         large: true,
@@ -63,7 +63,7 @@ async function selectAssessment(button) {
 
     await modal.show();
     modal.getRoot().on(ModalEvents.save, () => {
-        mapAssessment(courseid, coursemoduleid, mabid, partid).then(
+        mapAssessment(courseid, sourcetype, sourceid, mabid, partid).then(
             (result) => {
                 if (result.success) {
                     // Store the success message in localStorage for display on the dashboard page.

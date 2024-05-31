@@ -25,30 +25,46 @@ namespace local_sitsgradepush\assessment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class assessmentfactory {
+
+    /** @var string Course module source type */
+    const SOURCETYPE_MOD = 'mod';
+
+    /** @var string Grade item source type */
+    const SOURCETYPE_GRADE_ITEM = 'gradeitem';
+
+    /** @var string Grade category source type */
+    const SOURCETYPE_GRADE_CATEGORY = 'gradecategory';
+
     /**
      * Return assessment object by a given mod name.
      *
-     * @param int|\stdClass $coursemodule
+     * @param string $sourcetype
+     * @param int $id
      * @return assessment
      * @throws \moodle_exception
      */
-    public static function get_assessment(int|\stdClass $coursemodule) {
-        // Get course module object if coursemodule is an id.
-        if (is_int($coursemodule)) {
-            if (!$coursemodule = \get_coursemodule_from_id('', $coursemodule)) {
-                throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', $coursemodule);
+    public static function get_assessment(string $sourcetype, int $id): Assessment {
+        try {
+            if ($sourcetype === self::SOURCETYPE_MOD) {
+                $coursemodule = get_coursemodule_from_id('', $id);
+                if (!$coursemodule) {
+                    throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $id);
+                }
+                $classname = $coursemodule->modname;
+                $data = $coursemodule;
+            } else {
+                $classname = $sourcetype;
+                $data = $id;
             }
-        }
 
-        switch ($coursemodule->modname) {
-            case 'quiz':
-                return new quiz($coursemodule);
-            case 'assign':
-                return new assign($coursemodule);
-            case 'turnitintooltwo':
-                return new turnitintooltwo($coursemodule);
-            default:
-                throw new \moodle_exception('Mod name '. $coursemodule->modname .' not found.');
+            $fullclassname = __NAMESPACE__ . '\\' . $classname;
+            if (!class_exists($fullclassname)) {
+                throw new \moodle_exception('error:assessmentclassnotfound', 'local_sitsgradepush', '', $fullclassname);
+            }
+
+            return new $fullclassname($data);
+        } catch (\Exception $e) {
+            throw new \moodle_exception($e->getMessage());
         }
     }
 }

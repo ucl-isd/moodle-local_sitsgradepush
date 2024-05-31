@@ -23,6 +23,7 @@
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 
+use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\manager;
 
 /**
@@ -55,8 +56,9 @@ function local_sitsgradepush_extend_settings_navigation(settings_navigation $set
 
     // Build the grade push page url.
     $url = new moodle_url('/local/sitsgradepush/index.php', [
+        'courseid' => $PAGE->course->id,
+        'sourcetype' => assessmentfactory::SOURCETYPE_MOD,
         'id' => $cm->id,
-        'modname' => $cm->modname,
     ]);
 
     // Create the node.

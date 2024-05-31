@@ -272,21 +272,21 @@ function updateMarksColumn(assessments) {
             // Show the transfer button if there are marks to transfer.
             let transferButton = marksColumnField.querySelector('.js-btn-transfer-marks');
             if (assessment.markscount > 0) {
-                transferButton.style.display = 'block';
+                transferButton.classList.remove('d-none');
             } else {
-                transferButton.style.display = 'none';
+                transferButton.classList.add('d-none');
             }
 
             // Show marks information if no task running.
             if (assessment.task === null) {
                 marksColumnField.setAttribute('data-task-running', false);
-                taskContainer.style.display = 'none';
-                marksContainer.style.display = 'block';
+                taskContainer.classList.add('d-none');
+                marksContainer.classList.remove('d-none');
             } else {
                 // Show task information if task running.
                 marksColumnField.setAttribute('data-task-running', true);
-                marksContainer.style.display = 'none';
-                taskContainer.style.display = 'block';
+                marksContainer.classList.add('d-none');
+                taskContainer.classList.remove('d-none');
                 updateProgressBar(taskContainer, assessment.task.progress);
             }
         }

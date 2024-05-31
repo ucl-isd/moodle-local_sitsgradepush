@@ -38,7 +38,8 @@ class get_assessments_update extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Course ID', VALUE_REQUIRED),
-            'coursemoduleid' => new external_value(PARAM_INT, 'Course module ID', VALUE_DEFAULT, 0),
+            'sourcetype' => new external_value(PARAM_TEXT, 'Source Type', VALUE_DEFAULT, ''),
+            'sourceid' => new external_value(PARAM_INT, 'Source ID', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -59,24 +60,25 @@ class get_assessments_update extends external_api {
      * Get the tasks progresses for a given course.
      *
      * @param int $courseid
-     * @param int $coursemoduleid
-     *
+     * @param string $sourcetype
+     * @param int $sourceid
      * @return array
      */
-    public static function execute(int $courseid, int $coursemoduleid = 0) {
+    public static function execute(int $courseid, string $sourcetype = '', int $sourceid = 0) {
         try {
             // Validate parameters.
             $params = self::validate_parameters(
                 self::execute_parameters(),
                 [
                     'courseid' => $courseid,
-                    'coursemoduleid' => $coursemoduleid,
+                    'sourcetype' => $sourcetype,
+                    'sourceid' => $sourceid,
                 ]
             );
 
             // Get updates.
             if (empty($assessments = manager::get_manager()
-                ->get_data_for_page_update($params['courseid'], $params['coursemoduleid']))) {
+                ->get_data_for_page_update($params['courseid'], $params['sourcetype'], $params['sourceid']))) {
                 $assessments = [];
             }
 

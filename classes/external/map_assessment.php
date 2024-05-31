@@ -39,7 +39,8 @@ class map_assessment extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Coruse ID', VALUE_REQUIRED),
-            'coursemoduleid' => new external_value(PARAM_INT, 'Course Module ID', VALUE_REQUIRED),
+            'sourcetype' => new external_value(PARAM_TEXT, 'Source Type', VALUE_REQUIRED),
+            'sourceid' => new external_value(PARAM_INT, 'Source ID', VALUE_REQUIRED),
             'mabid' => new external_value(PARAM_INT, 'Assessment Component ID', VALUE_REQUIRED),
             'partid' => new external_value(PARAM_INT, 'Assessment Part ID', VALUE_DEFAULT, null),
         ]);
@@ -61,12 +62,13 @@ class map_assessment extends external_api {
      * Map an assessment to an SITS assessment component (MAB).
      *
      * @param int $courseid
-     * @param int $coursemoduleid
+     * @param string $sourcetype
+     * @param int $sourceid
      * @param int $mabid
      * @param int|null $partid
      * @return array
      */
-    public static function execute(int $courseid, int $coursemoduleid, int $mabid, int $partid = null) {
+    public static function execute(int $courseid, string $sourcetype, int $sourceid, int $mabid, int $partid = null) {
         try {
             if (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($courseid))) {
                 throw new \moodle_exception('error:mapassessment', 'local_sitsgradepush');
@@ -76,7 +78,8 @@ class map_assessment extends external_api {
                 self::execute_parameters(),
                 [
                     'courseid' => $courseid,
-                    'coursemoduleid' => $coursemoduleid,
+                    'sourcetype' => $sourcetype,
+                    'sourceid' => $sourceid,
                     'mabid' => $mabid,
                     'partid' => $partid,
                 ]
@@ -84,8 +87,10 @@ class map_assessment extends external_api {
 
             $manager = manager::get_manager();
             $data = new \stdClass();
+            $data->courseid = $params['courseid'];
             $data->componentgradeid = $params['mabid'];
-            $data->coursemoduleid = $params['coursemoduleid'];
+            $data->sourcetype = $params['sourcetype'];
+            $data->sourceid = $params['sourceid'];
             $data->partid = $params['partid'];
             $manager->save_assessment_mapping($data);
 

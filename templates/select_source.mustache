@@ -25,27 +25,39 @@
     * none
 
     Context variables required for this template:
-    * activities - Array, array of activity.
+    * assessments - Array, array of assessment.
         * type - String, acitivity type.
-        * name - String, activity name.
-        * startdate - String, activity start date.
-        * enddate - String, activity end date.
+        * name - String, assessment name.
+        * startdate - String, assessment start date.
+        * enddate - String, assessment end date.
+        * mapcode - String, map code.
+        * mabseq - String, mab sequence.
+        * courseid - String, assessment course id.
+        * mabid - String, mab id.
+        * sourcetype - String, assessment source type.
+        * sourceid - String, assessment source id.
 
     Example context (json):
     {
-        "activities":
+        "assessments":
         [
             {
                 "type": "Assignment",
                 "name": "Test assignment",
                 "startdate": "13/07/2023 00:00:00",
-                "enddate": "20/07/2023 00:00:00"
+                "enddate": "20/07/2023 00:00:00",
+                "mapcode": "1",
+                "mabseq": "1",
+                "courseid": "1",
+                "mabid": "1",
+                "sourcetype": "mod",
+                "sourceid": "1"
             }
         ]
     }
 }}
 <div class="container mt-5">
-    <h2 class="mb-4">{{#str}} existingactivity:header, local_sitsgradepush {{/str}}</h2>
+    <h2 class="mb-4">{{#str}} selectsource:header, local_sitsgradepush {{/str}}</h2>
     <input type="text" id="filterInput" class="form-control mb-3" placeholder="Filter assessments">
     <table class="table table-hover table-bordered" id="existing-activity-table">
         <thead style="background-color: lightgrey">
@@ -58,7 +70,7 @@
         </tr>
         </thead>
         <tbody>
-        {{#activities}}
+        {{#assessments}}
             <tr>
                 <td>{{type}}</td>
                 <td>{{name}}</td>
@@ -71,16 +83,17 @@
                             data-mabseq="{{mabseq}}"
                             data-courseid="{{courseid}}"
                             data-mabid="{{mabid}}"
-                            data-coursemoduleid="{{coursemoduleid}}">
+                            data-sourcetype="{{sourcetype}}"
+                            data-sourceid="{{sourceid}}">
                         <i class="fa-solid fa-plus mr-2"></i>{{#str}} select, local_sitsgradepush {{/str}}
                         <span class="sr-only">{{name}}</span>
                     </button>
                 </td>
             </tr>
-        {{/activities}}
+        {{/assessments}}
         </tbody>
     </table>
     <div id="noMatchingRowsMessage" style="display: none;">
-        {{#str}} existingactivity:no_match_row, local_sitsgradepush {{/str}}
+        {{#str}} selectsource:no_match_row, local_sitsgradepush {{/str}}
     </div>
 </div>

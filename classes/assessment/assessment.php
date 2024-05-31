@@ -31,94 +31,130 @@ abstract class assessment implements iassessment {
     /** @var string Grade failed */
     const GRADE_FAIL = 'F';
 
-    /** @var \stdClass Course module object */
-    public \stdClass $coursemodule;
+    /** @var int Source instance id. E.g. course module id for activities, grade item id for grade items. */
+    public int $id;
 
-    /** @var \stdClass Module instance object */
-    public \stdClass $moduleinstance;
+    /** @var string Source instance type. E.g. mod, gradeitem, gradecategory. */
+    public string $type;
+
+    /** @var mixed Source instance. */
+    protected mixed $sourceinstance;
 
     /**
      * Constructor.
      *
-     * @param \stdClass $coursemodule
+     * @param string $sourcetype
+     * @param int $sourceid
+     */
+    public function __construct(string $sourcetype, int $sourceid) {
+        $this->id = $sourceid;
+        $this->type = $sourcetype;
+        $this->set_instance();
+    }
+
+    /**
+     * Get the source id.
+     *
+     * @return int
+     */
+    public function get_id(): int {
+        return $this->id;
+    }
+
+    /**
+     * Get the source type.
+     *
+     * @return string
+     */
+    public function get_type(): string {
+        return $this->type;
+    }
+
+    /**
+     * Get the URL to the marks transfer history page.
+     *
+     * @param bool $escape
+     * @return string
+     * @throws \moodle_exception
+     */
+    public function get_assessment_transfer_history_url(bool $escape): string {
+        $url = new \moodle_url(
+            '/local/sitsgradepush/index.php',
+            [
+                'courseid' => $this->get_course_id(),
+                'sourcetype' => $this->get_type(),
+                'id' => $this->get_id(),
+            ]
+        );
+
+        return $url->out($escape);
+    }
+
+    /**
+     * Check if this assessment can be mapped to a given mab.
+     *
+     * @param int|\stdClass $mab
+     * @return bool
      * @throws \dml_exception
      */
-    public function __construct(\stdClass $coursemodule) {
-        $this->coursemodule = $coursemodule;
-        $this->set_module_instance();
-    }
+    public function can_map_to_mab(int|\stdClass $mab): bool {
+        // Check the assessment is valid for marks transfer.
+        if (!$this->check_assessment_validity()) {
+            return false;
+        }
 
-    /**
-     * Return the assessment name.
-     *
-     * @return string
-     */
-    public function get_assessment_name(): string {
-        return $this->moduleinstance->name;
-    }
+        $manager = manager::get_manager();
+        // Variable $mab is an integer.
+        if (is_int($mab)) {
+            // Get the mab object.
+            $mab = $manager->get_local_component_grade_by_id($mab);
+        }
 
-    /**
-     * Get the course module object related to this assessment.
-     *
-     * @return \stdClass
-     */
-    public function get_course_module(): \stdClass {
-        return $this->coursemodule;
-    }
+        // Get all mappings for this assessment.
+        $mappings = $manager->get_assessment_mappings($this);
 
-    /**
-     * Get the course module id.
-     *
-     * @return int
-     */
-    public function get_coursemodule_id(): int {
-        return $this->coursemodule->id;
-    }
-
-    /**
-     * Get the course id.
-     *
-     * @return int
-     */
-    public function get_course_id(): int {
-        return $this->coursemodule->course;
-    }
-
-    /**
-     * Get the course id.
-     *
-     * @return string
-     */
-    public function get_module_type(): string {
-        return get_module_types_names()[$this->coursemodule->modname];
-    }
-
-    /**
-     * Get the grade of a user.
-     *
-     * @param int $userid
-     * @param int|null $partid
-     * @return array|null
-     */
-    public function get_user_grade(int $userid, int $partid = null): ?array {
-        $result = null;
-        if ($grade = grade_get_grades(
-            $this->coursemodule->course, 'mod', $this->coursemodule->modname, $this->coursemodule->instance, $userid)) {
-            foreach ($grade->items as $item) {
-                foreach ($item->grades as $grade) {
-                    if ($grade->grade) {
-                        if (is_numeric($grade->grade)) {
-                            $manager = manager::get_manager();
-                            $formattedmarks = $manager->get_formatted_marks($this->coursemodule->course, (float)$grade->grade);
-                            $equivalentgrade = $this->get_equivalent_grade_from_mark((float)$grade->grade);
-                            return [$grade->grade, $equivalentgrade, $formattedmarks];
-                        }
-                    }
+        // Check if the mab is valid for a new mapping if existing mappings are found.
+        if (!empty($mappings)) {
+            foreach ($mappings as $mapping) {
+                // Check this assessment does not map to the same mab.
+                if ($mapping->componentgradeid == $mab->id) {
+                    return false;
+                }
+                // Check this assessment does not map to a mab that has the same map code.
+                if ($mapping->mapcode == $mab->mapcode) {
+                    return false;
                 }
             }
         }
 
-        return $result;
+        return true;
+    }
+
+    /**
+     * Get the source instance.
+     *
+     * @return mixed
+     */
+    public function get_source_instance(): mixed {
+        return $this->sourceinstance;
+    }
+
+    /**
+     * Get the start date of the assessment.
+     *
+     * @return int|null
+     */
+    public function get_start_date(): ?int {
+        return null;
+    }
+
+    /**
+     * Get the end date of the assessment.
+     *
+     * @return int|null
+     */
+    public function get_end_date(): ?int {
+        return null;
     }
 
     /**
@@ -136,12 +172,31 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Set the module instance.
-     * @return void
-     * @throws \dml_exception
+     * Check if the assessment is valid for marks transfer.
+     *
+     * @return bool
      */
-    protected function set_module_instance(): void {
-        global $DB;
-        $this->moduleinstance = $DB->get_record($this->coursemodule->modname, ['id' => $this->coursemodule->instance]);
+    protected function check_assessment_validity(): bool {
+        // Get all grade items related to this assessment.
+        $gradeitems = $this->get_grade_items();
+
+        // No grade items found.
+        if (empty($gradeitems)) {
+            return false;
+        }
+
+        // Check if any grade items are valid.
+        foreach ($gradeitems as $gradeitem) {
+            if ($gradeitem->gradetype != GRADE_TYPE_VALUE) {
+                return false;
+            }
+
+            // Check the grade min and grade max.
+            if ($gradeitem->grademin != 0 || $gradeitem->grademax != 100) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

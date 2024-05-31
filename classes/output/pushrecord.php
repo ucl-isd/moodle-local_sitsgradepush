@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\output;
 
+use local_sitsgradepush\assessment\assessment;
+use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\errormanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\submission\submissionfactory;
@@ -108,27 +110,27 @@ class pushrecord {
      * Constructor.
      *
      * @param \stdClass $student
-     * @param int $coursemoduleid
-     * @param int $courseid
+     * @param assessment $assessment
      * @param \stdClass|null $mapping
+     * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function __construct(\stdClass $student, int $coursemoduleid, int $courseid, \stdClass $mapping = null) {
+    public function __construct(\stdClass $student, assessment $assessment, \stdClass $mapping = null) {
         // Get manager.
         $this->manager = manager::get_manager();
 
         // Set course id.
-        $this->courseid = $courseid;
+        $this->courseid = $assessment->get_course_id();
 
         // Set student data.
         $this->set_student_info($student);
 
         // Set grade.
-        $this->set_grade($coursemoduleid, $student->id);
+        $this->set_grade($assessment, $student->id);
 
         // Set submission.
-        $this->set_submission($coursemoduleid, $student->id);
+        $this->set_submission($assessment, $student->id);
 
         if (!empty($mapping)) {
             // Set transfer records.
@@ -145,13 +147,12 @@ class pushrecord {
     /**
      * Set grade.
      *
-     * @param int $coursemoduleid
+     * @param assessment $assessment
      * @param int $studentid
      * @return void
-     * @throws \moodle_exception
      */
-    protected function set_grade(int $coursemoduleid, int $studentid): void {
-        list($rawmarks, $equivalentgrade, $formattedmarks) = $this->manager->get_student_grade($coursemoduleid, $studentid);
+    protected function set_grade(assessment $assessment, int $studentid): void {
+        list($rawmarks, $equivalentgrade, $formattedmarks) = $assessment->get_user_grade($studentid);
         $this->rawmarks = $rawmarks ?? '-';
         $this->equivalentgrade = $equivalentgrade ?? '-';
         $this->marks = $formattedmarks ?? '-';
@@ -171,17 +172,22 @@ class pushrecord {
 
     /**
      * Set submission.
-     * @param int $coursemoduleid
+     *
+     * @param assessment $source
      * @param int $studentid
      * @return void
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    protected function set_submission(int $coursemoduleid, int $studentid): void {
+    protected function set_submission(assessment $source, int $studentid): void {
+        // Exit if source is not a course module.
+        if ($source->get_type() !== assessmentfactory::SOURCETYPE_MOD) {
+            return;
+        }
 
         // Get submission.
-        $submission = submissionfactory::get_submission($coursemoduleid, $studentid);
+        $submission = submissionfactory::get_submission($source->get_id(), $studentid);
         if ($submission->get_submission_data()) {
             $this->handindatetime = $submission->get_handin_datetime();
             $this->handinstatus = $submission->get_handin_status();

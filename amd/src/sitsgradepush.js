@@ -10,29 +10,31 @@ let shouldRefresh = false;
  * Initialize the course module marks transfer page (index.php).
  *
  * @param {int} courseid
- * @param {int} coursemoduleid
+ * @param {string} sourcetype
+ * @param {int} sourceid
  */
-export const init = (courseid, coursemoduleid) => {
+export const init = (courseid, sourcetype, sourceid) => {
     // Initialize page update tasks.
-    initPageUpdate(courseid, coursemoduleid);
+    initPageUpdate(courseid, sourcetype, sourceid);
 
     // Initialize the confirmation modal.
-    initConfirmationModal(courseid, coursemoduleid);
+    initConfirmationModal(courseid, sourcetype, sourceid);
 };
 
 /**
  * Initialize page update on course module marks transfer page (index.php).
  *
  * @param {int} courseid
- * @param {int} coursemoduleid
+ * @param {string} sourcetype
+ * @param {int} sourceid
  */
-function initPageUpdate(courseid, coursemoduleid) {
+function initPageUpdate(courseid, sourcetype, sourceid) {
     // Update the tasks progresses.
-    updateTasksInfo(courseid, coursemoduleid);
+    updateTasksInfo(courseid, sourcetype, sourceid);
 
     // Update the tasks progresses every 15 seconds.
     updatePageIntervalId = setInterval(() => {
-        updateTasksInfo(courseid, coursemoduleid);
+        updateTasksInfo(courseid, sourcetype, sourceid);
     }, updatePageDelay);
 
     // Add event listener to stop update the page when the page is not visible. e.g. when the user switches to another tab.
@@ -40,9 +42,9 @@ function initPageUpdate(courseid, coursemoduleid) {
         if (document.visibilityState === "hidden") {
             clearInterval(updatePageIntervalId);
         } else {
-            updateTasksInfo(courseid, coursemoduleid);
+            updateTasksInfo(courseid, sourcetype, sourceid);
             updatePageIntervalId = setInterval(() => {
-                updateTasksInfo(courseid, coursemoduleid);
+                updateTasksInfo(courseid, sourcetype, sourceid);
             }, updatePageDelay);
         }
     });
@@ -52,9 +54,10 @@ function initPageUpdate(courseid, coursemoduleid) {
  * Initialize the confirmation modal.
  *
  * @param {int} courseid
- * @param {int} coursemoduleid
+ * @param {string} sourcetype
+ * @param {int} sourceid
  */
-function initConfirmationModal(courseid, coursemoduleid) {
+function initConfirmationModal(courseid, sourcetype, sourceid) {
     // Find the confirmation modal.
     let confirmTransferButton = document.getElementById("js-transfer-modal-button");
 
@@ -70,7 +73,8 @@ function initConfirmationModal(courseid, coursemoduleid) {
         let sync = confirmTransferButton.getAttribute('data-sync');
         if (sync === "1") {
             // Do sync push.
-            window.location.href = '/local/sitsgradepush/index.php?id=' + coursemoduleid + '&pushgrade=1';
+            window.location.href = `/local/sitsgradepush/index.php?courseid=${courseid}&sourcetype=${sourcetype}&id=${sourceid}` +
+            `&pushgrade=1`;
         } else {
             // Do async push.
             let promises = [];
@@ -125,7 +129,7 @@ function initConfirmationModal(courseid, coursemoduleid) {
             await Promise.all(promises);
 
             // Update the page.
-            await updateTasksInfo(courseid, coursemoduleid);
+            await updateTasksInfo(courseid, sourcetype, sourceid);
 
             // Display a notification.
             await notification.addNotification({
@@ -140,12 +144,13 @@ function initConfirmationModal(courseid, coursemoduleid) {
  * Update all marks transfer tasks information, e.g. progress bars.
  *
  * @param {int} courseid
- * @param {int} coursemoduleid
- * @return {void}
+ * @param {string} sourcetype
+ * @param {int} sourceid
+ * @return {Promise<*>}
  */
-async function updateTasksInfo(courseid, coursemoduleid) {
+async function updateTasksInfo(courseid, sourcetype, sourceid) {
     // Get all latest tasks statuses.
-    let update = await getAssessmentsUpdate(courseid, coursemoduleid);
+    let update = await getAssessmentsUpdate(courseid, sourcetype, sourceid);
     if (update.success) {
         // Parse the JSON string.
         let assessments = JSON.parse(update.assessments);
@@ -160,6 +165,8 @@ async function updateTasksInfo(courseid, coursemoduleid) {
         clearInterval(updatePageIntervalId);
         window.console.error(update.message);
     }
+
+    return update;
 }
 
 /**
@@ -199,9 +206,9 @@ function updateProgress(assessments) {
         }
         if (assessment.task === null) {
             // Hide the progress container if there is no task in progress.
-            progressContainer.style.display = 'none';
+            progressContainer.classList.add('d-none');
         } else {
-            progressContainer.style.display = 'block';
+            progressContainer.classList.remove('d-none');
             updateProgressBar(progressContainer, assessment.task.progress);
         }
     });

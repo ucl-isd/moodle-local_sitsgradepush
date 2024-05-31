@@ -24,7 +24,7 @@ namespace local_sitsgradepush\assessment;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class quiz extends assessment {
+class quiz extends activity {
     /**
      * Get all participants.
      *
@@ -41,7 +41,7 @@ class quiz extends assessment {
      * @return int|null
      */
     public function get_start_date(): ?int {
-        return $this->moduleinstance->timeopen;
+        return $this->get_source_instance()->timeopen;
     }
 
     /**
@@ -50,6 +50,6 @@ class quiz extends assessment {
      * @return int|null
      */
     public function get_end_date(): ?int {
-        return $this->moduleinstance->timeclose;
+        return $this->get_source_instance()->timeclose;
     }
 }
