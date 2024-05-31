@@ -12,10 +12,20 @@ This does require some development to adopt but the barrier is greatly reduced.
 3) Stutalk APIs. We can probably share some of the stutalk endpoints that were built, they just don't lend themselves to being in git.
 4) As an additional safety, we prevent the configuration of marks transfer for previous academic years. This ends up calling our [Lifecycle](https://github.com/ucl-isd/moodle-block_lifecycle) plugin to find out the [end of the late assessment](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/classes/manager.php#L1057-L1059) period. This could easily be made optional.
 
+## Features
+
+- Link one Moodle activity to one SITS Assessment Component
+- Link one Moodle activity to multiple SITS Assessment Component for seperate module deliveries
+- only available for courses with mappings to a Module Delivery 
+- push numerical grades 0-100
+- manual trigger for push
+- push the submission date & time
+- Activities supported: Moodle Assignment, Turnitin Assignment (only with 1 part - most common) and Quiz.
+- Select a Gradebook [grade item](https://docs.moodle.org/403/en/Grade_items) (covering LTIs, etc) and [grade category](https://docs.moodle.org/403/en/Grade_categories)
+- Limit Assessment Component availability to ensure only compatible SITS Marking Schemes and SITS Assessment Types can be mapped. And for Exam Assessment types, only allow those components where the exam room code = EXAMMDLE
 
 ## Roadmap
-We are just at the initial launch stage, but are expecting to implement the following features in the coming months:
-- Select a Gradebook [grade item](https://docs.moodle.org/403/en/Grade_items) (covering LTIs, etc) and [grade category](https://docs.moodle.org/403/en/Grade_categories)
+We had our initial launch stage in March 2024, we are planning to keep improving the tool, by implementng the following features in the coming months:
 - resits, retakes, repeats, re-assessments, etc
 - Late / non-submission reporting
 - Automatically populate extra time / deadline extensions for [SORAs](https://www.ucl.ac.uk/students/support-and-wellbeing/disability-support/reasonable-adjustments-your-assessments) and [ECs](https://www.ucl.ac.uk/academic-manual/chapters/chapter-2-student-support-framework/2-short-term-illness-and-other-extenuating)
