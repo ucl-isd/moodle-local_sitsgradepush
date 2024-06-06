@@ -55,7 +55,7 @@ class easikit extends client {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function build_request(string $action, \stdClass $data = null, submission $submission = null) {
+    public function build_request(string $action, ?\stdClass $data = null, ?submission $submission = null) {
         switch ($action) {
             case manager::PUSH_GRADE:
                 $request = new pushgrade($data);

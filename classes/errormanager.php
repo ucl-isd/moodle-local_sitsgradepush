@@ -92,7 +92,7 @@ class errormanager {
      * @param int|null $errorcode error code
      * @return string error label
      */
-    public static function get_error_label(int $errorcode = null): string {
+    public static function get_error_label(?int $errorcode = null): string {
         // If no error code provided, return unknown error.
         if (!isset($errorcode)) {
             return self::ERROR_TYPES_LABEL[self::ERROR_UNKNOWN];
@@ -107,7 +107,7 @@ class errormanager {
      * @param string|null $errorstring
      * @return int
      */
-    public static function identify_error(string $errorstring = null): int {
+    public static function identify_error(?string $errorstring = null): int {
         // If no error string provided, return unknown error.
         if (!isset($errorstring)) {
             return self::ERROR_UNKNOWN;

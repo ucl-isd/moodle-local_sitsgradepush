@@ -286,7 +286,7 @@ class renderer extends plugin_renderer_base {
      * @param int|null $errortype
      * @return string
      */
-    private function get_label_html(int $errortype = null): string {
+    private function get_label_html(?int $errortype = null): string {
         // This is for old data that does not have the error type.
         if (is_null($errortype)) {
             return '<span class="badge badge-danger">'.errormanager::get_error_label(errormanager::ERROR_UNKNOWN).'</span> ';
