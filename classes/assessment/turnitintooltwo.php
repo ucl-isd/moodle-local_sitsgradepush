@@ -82,10 +82,10 @@ class turnitintooltwo extends activity {
      *
      * @return bool
      */
-    protected function check_assessment_validity(): bool {
+    public function check_assessment_validity(): \stdClass {
         // Check the Turnitin assignment only has one part.
         if (count($this->turnitinparts) > 1) {
-            return false;
+            return $this->set_validity_result(false, 'error:turnitin_numparts');
         }
         return parent::check_assessment_validity();
     }

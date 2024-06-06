@@ -1113,8 +1113,8 @@ class manager {
 
         // Check the grade type of the course module is supported.
         foreach ($gradeitems as $gradeitem) {
-            if ($gradeitem->gradetype == GRADE_TYPE_SCALE) {
-                throw new \moodle_exception('error:gradetype_not_supported', 'local_sitsgradepush', '', 'scale');
+            if ($gradeitem->gradetype != GRADE_TYPE_VALUE) {
+                throw new \moodle_exception('error:gradetype_not_supported', 'local_sitsgradepush');
             }
         }
 

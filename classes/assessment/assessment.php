@@ -99,7 +99,8 @@ abstract class assessment implements iassessment {
      */
     public function can_map_to_mab(int|\stdClass $mab): bool {
         // Check the assessment is valid for marks transfer.
-        if (!$this->check_assessment_validity()) {
+        $validity = $this->check_assessment_validity();
+        if (!$validity->valid) {
             return false;
         }
 
@@ -158,6 +159,54 @@ abstract class assessment implements iassessment {
     }
 
     /**
+     * Check if the assessment is valid for marks transfer.
+     *
+     * @return \stdClass
+     */
+    public function check_assessment_validity(): \stdClass {
+        $result = $this->set_validity_result(true);
+
+        // Get all grade items related to this assessment.
+        $gradeitems = $this->get_grade_items();
+
+        // No grade items found.
+        if (empty($gradeitems)) {
+            $result = $this->set_validity_result(false, 'error:grade_items_not_found');
+            return $result;
+        }
+
+        // Check if any grade items are valid.
+        foreach ($gradeitems as $gradeitem) {
+            if ($gradeitem->gradetype != GRADE_TYPE_VALUE) {
+                $result = $this->set_validity_result(false, 'error:gradetype_not_supported');
+                break;
+            }
+
+            // Check the grade min and grade max.
+            if ($gradeitem->grademin != 0 || $gradeitem->grademax != 100) {
+                $result = $this->set_validity_result(false, 'error:grademinmax');
+                break;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Set validity result.
+     *
+     * @param bool $valid
+     * @param string $errorcode
+     * @return \stdClass
+     */
+    protected function set_validity_result(bool $valid, string $errorcode = ''): \stdClass {
+        $result = new \stdClass();
+        $result->valid = $valid;
+        $result->errorcode = $errorcode;
+        return $result;
+    }
+
+    /**
      * Get the equivalent grade for a given mark.
      *
      * @param float $marks
@@ -169,34 +218,5 @@ abstract class assessment implements iassessment {
             $equivalentgrade = self::GRADE_FAIL;
         }
         return $equivalentgrade;
-    }
-
-    /**
-     * Check if the assessment is valid for marks transfer.
-     *
-     * @return bool
-     */
-    protected function check_assessment_validity(): bool {
-        // Get all grade items related to this assessment.
-        $gradeitems = $this->get_grade_items();
-
-        // No grade items found.
-        if (empty($gradeitems)) {
-            return false;
-        }
-
-        // Check if any grade items are valid.
-        foreach ($gradeitems as $gradeitem) {
-            if ($gradeitem->gradetype != GRADE_TYPE_VALUE) {
-                return false;
-            }
-
-            // Check the grade min and grade max.
-            if ($gradeitem->grademin != 0 || $gradeitem->grademax != 100) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }
