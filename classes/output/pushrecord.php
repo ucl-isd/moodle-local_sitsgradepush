@@ -116,7 +116,7 @@ class pushrecord {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function __construct(\stdClass $student, assessment $assessment, \stdClass $mapping = null) {
+    public function __construct(\stdClass $student, assessment $assessment, ?\stdClass $mapping = null) {
         // Get manager.
         $this->manager = manager::get_manager();
 

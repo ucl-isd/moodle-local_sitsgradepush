@@ -172,7 +172,7 @@ abstract class submission implements isubmission {
      * @param int|null $time
      * @return string
      */
-    protected function get_iso8601_datetime(int $time = null): string {
+    protected function get_iso8601_datetime(?int $time = null): string {
         if ($time) {
             $datetime = date('c', $time);
         } else {

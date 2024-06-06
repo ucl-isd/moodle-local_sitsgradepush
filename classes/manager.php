@@ -490,7 +490,7 @@ class manager {
      * @return mixed
      * @throws \dml_exception
      */
-    public function get_assessment_mappings(assessment $source, int $componentgradeid = null): mixed {
+    public function get_assessment_mappings(assessment $source, ?int $componentgradeid = null): mixed {
         global $DB;
 
         $params = [
@@ -655,7 +655,7 @@ class manager {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid, int $taskid = null): bool {
+    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid, ?int $taskid = null): bool {
         try {
             // Check if last push was succeeded, exit if succeeded.
             if ($this->last_push_succeeded($assessmentmapping->id, $userid, self::PUSH_GRADE)) {
@@ -790,7 +790,7 @@ class manager {
      * @return array
      * @throws \dml_exception
      */
-    public function get_transfer_logs(int $assessmentmappingid, int $userid, string $type = null): array {
+    public function get_transfer_logs(int $assessmentmappingid, int $userid, ?string $type = null): array {
         global $DB;
 
         // Initialize params.
@@ -834,7 +834,7 @@ class manager {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_assessment_data(string $sourcetype, int $sourceid, int $assessmentmappingid = null): array|\stdClass {
+    public function get_assessment_data(string $sourcetype, int $sourceid, ?int $assessmentmappingid = null): array|\stdClass {
         // Get the assessment.
         $assessment = assessmentfactory::get_assessment($sourcetype, $sourceid);
 
@@ -1326,7 +1326,7 @@ class manager {
      * @throws \dml_exception
      */
     private function save_transfer_log(
-        string $type, int $assessmentmappingid, int $userid, mixed $request, array $response, ?int $taskid, int $errorlogid = null
+        string $type, int $assessmentmappingid, int $userid, mixed $request, array $response, ?int $taskid, ?int $errorlogid = null
     ): void {
         global $USER, $DB;
         $insert = new \stdClass();

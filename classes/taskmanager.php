@@ -215,7 +215,7 @@ class taskmanager {
      * @param int|null $errlogid
      * @throws \dml_exception
      */
-    public static function update_task_status(int $taskid, int $status, int $errlogid = null) {
+    public static function update_task_status(int $taskid, int $status, ?int $errlogid = null) {
         global $DB;
 
         $task = $DB->get_record('local_sitsgradepush_tasks', ['id' => $taskid]);

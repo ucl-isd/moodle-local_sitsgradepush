@@ -119,7 +119,7 @@ abstract class activity extends assessment {
      * @param int|null $partid
      * @return array|null
      */
-    public function get_user_grade(int $userid, int $partid = null): ?array {
+    public function get_user_grade(int $userid, ?int $partid = null): ?array {
         $result = null;
         if ($grade = grade_get_grades(
             $this->coursemodule->course, 'mod', $this->coursemodule->modname, $this->coursemodule->instance, $userid)) {
