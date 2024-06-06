@@ -46,6 +46,7 @@ $functions = [
         'description' => 'Get assessment updates for a given course / course module',
         'ajax' => true,
         'type' => 'read',
+        'readonlysession' => true,
         'loginrequired' => true,
     ],
 ];
