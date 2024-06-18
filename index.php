@@ -115,6 +115,13 @@ if (!empty($content)) {
             if (empty($mapping->students)) {
                 continue;
             }
+
+            // Check grade item is valid for mark transfer.
+            $validity = $mapping->source->check_assessment_validity();
+            if (!$validity->valid) {
+                throw new \moodle_exception($validity->errorcode, 'local_sitsgradepush');
+            }
+
             // Push grades for each student in the mapping.
             foreach ($mapping->students as $student) {
                 $manager->push_grade_to_sits($mapping, $student->userid);

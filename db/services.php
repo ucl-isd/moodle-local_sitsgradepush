@@ -32,6 +32,7 @@ $functions = [
         'description' => 'Schedule a push task',
         'ajax' => true,
         'type' => 'write',
+        'readonlysession' => true,
         'loginrequired' => true,
     ],
     'local_sitsgradepush_map_assessment' => [
@@ -39,6 +40,7 @@ $functions = [
         'description' => 'Map assessment',
         'ajax' => true,
         'type' => 'write',
+        'readonlysession' => true,
         'loginrequired' => true,
     ],
     'local_sitsgradepush_get_assessments_update' => [

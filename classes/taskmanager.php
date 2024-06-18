@@ -272,6 +272,12 @@ class taskmanager {
             throw new \moodle_exception('error:nostudentfoundformapping', 'local_sitsgradepush');
         }
 
+        // Check grade item is valid for mark transfer.
+        $validity = $mapping->source->check_assessment_validity();
+        if (!$validity->valid) {
+            throw new \moodle_exception($validity->errorcode, 'local_sitsgradepush');
+        }
+
         // Failed to insert the task.
         if (!$DB->insert_record('local_sitsgradepush_tasks', $task)) {
             throw new \moodle_exception('error:inserttask', 'local_sitsgradepush');
