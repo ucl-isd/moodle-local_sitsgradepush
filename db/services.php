@@ -51,4 +51,12 @@ $functions = [
         'readonlysession' => true,
         'loginrequired' => true,
     ],
+    'local_sitsgradepush_get_summative_grade_items' => [
+        'classname' => 'local_sitsgradepush\external\get_summative_grade_items',
+        'description' => 'Get summative grade items for a given course',
+        'ajax' => true,
+        'type' => 'read',
+        'readonlysession' => true,
+        'loginrequired' => true,
+    ],
 ];

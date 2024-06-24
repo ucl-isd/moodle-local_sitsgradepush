@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 namespace local_sitsgradepush;
 
 use core_course\customfield\course_handler;
@@ -1310,6 +1311,50 @@ class manager {
         }
 
         return $assessments;
+    }
+
+    /**
+     * Get all summative grade items, i.e. grade items of mapped assessments.
+     *
+     * @param int $courseid
+     *
+     * @return array
+     * @throws \dml_exception|\moodle_exception
+     */
+    public function get_all_summative_grade_items(int $courseid): array {
+        global $DB;
+
+        // Get all mapped assessments.
+        $mappings = $DB->get_records(self::TABLE_ASSESSMENT_MAPPING, ['courseid' => $courseid]);
+
+        // No mapping found for the course.
+        if (empty($mappings)) {
+            return [];
+        }
+
+        // Get all summative grade items.
+        $results = [];
+        $requiredfields = ['id', 'categoryid', 'itemname', 'itemtype', 'itemmodule', 'iteminstance', 'itemnumber', 'gradetype'];
+        foreach ($mappings as $mapping) {
+            $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
+            $gradeitems = $assessment->get_grade_items();
+
+            // No grade items found for the assessment.
+            if (empty($gradeitems)) {
+                continue;
+            }
+
+            // Only return required fields.
+            foreach ($gradeitems as $gradeitem) {
+                $result = new \stdClass();
+                foreach ($requiredfields as $field) {
+                    $result->$field = $gradeitem->$field;
+                }
+                $results[] = $result;
+            }
+        }
+
+        return $results;
     }
 
     /**

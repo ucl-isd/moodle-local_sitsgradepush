@@ -18,19 +18,20 @@ namespace local_sitsgradepush\external;
 
 use core_external\external_api;
 use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use local_sitsgradepush\manager;
 
 /**
- * External API for getting assessments update for page updates.
+ * External API for getting summative grade items for a given course.
  *
  * @package    local_sitsgradepush
- * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class get_assessments_update extends external_api {
+class get_summative_grade_items extends external_api {
     /**
      * Returns description of method parameters.
      *
@@ -39,8 +40,6 @@ class get_assessments_update extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Course ID', VALUE_REQUIRED),
-            'sourcetype' => new external_value(PARAM_TEXT, 'Source Type', VALUE_DEFAULT, ''),
-            'sourceid' => new external_value(PARAM_INT, 'Source ID', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -52,44 +51,44 @@ class get_assessments_update extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Result of request', VALUE_REQUIRED),
-            'assessments' => new external_value(PARAM_RAW, 'Assessments Latest Status', VALUE_OPTIONAL),
+            'gradeitems' => new external_multiple_structure(
+              new external_single_structure([
+                'id' => new external_value(PARAM_INT, 'Grade item ID', VALUE_REQUIRED),
+                'categoryid' => new external_value(PARAM_INT, 'Grade item category ID', VALUE_REQUIRED),
+                'itemname' => new external_value(PARAM_TEXT, 'Grade item name', VALUE_REQUIRED),
+                'itemtype' => new external_value(PARAM_TEXT, 'Grade item type', VALUE_REQUIRED),
+                'itemmodule' => new external_value(PARAM_TEXT, 'Grade item module', VALUE_REQUIRED),
+                'iteminstance' => new external_value(PARAM_INT, 'Grade item instance', VALUE_REQUIRED),
+                'itemnumber' => new external_value(PARAM_INT, 'Grade item number', VALUE_REQUIRED),
+              ], 'Grade item', VALUE_REQUIRED), 'List of grade items', VALUE_REQUIRED),
             'message' => new external_value(PARAM_TEXT, 'Error message', VALUE_OPTIONAL),
         ]);
     }
 
     /**
-     * Get the tasks progresses for a given course.
+     * Get summative grade items for a given course.
      *
      * @param int $courseid
-     * @param string $sourcetype
-     * @param int $sourceid
      * @return array
      */
-    public static function execute(int $courseid, string $sourcetype = '', int $sourceid = 0) {
+    public static function execute(int $courseid) {
         try {
             // Validate parameters.
             $params = self::validate_parameters(
                 self::execute_parameters(),
                 [
                     'courseid' => $courseid,
-                    'sourcetype' => $sourcetype,
-                    'sourceid' => $sourceid,
                 ]
             );
 
-            // Get updates.
-            if (empty($assessments = manager::get_manager()
-                ->get_data_for_page_update($params['courseid'], $params['sourcetype'], $params['sourceid']))) {
-                $assessments = [];
-            }
-
             return [
                 'success' => true,
-                'assessments' => json_encode($assessments),
+                'gradeitems' => manager::get_manager()->get_all_summative_grade_items($params['courseid']),
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
+                'gradeitems' => [],
                 'message' => $e->getMessage(),
             ];
         }
