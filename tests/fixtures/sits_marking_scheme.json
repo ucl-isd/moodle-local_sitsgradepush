@@ -1,0 +1,597 @@
+{
+  "UGM05":
+  {
+    "MKS_CODE": "UGM05",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "MDA03":
+  {
+    "MKS_CODE": "MDA03",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "MDM03":
+  {
+    "MKS_CODE": "MDM03",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "PGM04":
+  {
+    "MKS_CODE": "PGM04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "UGM04":
+  {
+    "MKS_CODE": "UGM04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "MDM04":
+  {
+    "MKS_CODE": "MDM04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "MDA04":
+  {
+    "MKS_CODE": "MDA04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "PGA03":
+  {
+    "MKS_CODE": "PGA03",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "N"
+  },
+  "PGM03":
+  {
+    "MKS_CODE": "PGM03",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "UGA04":
+  {
+    "MKS_CODE": "UGA04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "N"
+  },
+  "MDA06":
+  {
+    "MKS_CODE": "MDA06",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "MDM06":
+  {
+    "MKS_CODE": "MDM06",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "OLDUCL":
+  {
+    "MKS_CODE": "OLDUCL",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "",
+    "MKS_IUSE": "Y"
+  },
+  "UGM01":
+  {
+    "MKS_CODE": "UGM01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "UGA01":
+  {
+    "MKS_CODE": "UGA01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "N"
+  },
+  "UGM02":
+  {
+    "MKS_CODE": "UGM02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "UGA02":
+  {
+    "MKS_CODE": "UGA02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "N"
+  },
+  "LBM01":
+  {
+    "MKS_CODE": "LBM01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "LBA01":
+  {
+    "MKS_CODE": "LBA01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "LBM02":
+  {
+    "MKS_CODE": "LBM02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "LBA02":
+  {
+    "MKS_CODE": "LBA02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "PGM01":
+  {
+    "MKS_CODE": "PGM01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "PGA01":
+  {
+    "MKS_CODE": "PGA01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "N"
+  },
+  "PGM02":
+  {
+    "MKS_CODE": "PGM02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "PGA02":
+  {
+    "MKS_CODE": "PGA02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "N"
+  },
+  "DPA01":
+  {
+    "MKS_CODE": "DPA01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "N"
+  },
+  "DPM01":
+  {
+    "MKS_CODE": "DPM01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "DPA02":
+  {
+    "MKS_CODE": "DPA02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "N"
+  },
+  "DPM02":
+  {
+    "MKS_CODE": "DPM02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "LMA01":
+  {
+    "MKS_CODE": "LMA01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "MDM05":
+  {
+    "MKS_CODE": "MDM05",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "LMM01":
+  {
+    "MKS_CODE": "LMM01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "MDA01":
+  {
+    "MKS_CODE": "MDA01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "MDA02":
+  {
+    "MKS_CODE": "MDA02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "MDM01":
+  {
+    "MKS_CODE": "MDM01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "MDM02":
+  {
+    "MKS_CODE": "MDM02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "UGM03":
+  {
+    "MKS_CODE": "UGM03",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "OLDPF":
+  {
+    "MKS_CODE": "OLDPF",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "",
+    "MKS_IUSE": "Y"
+  },
+  "MDA05":
+  {
+    "MKS_CODE": "MDA05",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "SPASS":
+  {
+    "MKS_CODE": "SPASS",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "",
+    "MKS_IUSE": "N"
+  },
+  "MDMZ1":
+  {
+    "MKS_CODE": "MDMZ1",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "MDA08":
+  {
+    "MKS_CODE": "MDA08",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "IEA01":
+  {
+    "MKS_CODE": "IEA01",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "IEA02":
+  {
+    "MKS_CODE": "IEA02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "IEA03":
+  {
+    "MKS_CODE": "IEA03",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "IEA04":
+  {
+    "MKS_CODE": "IEA04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "IEA05":
+  {
+    "MKS_CODE": "IEA05",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "IEA06":
+  {
+    "MKS_CODE": "IEA06",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "IEM01":
+  {
+    "MKS_CODE": "IEM01",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "IEM02":
+  {
+    "MKS_CODE": "IEM02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "IEM03":
+  {
+    "MKS_CODE": "IEM03",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "IEM04":
+  {
+    "MKS_CODE": "IEM04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "IEM05":
+  {
+    "MKS_CODE": "IEM05",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "IEM06":
+  {
+    "MKS_CODE": "IEM06",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "MDA07":
+  {
+    "MKS_CODE": "MDA07",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "MDM08":
+  {
+    "MKS_CODE": "MDM08",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "MDM07":
+  {
+    "MKS_CODE": "MDM07",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "PDA02":
+  {
+    "MKS_CODE": "PDA02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "PDM02":
+  {
+    "MKS_CODE": "PDM02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "PGC03":
+  {
+    "MKS_CODE": "PGC03",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "UGC04":
+  {
+    "MKS_CODE": "UGC04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "GNA01":
+  {
+    "MKS_CODE": "GNA01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "GNA03":
+  {
+    "MKS_CODE": "GNA03",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "GNM02":
+  {
+    "MKS_CODE": "GNM02",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "GNM03":
+  {
+    "MKS_CODE": "GNM03",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "GGA02":
+  {
+    "MKS_CODE": "GGA02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "GGM02":
+  {
+    "MKS_CODE": "GGM02",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "UGC01":
+  {
+    "MKS_CODE": "UGC01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "PGC01":
+  {
+    "MKS_CODE": "PGC01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  },
+  "AGM01":
+  {
+    "MKS_CODE": "AGM01",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "GNA02":
+  {
+    "MKS_CODE": "GNA02",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "UNA02":
+  {
+    "MKS_CODE": "UNA02",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "UNM01":
+  {
+    "MKS_CODE": "UNM01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "UNM02":
+  {
+    "MKS_CODE": "UNM02",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "GGA03":
+  {
+    "MKS_CODE": "GGA03",
+    "MKS_MARKS": "P",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "GGA04":
+  {
+    "MKS_CODE": "GGA04",
+    "MKS_MARKS": "P",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "GGM03":
+  {
+    "MKS_CODE": "GGM03",
+    "MKS_MARKS": "G",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "AGA01":
+  {
+    "MKS_CODE": "AGA01",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "GNM01":
+  {
+    "MKS_CODE": "GNM01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "UNA01":
+  {
+    "MKS_CODE": "UNA01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "GGA01":
+  {
+    "MKS_CODE": "GGA01",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "A",
+    "MKS_IUSE": "Y"
+  },
+  "GGM01":
+  {
+    "MKS_CODE": "GGM01",
+    "MKS_MARKS": "N",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "GGM04":
+  {
+    "MKS_CODE": "GGM04",
+    "MKS_MARKS": "G",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "LMC01":
+  {
+    "MKS_CODE": "LMC01",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "Y"
+  },
+  "PGC04":
+  {
+    "MKS_CODE": "PGC04",
+    "MKS_MARKS": "Y",
+    "MKS_TYPE": "M",
+    "MKS_IUSE": "N"
+  }
+}
