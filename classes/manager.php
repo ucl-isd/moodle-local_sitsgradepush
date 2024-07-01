@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush;
 
+use core_component;
 use core_course\customfield\course_handler;
 use DirectoryIterator;
 use grade_tree;
@@ -305,7 +306,7 @@ class manager {
 
         $moduledeliveries = [];
         foreach ($modocc as $occ) {
-            $sql = "SELECT cg.*, am.sourceid, am.sourcetype, am.id AS 'assessmentmappingid'
+            $sql = "SELECT cg.*, am.sourceid, am.sourcetype, am.id AS assessmentmappingid
                     FROM {" . self::TABLE_COMPONENT_GRADE . "} cg LEFT JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                     ON cg.id = am.componentgradeid
                     WHERE cg.modcode = :modcode AND cg.modocc = :modocc AND cg.academicyear = :academicyear
@@ -508,7 +509,7 @@ class manager {
                        am.reassessmentseq, cg.modcode, cg.modocc, cg.academicyear, cg.periodslotcode, cg.mapcode,
                        cg.mabseq, cg.astcode, cg.mabname,
                        CONCAT(cg.modcode, '-', cg.academicyear, '-', cg.periodslotcode, '-', cg.modocc, '-',
-                       cg.mabseq, ' ', cg.mabname) AS 'formattedname'
+                       cg.mabseq, ' ', cg.mabname) AS formattedname
                 FROM {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                 JOIN {" . self::TABLE_COMPONENT_GRADE . "} cg ON am.componentgradeid = cg.id
                 WHERE am.sourceid = :sourceid AND am.sourcetype = :sourcetype $where";
@@ -545,18 +546,6 @@ class manager {
         }
 
         return $list;
-    }
-
-    /**
-     * Return course module data.
-     *
-     * @param int $id
-     * @return false|mixed|\stdClass
-     * @throws \dml_exception
-     */
-    public function get_course_module(int $id): mixed {
-        global $DB;
-        return $DB->get_record("course_modules", ["id" => $id]);
     }
 
     /**
@@ -816,7 +805,7 @@ class manager {
                     SELECT type, assessmentmappingid, MAX(timecreated) AS latest_time
                     FROM {" . self::TABLE_TRANSFER_LOG . "}
                     WHERE userid = :userid1 AND assessmentmappingid = :assessmentmappingid
-                    GROUP BY type) t2
+                    GROUP BY type, assessmentmappingid) t2
                 ON t1.type = t2.type AND t1.timecreated = t2.latest_time AND t1.assessmentmappingid = t2.assessmentmappingid
                 LEFT JOIN {" . self::TABLE_ERROR_LOG . "} errlog ON t1.errlogid = errlog.id
                 WHERE t1.userid = :userid2 {$bytype}";
@@ -1165,6 +1154,11 @@ class manager {
     public function get_all_course_activities(int $courseid): array {
         $activities = [];
         foreach (self::ALLOWED_ACTIVITIES as $modname) {
+            // Skip if the activity is not installed.
+            if (!array_key_exists($modname, core_component::get_plugin_list('mod'))) {
+                continue;
+            }
+
             if (!empty($results = get_coursemodules_in_course($modname, $courseid))) {
                 foreach ($results as $result) {
                     $assessemnt = assessmentfactory::get_assessment(assessmentfactory::SOURCETYPE_MOD, $result->id);

@@ -1,0 +1,38 @@
+[
+  {
+    "mod_occ_bdo_id": "ED8085B27C4EB3FFE053011E1D0AC59D",
+    "mod_inst_bdo_id": "ED8085B26F0FB3FFE053011E1D0AC59D",
+    "mod_code": "PHAY0063",
+    "mod_occ_psl_code": "T1",
+    "mod_occ_mav": "A7P",
+    "mod_occ_year_code": "2023",
+    "mod_occ_name": "Independent Prescribing"
+  },
+  {
+    "mod_occ_bdo_id": "ED8085B29E57B3FFE053011E1D0AC59D",
+    "mod_inst_bdo_id": "ED8085B26E6EB3FFE053011E1D0AC59D",
+    "mod_code": "MSIN0047",
+    "mod_occ_psl_code": "T2",
+    "mod_occ_mav": "A7P",
+    "mod_occ_year_code": "2023",
+    "mod_occ_name": "Entrepreneurial Finance"
+  },
+  {
+    "mod_occ_bdo_id": "ED8085B28E40B3FFE053011E1D0AC59D",
+    "mod_inst_bdo_id": "ED8085B2633EB3FFE053011E1D0AC59D",
+    "mod_code": "LAWS0024",
+    "mod_occ_psl_code": "T1/2",
+    "mod_occ_mav": "A6U",
+    "mod_occ_year_code": "2023",
+    "mod_occ_name": "Family Law"
+  },
+  {
+    "mod_occ_bdo_id": "C77E1311CD334D99A2B9D24F8F1B6B73",
+    "mod_inst_bdo_id": "D5E9D25D008F4980842B36F858B27582",
+    "mod_code": "SECU0020",
+    "mod_occ_psl_code": "T2",
+    "mod_occ_mav": "A7P",
+    "mod_occ_year_code": "2023",
+    "mod_occ_name": "Preventing Crimes"
+  }
+]
