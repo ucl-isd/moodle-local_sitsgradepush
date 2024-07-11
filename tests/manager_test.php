@@ -325,7 +325,8 @@ final class manager_test extends \advanced_testcase {
      */
     public function test_get_component_grade_options(): void {
         global $DB;
-        // Skip test if database family is postgres, mim tables cannot be created.
+
+        // Skip test if database family is postgres, the SQL query in the portico enrolment block is not supported.
         if ($DB->get_dbfamily() === 'postgres') {
             $this->markTestSkipped('This test is not supported on PostgreSQL.');
         }

@@ -171,8 +171,7 @@ abstract class assessment implements iassessment {
 
         // No grade items found.
         if (empty($gradeitems)) {
-            $result = $this->set_validity_result(false, 'error:grade_items_not_found');
-            return $result;
+            return $this->set_validity_result(false, 'error:grade_items_not_found');
         }
 
         // Check if any grade items are valid.

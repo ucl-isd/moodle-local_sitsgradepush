@@ -110,7 +110,7 @@ class tests_data_provider {
         $tables = $DB->get_tables(false);
 
         $table = new xmldb_table('sits_moduleoccurence_mapping');
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, null, XMLDB_SEQUENCE, null);
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('mod_occ_bdo_id', XMLDB_TYPE_CHAR, '50', null, null, null, null);
         $table->add_field('mod_code', XMLDB_TYPE_CHAR, '12', null, null, null, null);
         $table->add_field('reg_status', XMLDB_TYPE_CHAR, '3', null, null, null, 'APP');
@@ -118,7 +118,7 @@ class tests_data_provider {
         $table->add_field('vle_courseid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
         $table->add_field('mapping_action', XMLDB_TYPE_CHAR, '3', null, null, null, null);
         $table->add_field('group_import', XMLDB_TYPE_CHAR, '3', null, null, null, 'NA');
-        $table->add_field('last_updated', XMLDB_TYPE_DATETIME, '', null, null, null, null);
+        $table->add_field('last_updated', XMLDB_TYPE_DATETIME, null, null, null, null, null);
 
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
 
@@ -127,14 +127,14 @@ class tests_data_provider {
         }
 
         $table = new xmldb_table('sits_moduleoccurence');
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, null, XMLDB_SEQUENCE, null);
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('mod_occ_bdo_id', XMLDB_TYPE_CHAR, '50', null, null, null, null);
         $table->add_field('mod_inst_bdo_id', XMLDB_TYPE_CHAR, '50', null, null, null, null);
         $table->add_field('mod_code', XMLDB_TYPE_CHAR, '12', null, null, null, null);
         $table->add_field('mod_occ_psl_code', XMLDB_TYPE_CHAR, '6', null, null, null, null);
         $table->add_field('mod_occ_mav', XMLDB_TYPE_CHAR, '6', null, null, null, null);
         $table->add_field('mod_occ_year_code', XMLDB_TYPE_CHAR, '12', null, null, null, null);
-        $table->add_field('mod_occ_name', XMLDB_TYPE_CHAR, '120', null, null, null, null);
+        $table->add_field('mod_occ_name', XMLDB_TYPE_TEXT, null, null, null, null, null);
 
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
 
