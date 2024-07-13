@@ -1,0 +1,62 @@
+[
+  {
+    "testcase": "other",
+    "lastgradepushresult": "success",
+    "marksupdatedaftertransfer": false,
+    "lastsublogpushresult": "success",
+    "isgradepushed": true,
+    "issublogpushed": true
+  },
+  {
+    "testcase": "sublogerror2",
+    "lastgradepushresult": "success",
+    "marksupdatedaftertransfer": false,
+    "lastsublogpushresult": "failed",
+    "isgradepushed": true,
+    "issublogpushed": false,
+    "lastsublogpusherrortype": -4
+  },
+  {
+    "testcase": "sublogerror1",
+    "lastgradepushresult": "success",
+    "marksupdatedaftertransfer": false,
+    "lastsublogpushresult": "failed",
+    "isgradepushed": true,
+    "issublogpushed": false,
+    "lastsublogpusherrortype": -3
+  },
+  {
+    "testcase": "updatedaftertransfer",
+    "lastgradepushresult": "success",
+    "marksupdatedaftertransfer": true,
+    "lastsublogpushresult": "success",
+    "isgradepushed": true,
+    "issublogpushed": true
+  },
+  {
+    "testcase": "notyetpushed",
+    "lastgradepushresult": null,
+    "marksupdatedaftertransfer": false,
+    "lastsublogpushresult": null,
+    "isgradepushed": false,
+    "issublogpushed": false
+  },
+  {
+    "testcase": "transfererror1",
+    "lastgradepushresult": "failed",
+    "marksupdatedaftertransfer": false,
+    "lastsublogpushresult": "",
+    "isgradepushed": false,
+    "issublogpushed": false,
+    "lastgradepusherrortype": -3
+  },
+  {
+    "testcase": "transfererror2",
+    "lastgradepushresult": "failed",
+    "marksupdatedaftertransfer": false,
+    "lastsublogpushresult": "",
+    "isgradepushed": false,
+    "issublogpushed": false,
+    "lastgradepusherrortype": -4
+  }
+]

@@ -73,13 +73,15 @@ class logger {
         $error->response = $response;
         $error->timecreated = time();
 
+        // Set default error type.
+        $error->errortype = errormanager::ERROR_UNKNOWN;
+
         // Check if response is JSON.
-        if ($decodedresponse = json_decode($response, true)) {
+        if (!empty($response)) {
+            $decodedresponse = json_decode($response, true);
             // Try to identify the error type.
             if (!empty($decodedresponse['message'])) {
                 $error->errortype = errormanager::identify_error($decodedresponse['message']);
-            } else {
-                $error->errortype = errormanager::ERROR_UNKNOWN;
             }
         }
 
