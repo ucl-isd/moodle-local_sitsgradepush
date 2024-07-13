@@ -26,8 +26,9 @@ This does require some development to adopt but the barrier is greatly reduced.
 
 ## Roadmap
 We had our initial launch stage in March 2024, we are planning to keep improving the tool, by implementng the following features in the coming months:
-- resits, retakes, repeats, re-assessments, etc
+- resits, retakes, repeats, re-assessments, etc 
 - Late / non-submission reporting
+- Add support for LTI, Lesson, H5P, Coursework as source of marks
 - Automatically populate extra time / deadline extensions for [SORAs](https://www.ucl.ac.uk/students/support-and-wellbeing/disability-support/reasonable-adjustments-your-assessments) and [ECs](https://www.ucl.ac.uk/academic-manual/chapters/chapter-2-student-support-framework/2-short-term-illness-and-other-extenuating)
 - Select the marks from a specific part of a Turnitin Assignment with multiple parts
 - Combining the source of the marks from multiple Turnitin assignments where these are used to handle seperate deadlines & multiple markers 
