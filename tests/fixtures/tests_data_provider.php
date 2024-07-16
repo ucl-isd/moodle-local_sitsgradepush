@@ -14,11 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace local_sitsgradepush\tests\fixtures;
+namespace local_sitsgradepush;
 
-use local_sitsgradepush\cachemanager;
 use ReflectionClass;
-use xmldb_table;
 
 /**
  * Class tests_data_provider, used to provide data for tests.
@@ -86,106 +84,46 @@ class tests_data_provider {
      */
     public static function import_sitsgradepush_grade_components() {
         global $CFG, $DB;
+
+        // Skip if the table is not empty.
+        if ($DB->count_records('local_sitsgradepush_mab') > 0) {
+            return;
+        }
         $mab = file_get_contents($CFG->dirroot . "/local/sitsgradepush/tests/fixtures/local_sitsgradepush_mab.json");
         $mab = json_decode($mab, true);
         $DB->insert_records('local_sitsgradepush_mab', $mab);
     }
 
     /**
-     * Create MIM tables.
+     * Return the testing module occurrences data.
      *
-     * @return void
-     * @throws \ddl_exception
-     */
-    public static function create_mim_tables() {
-        global $CFG, $DB;
-
-        // Create MIM tables.
-        $dbman = $DB->get_manager();
-
-        // Remove the prefix from DB manager.
-        $dbman->generator->prefix = "";
-
-        // Get all tables.
-        $tables = $DB->get_tables(false);
-
-        $table = new xmldb_table('sits_moduleoccurence_mapping');
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('mod_occ_bdo_id', XMLDB_TYPE_CHAR, '50', null, null, null, null);
-        $table->add_field('mod_code', XMLDB_TYPE_CHAR, '12', null, null, null, null);
-        $table->add_field('reg_status', XMLDB_TYPE_CHAR, '3', null, null, null, 'APP');
-        $table->add_field('vle_idnumber', XMLDB_TYPE_CHAR, '255', null, null, null, null);
-        $table->add_field('vle_courseid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
-        $table->add_field('mapping_action', XMLDB_TYPE_CHAR, '3', null, null, null, null);
-        $table->add_field('group_import', XMLDB_TYPE_CHAR, '3', null, null, null, 'NA');
-        $table->add_field('last_updated', XMLDB_TYPE_DATETIME, null, null, null, null, null);
-
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-
-        if (!isset($tables['sits_moduleoccurence_mapping'])) {
-            $dbman->create_table($table);
-        }
-
-        $table = new xmldb_table('sits_moduleoccurence');
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('mod_occ_bdo_id', XMLDB_TYPE_CHAR, '50', null, null, null, null);
-        $table->add_field('mod_inst_bdo_id', XMLDB_TYPE_CHAR, '50', null, null, null, null);
-        $table->add_field('mod_code', XMLDB_TYPE_CHAR, '12', null, null, null, null);
-        $table->add_field('mod_occ_psl_code', XMLDB_TYPE_CHAR, '6', null, null, null, null);
-        $table->add_field('mod_occ_mav', XMLDB_TYPE_CHAR, '6', null, null, null, null);
-        $table->add_field('mod_occ_year_code', XMLDB_TYPE_CHAR, '12', null, null, null, null);
-        $table->add_field('mod_occ_name', XMLDB_TYPE_TEXT, null, null, null, null, null);
-
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-
-        if (!isset($tables['sits_moduleoccurence_mapping'])) {
-            $dbman->create_table($table);
-        }
-
-        $dbman->generator->prefix = $CFG->prefix;
-    }
-
-    /**
-     * Import data into MIM tables.
+     * @param int $courseid
      *
-     * @return void
-     * @throws \coding_exception
+     * @return array
      * @throws \dml_exception
      */
-    public static function import_data_into_mim_tables() {
-        global $CFG, $DB;
+    public static function get_modocc_data(int $courseid): array {
+        global $DB;
+        $course = $DB->get_record('course', ['id' => $courseid]);
 
-        // Get the course id.
-        $courseid = $DB->get_field('course', 'id', ['shortname' => 'C1']);
-
-        self::set_protected_property($DB, 'prefix', "");
-
-        // Insert sits mapping statuses data.
-        $sitsmoduleoccurencemappings =
-          file_get_contents($CFG->dirroot . "/local/sitsgradepush/tests/fixtures/sits_moduleoccurence_mapping.json");
-        $sitsmoduleoccurencemappings = json_decode($sitsmoduleoccurencemappings, true);
-
-        foreach ($sitsmoduleoccurencemappings as &$sitsmoduleoccurencemapping) {
-            $sitsmoduleoccurencemapping['vle_courseid'] = $courseid;
+        // Return nothing for test course 2.
+        if ($course->shortname == 'C2') {
+            return [];
         }
 
-        $DB->insert_records('sits_moduleoccurence_mapping', $sitsmoduleoccurencemappings);
+        // Get module occurrences data from JSON file.
+        $modoccs = file_get_contents(__DIR__ . "/sits_moduleoccurence.json");
+        $modoccsarray = json_decode($modoccs);
 
-        // Insert sits module occurrences data.
-        $sitsmoduleoccurences =
-          file_get_contents($CFG->dirroot . "/local/sitsgradepush/tests/fixtures/sits_moduleoccurence.json");
-
-        $sitsmoduleoccurences = json_decode($sitsmoduleoccurences, true);
-
-        // Set cache.
-        foreach ($sitsmoduleoccurences as $sitsmoduleoccurence) {
+        // Set cache, so the get component grade API is not called.
+        foreach ($modoccsarray as $modocc) {
             $key = implode('_',
               [
                 cachemanager::CACHE_AREA_COMPONENTGRADES,
-                $sitsmoduleoccurence['mod_code'],
-                $sitsmoduleoccurence['mod_occ_mav'],
-                $sitsmoduleoccurence['mod_occ_psl_code'],
-                $sitsmoduleoccurence['mod_occ_year_code'],
+                $modocc->mod_code,
+                $modocc->mod_occ_mav,
+                $modocc->mod_occ_psl_code,
+                $modocc->mod_occ_year_code,
               ]
             );
             // Replace '/' with '_' for simple key.
@@ -193,41 +131,43 @@ class tests_data_provider {
             cachemanager::set_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key, 'dummy_response', 3600);
         }
 
-        $DB->insert_records('sits_moduleoccurence', $sitsmoduleoccurences);
-
-        // Set the prefix back.
-        self::set_protected_property($DB, 'prefix', $CFG->prefix);
+        return $modoccsarray;
     }
 
     /**
-     * Tear down MIM tables.
+     * Get the behat test students' data.
      *
-     * @return void
-     * @throws \ddl_exception
-     * @throws \ddl_table_missing_exception
+     * @param  string $mapcode
+     * @param  string $mabseq
+     *
+     * @return array
      */
-    public static function tear_down_mim_tables() {
-        global $CFG, $DB;
+    public static function get_behat_test_students_response(string $mapcode, string $mabseq): array {
+        $students = file_get_contents(__DIR__ . "/behat_test_students.json");
+        $students = json_decode($students, true);
+        $students = $students[$mapcode][$mabseq];
 
-        $dbman = $DB->get_manager();
-        $dbman->generator->prefix = "";
-        self::set_protected_property($DB, 'prefix', "");
+        return !empty($students) ? $students : [];
+    }
 
-        // Get all tables.
-        $tables = $DB->get_tables(false);
+    /**
+     * Get behat push grade response.
+     *
+     * @return array
+     * @throws \coding_exception
+     */
+    public static function get_behat_push_grade_response(): array {
+        return ["code" => 0, "message" => get_string('msg:gradepushsuccess', 'sitsapiclient_easikit')];
+    }
 
-        $table = new xmldb_table('sits_moduleoccurence');
-        if (isset($tables['sits_moduleoccurence'])) {
-            $dbman->drop_table($table);
-        }
-
-        $table = new xmldb_table('sits_moduleoccurence_mapping');
-        if (isset($tables['sits_moduleoccurence_mapping'])) {
-            $dbman->drop_table($table);
-        }
-
-        $dbman->generator->prefix = $CFG->prefix;
-        self::set_protected_property($DB, 'prefix', $CFG->prefix);
+    /**
+     * Get behat push submission log response.
+     *
+     * @return array
+     * @throws \coding_exception
+     */
+    public static function get_behat_submission_log_response(): array {
+        return ["code" => 0, "message" => get_string('msg:submissionlogpushsuccess', 'sitsapiclient_easikit')];
     }
 
     /**

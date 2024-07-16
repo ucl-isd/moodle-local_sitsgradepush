@@ -130,12 +130,13 @@ class renderer extends plugin_renderer_base {
      *
      * @param array $moduledeliveries Module deliveries
      * @param int $courseid Course ID
+     * @param int $reassess Reassessment flag
      * @return string Rendered HTML
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function render_dashboard(array $moduledeliveries, int $courseid): string {
+    public function render_dashboard(array $moduledeliveries, int $courseid, int $reassess): string {
         // Set default value for the select module delivery dropdown list.
         $options[] = (object) ['value' => 'none', 'name' => 'NONE'];
 
@@ -169,38 +170,43 @@ class renderer extends plugin_renderer_base {
                     // Add the select source url.
                     $selectsourceurl = new \moodle_url(
                         '/local/sitsgradepush/select_source.php',
-                        ['courseid' => $courseid, 'mabid' => $componentgrade->id]
+                        ['courseid' => $courseid,
+                         'mabid' => $componentgrade->id,
+                         'reassess' => $reassess,
+                        ]
                     );
                     $componentgrade->selectsourceurl = $selectsourceurl->out(false);
 
-                    // No assessment mapping id means the MAB is not mapped to any activity.
-                    if (empty($componentgrade->assessmentmappingid)) {
+                    // No need to render mapping information if the component grade is not mapped
+                    // for the given marks transfer type.
+                    $mapping  = $this->manager->is_component_grade_mapped($componentgrade->id, $reassess);
+                    if (empty($mapping)) {
                         continue;
                     }
 
                     // Get the assessment mapping status.
                     $assessmentdata = $this->manager->get_assessment_data(
-                        $componentgrade->sourcetype,
-                        $componentgrade->sourceid,
-                        $componentgrade->assessmentmappingid
+                        $mapping->sourcetype,
+                        $mapping->sourceid,
+                        $mapping->id
                     );
 
                     $assessmentmapping = new \stdClass();
                     $assessmentmapping->markstotransfer = $assessmentdata->markscount ?? 0;
-                    $assessmentmapping->id = $componentgrade->assessmentmappingid;
+                    $assessmentmapping->id = $mapping->id;
                     $assessmentmapping->type = $assessmentdata->source->get_display_type_name();
                     $assessmentmapping->name = $assessmentdata->source->get_assessment_name();
                     $assessmentmapping->url = $assessmentdata->source->get_assessment_url(false);
                     $assessmentmapping->transferhistoryurl = $assessmentdata->source->get_assessment_transfer_history_url(false);
 
                     // Check if there is a task running for the assessment mapping.
-                    $taskrunning = taskmanager::get_pending_task_in_queue($componentgrade->assessmentmappingid);
+                    $taskrunning = taskmanager::get_pending_task_in_queue($mapping->id);
                     $assessmentmapping->taskrunning = !empty($taskrunning);
                     $assessmentmapping->taskprogress = $taskrunning && $taskrunning->progress ? $taskrunning->progress : 0;
 
                     // Disable the change source button if there is a task running.
                     $assessmentmapping->disablechangesource =
-                        !empty($taskrunning) || $this->manager->has_grades_pushed($componentgrade->assessmentmappingid);
+                        !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
 
                     $componentgrade->assessmentmapping = $assessmentmapping;
                 }
@@ -236,10 +242,12 @@ class renderer extends plugin_renderer_base {
      *
      * @param int $courseid
      * @param \stdClass $mab
+     * @param int $reassess
+     *
      * @return string
      * @throws \moodle_exception
      */
-    public function render_select_source_page(int $courseid, \stdClass $mab): string {
+    public function render_select_source_page(int $courseid, \stdClass $mab, int $reassess): string {
         $validassessments = [];
 
         // Get all valid activities.
@@ -273,6 +281,7 @@ class renderer extends plugin_renderer_base {
                 !empty($assessment->get_start_date()) ? date('d/m/Y H:i:s', $assessment->get_start_date()) : '-';
             $formattedassessment->enddate =
                 !empty($assessment->get_end_date()) ? date('d/m/Y H:i:s', $assessment->get_end_date()) : '-';
+            $formattedassessment->reassess = $reassess;
             $validassessments[] = $formattedassessment;
         }
 
@@ -339,5 +348,58 @@ class renderer extends plugin_renderer_base {
         }
 
         return $lasttasktext;
+    }
+
+    /**
+     * Print the dashboard selector.
+     *
+     * @param  \moodle_url $url
+     * @param  int $reassess
+     *
+     * @return string
+     * @throws \coding_exception
+     * @throws \moodle_exception
+     */
+    public function print_dashboard_selector(\moodle_url $url, int $reassess): string {
+        // Do not show the selector if the reassessment feature is disabled.
+        if (get_config('local_sitsgradepush', 'reassessment_enabled') !== '1') {
+            return '';
+        }
+
+        $activeurl = $url->out(false);
+        if ($reassess == 1) {
+            $reassessdashboardurl = $url->out(false);
+            $url->remove_params(['reassess']);
+            $maindashboardurl = $url->out(false);
+        } else {
+            $maindashboardurl = $url->out(false);
+            $url->params(['reassess' => 1]);
+            $reassessdashboardurl = $url->out(false);
+        }
+
+        $menuarray = [
+          $maindashboardurl => get_string('dashboard:main_page', 'local_sitsgradepush'),
+          $reassessdashboardurl => get_string('dashboard:reassessment_page', 'local_sitsgradepush'),
+        ];
+
+        $selectmenu = new \core\output\select_menu('dashboardtype', $menuarray, $activeurl);
+        $selectmenu->set_label(get_string('dashboard:type', 'local_sitsgradepush'), ['class' => 'sr-only']);
+        $options = \html_writer::tag(
+          'div',
+          $this->output->render_from_template(
+            'core/tertiary_navigation_selector',
+            $selectmenu->export_for_template($this->output)
+          ),
+          ['class' => 'navitem']
+        );
+
+        return \html_writer::tag(
+          'div',
+          $options,
+          [
+            'class' => 'tertiary-navigation border-bottom mb-2 d-flex',
+            'id'    => 'tertiary-navigation',
+          ]
+        );
     }
 }

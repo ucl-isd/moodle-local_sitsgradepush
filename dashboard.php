@@ -34,6 +34,9 @@ require_once('../../config.php');
 // Course ID.
 $courseid = required_param('id', PARAM_INT);
 
+// Is reassessment or not.
+$reassess = optional_param('reassess', 0, PARAM_INT);
+
 // Get course context.
 $context = context_course::instance($courseid);
 
@@ -43,24 +46,29 @@ if (!$course = get_course($courseid)) {
 }
 
 // Make sure user is authenticated.
-require_login();
+require_login($course);
 
 // Check user's capability.
 require_capability('local/sitsgradepush:mapassessment', $context);
 
-// Set the required data into the PAGE object.
+$header = get_string('dashboard:header', 'local_sitsgradepush');
 $param = ['id' => $courseid];
+if ($reassess == 1) {
+    // Check re-assessment marks transfer is enabled.
+    if (get_config('local_sitsgradepush', 'reassessment_enabled') !== '1') {
+        throw new moodle_exception('error:reassessmentdisabled', 'local_sitsgradepush');
+    }
+    $param['reassess'] = $reassess;
+    $header = get_string('dashboard:header:reassess', 'local_sitsgradepush');
+}
+
 $url = new moodle_url('/local/sitsgradepush/dashboard.php', $param);
+
+// Set the required data into the PAGE object.
 $PAGE->set_context($context);
 $PAGE->set_url($url);
 $PAGE->set_title(get_string('dashboard:header', 'local_sitsgradepush'));
-$PAGE->set_secondary_navigation(false);
-
-// Set the breadcrumbs.
-$PAGE->navbar->add(get_string('courses'), new moodle_url('/course/index.php'));
-$PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php', ['id' => $courseid]));
-$PAGE->navbar->add(get_string('pluginname', 'local_sitsgradepush'),
-    new moodle_url('/local/sitsgradepush/dashboard.php', $param));
+$PAGE->set_heading(format_string($course->fullname, true, ['context' => $context]));
 
 // Page header.
 echo $OUTPUT->header();
@@ -74,6 +82,8 @@ if (!has_capability('local/sitsgradepush:pushgrade', $context)) {
 // Get renderer.
 $renderer = $PAGE->get_renderer('local_sitsgradepush');
 
+echo $renderer->print_dashboard_selector($url, $reassess);
+
 // Get the component grades.
 $manager = manager::get_manager();
 
@@ -83,9 +93,9 @@ $result = $manager->get_component_grade_options($courseid);
 // Render the dashboard.
 if (!empty($result)) {
     echo '<div id="sitsgradepush-dasboard-container" class="sitsgradepush-dasboard">';
-    echo '<h2>' . get_string('dashboard:header', 'local_sitsgradepush') . '</h2>
+    echo '<h2>' . $header . '</h2>
           <p>' . get_string('dashboard:header:desc', 'local_sitsgradepush') . '</p>';
-    echo $renderer->render_dashboard($result, $courseid);
+    echo $renderer->render_dashboard($result, $courseid, $reassess);
     echo '</div>';
 } else {
     echo get_string('error:nomoduledeliveryfound', 'local_sitsgradepush');

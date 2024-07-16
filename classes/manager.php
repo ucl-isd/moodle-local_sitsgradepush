@@ -32,6 +32,7 @@ defined('MOODLE_INTERNAL') || die;
 
 require_once("$CFG->libdir/gradelib.php");
 require_once("$CFG->dirroot/user/lib.php");
+require_once("$CFG->dirroot/local/sitsgradepush/tests/fixtures/tests_data_provider.php");
 
 /**
  * Manager class which handles SITS grade push.
@@ -245,8 +246,13 @@ class manager {
      * @throws \dml_exception
      */
     public function get_component_grade_options(int $courseid): array {
-        // Get module occurrences from portico enrolments block.
-        $modocc = \block_portico_enrolments\manager::get_modocc_mappings($courseid);
+        // For phpunit test and behat test.
+        if ((defined('PHPUNIT_TEST') && PHPUNIT_TEST) || defined('BEHAT_SITE_RUNNING')) {
+            $modocc = tests_data_provider::get_modocc_data($courseid);
+        } else {
+            // Get module occurrences from portico enrolments block.
+            $modocc = \block_portico_enrolments\manager::get_modocc_mappings($courseid);
+        }
 
         // Fetch component grades from SITS.
         $this->fetch_component_grades_from_sits($modocc);
@@ -306,9 +312,8 @@ class manager {
 
         $moduledeliveries = [];
         foreach ($modocc as $occ) {
-            $sql = "SELECT cg.*, am.sourceid, am.sourcetype, am.id AS assessmentmappingid
-                    FROM {" . self::TABLE_COMPONENT_GRADE . "} cg LEFT JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
-                    ON cg.id = am.componentgradeid
+            $sql = "SELECT cg.*
+                    FROM {" . self::TABLE_COMPONENT_GRADE . "} cg
                     WHERE cg.modcode = :modcode AND cg.modocc = :modocc AND cg.academicyear = :academicyear
                     AND cg.periodslotcode = :periodslotcode";
 
@@ -461,9 +466,14 @@ class manager {
         global $DB;
 
         // Validate component grade.
-        $assessment = $this->validate_component_grade($data->componentgradeid, $data->sourcetype, $data->sourceid);
+        $assessment = $this->validate_component_grade(
+          $data->componentgradeid,
+          $data->sourcetype,
+          $data->sourceid,
+          $data->reassessment
+        );
 
-        if ($mapping = $this->is_component_grade_mapped($data->componentgradeid)) {
+        if ($mapping = $this->is_component_grade_mapped($data->componentgradeid, $data->reassessment)) {
             // Checked in the above validation, the current mapping to this component grade
             // can be deleted as it does not have push records nor mapped to the current activity.
             $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mapping->id]);
@@ -478,6 +488,7 @@ class manager {
             $record->moduletype = $assessment->get_module_name();
         }
         $record->componentgradeid = $data->componentgradeid;
+        $record->reassessment = $data->reassessment;
         $record->timecreated = time();
         $record->timemodified = time();
 
@@ -518,15 +529,17 @@ class manager {
     }
 
     /**
-     * Check if the component grade is mapped to an activity.
+     * Check if the component grade is mapped to an activity for a marks transfer type.
+     * e.g. Re-assessment or normal assessment.
      *
      * @param int $id
+     * @param int $reassess
      * @return mixed
      * @throws \dml_exception
      */
-    public function is_component_grade_mapped(int $id): mixed {
+    public function is_component_grade_mapped(int $id, int $reassess): mixed {
         global $DB;
-        return $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['componentgradeid' => $id]);
+        return $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['componentgradeid' => $id, 'reassessment' => $reassess]);
     }
 
     /**
@@ -571,8 +584,6 @@ class manager {
      * @throws \moodle_exception
      */
     public function get_student_from_sits(\stdClass $componentgrade, int $userid): mixed {
-        $studentspr = null;
-
         // Get user.
         $user = user_get_users_by_id([$userid]);
 
@@ -580,11 +591,11 @@ class manager {
         $students = $this->get_students_from_sits($componentgrade);
         foreach ($students as $student) {
             if ($student['code'] == $user[$userid]->idnumber) {
-                $studentspr = $student['spr_code'];
+                return $student;
             }
         }
 
-        return $studentspr;
+        return null;
     }
 
     /**
@@ -600,8 +611,16 @@ class manager {
         // Stutalk Direct is not supported currently.
         if ($this->apiclient->get_client_name() == 'Stutalk Direct') {
             throw new \moodle_exception(
-                get_string('error:multiplemappingsnotsupported', 'local_sitsgradepush', $this->apiclient->get_client_name()
-            ));
+              'error:multiplemappingsnotsupported',
+              'local_sitsgradepush',
+              '',
+              $this->apiclient->get_client_name()
+            );
+        }
+
+        // For behat test.
+        if (defined('BEHAT_SITE_RUNNING')) {
+            return tests_data_provider::get_behat_test_students_response($componentgrade->mapcode, $componentgrade->mabseq);
         }
 
         // Try to get cache first.
@@ -664,7 +683,11 @@ class manager {
                 $data->grade = $equivalentgrade ?? '';
 
                 $request = $this->apiclient->build_request(self::PUSH_GRADE, $data);
-                $response = $this->apiclient->send_request($request);
+                if (defined('BEHAT_SITE_RUNNING')) {
+                    $response = tests_data_provider::get_behat_push_grade_response();
+                } else {
+                    $response = $this->apiclient->send_request($request);
+                }
 
                 // Check response.
                 $this->check_response($response, $request);
@@ -717,7 +740,11 @@ class manager {
             // Push if student has submission.
             if ($submission->get_submission_data()) {
                 $request = $this->apiclient->build_request(self::PUSH_SUBMISSION_LOG, $data, $submission);
-                $response = $this->apiclient->send_request($request);
+                if (defined('BEHAT_SITE_RUNNING')) {
+                    $response = tests_data_provider::get_behat_submission_log_response();
+                } else {
+                    $response = $this->apiclient->send_request($request);
+                }
 
                 // Check response.
                 $this->check_response($response, $request);
@@ -749,14 +776,23 @@ class manager {
     public function get_required_data_for_pushing(\stdClass $assessmentmapping, int $userid): \stdClass {
         global $USER;
 
-        // Get SPR_CODE from SITS.
-        $studentspr = $this->get_student_from_sits($assessmentmapping, $userid);
+        // Get student information from SITS.
+        $student = $this->get_student_from_sits($assessmentmapping, $userid);
+
+        if (empty($student)) {
+            throw new \moodle_exception('error:nostudentfoundformapping', 'local_sitsgradepush');
+        }
+
+        // Check resit number is not equal to 0 if it is a reassessment.
+        if ($assessmentmapping->reassessment == 1 && $student['assessment']['resit_number'] == 0) {
+            throw new \moodle_exception('error:resit_number_zero_for_reassessment', 'local_sitsgradepush');
+        }
 
         // Build the required data.
         $data = new \stdClass();
         $data->mapcode = $assessmentmapping->mapcode;
         $data->mabseq = $assessmentmapping->mabseq;
-        $data->sprcode = $studentspr;
+        $data->sprcode = $student['spr_code'];
         $data->academicyear = $assessmentmapping->academicyear;
         $data->pslcode = $assessmentmapping->periodslotcode;
         $data->reassessment = $assessmentmapping->reassessment;
@@ -766,7 +802,7 @@ class manager {
             $assessmentmapping->id,
             $USER->id
         );
-        $data->srarseq = '001'; // Just a dummy reassessment sequence number for now.
+        $data->srarseq = $student['assessment']['resit_number'];
 
         return $data;
     }
@@ -1074,11 +1110,12 @@ class manager {
      * @param int $componentgradeid
      * @param string $sourcetype
      * @param int $sourceid
+     * @param int $reassess
      * @return assessment
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function validate_component_grade(int $componentgradeid, string $sourcetype, int $sourceid): assessment {
+    public function validate_component_grade(int $componentgradeid, string $sourcetype, int $sourceid, int $reassess): assessment {
         // Check if the component grade exists.
         if (!$componentgrade = $this->get_local_component_grade_by_id($componentgradeid)) {
             throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $componentgradeid);
@@ -1113,8 +1150,8 @@ class manager {
             throw new \moodle_exception('error:pastactivity', 'local_sitsgradepush');
         }
 
-        // A component grade can only be mapped to one activity, so there is only one mapping record for each component grade.
-        if (!empty($mapping = $this->is_component_grade_mapped($componentgradeid))) {
+        // A component grade can be mapped twice, one for reassessment and one for normal assessment.
+        if (!empty($mapping = $this->is_component_grade_mapped($componentgradeid, $reassess))) {
             // Check if this mapping has grades pushed.
             if ($this->has_grades_pushed($mapping->id)) {
                 throw new \moodle_exception(
@@ -1224,12 +1261,13 @@ class manager {
      * Can the source be changed for a component grade.
      *
      * @param int $componentgradeid
+     * @param int $reassess
      * @return bool
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function can_change_source(int $componentgradeid): bool {
-        if ($assessementmapping = $this->is_component_grade_mapped($componentgradeid)) {
+    public function can_change_source(int $componentgradeid, int $reassess): bool {
+        if ($assessementmapping = $this->is_component_grade_mapped($componentgradeid, $reassess)) {
             return !taskmanager::get_pending_task_in_queue($assessementmapping->id) &&
                 !$this->has_grades_pushed($assessementmapping->id);
         } else {

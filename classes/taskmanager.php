@@ -346,7 +346,7 @@ class taskmanager {
                 am.id as assessmentmappingid,
                 am.sourcetype,
                 am.sourceid,
-                CONCAT(cg.mapcode, "-", cg.mabseq) AS mab,
+                CONCAT(cg.mapcode, \'-\', cg.mabseq) AS mab,
                 cg.mabname
                 FROM {' . manager::TABLE_TASKS . '} t
                 JOIN {' . manager::TABLE_ASSESSMENT_MAPPING . '} am ON t.assessmentmappingid = am.id

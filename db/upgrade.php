@@ -443,5 +443,60 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2024051300, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2024072300) {
+
+        // Define key componentgradeid (foreign-unique) to be dropped form local_sitsgradepush_mapping.
+        $table = new xmldb_table('local_sitsgradepush_mapping');
+
+        // Patch mapping table.
+        $DB->execute('UPDATE {local_sitsgradepush_mapping} SET reassessment = 0');
+
+        $field = new xmldb_field('reassessment', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, null, 'componentgradeid');
+
+        // Launch change of nullability for field reassessment.
+        $dbman->change_field_notnull($table, $field);
+
+        $key = new xmldb_key(
+          'componentgradeid',
+          XMLDB_KEY_FOREIGN_UNIQUE,
+          ['componentgradeid'],
+          'local_sits_component_grades',
+          ['id']
+        );
+
+        // Launch drop key componentgradeid.
+        $dbman->drop_key($table, $key);
+
+        // Define key componentgradeid (foreign) to be added to local_sitsgradepush_mapping.
+        $key = new xmldb_key('componentgradeid', XMLDB_KEY_FOREIGN, ['componentgradeid'], 'local_sits_component_grades', ['id']);
+        // Launch add key componentgradeid.
+        $dbman->add_key($table, $key);
+
+        // Add indexes.
+        $index = new xmldb_index('idx_courseid', XMLDB_INDEX_NOTUNIQUE, ['courseid']);
+
+        // Conditionally launch add index idx_courseid.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        $index = new xmldb_index('idx_sid_stype', XMLDB_INDEX_NOTUNIQUE, ['sourceid', 'sourcetype']);
+
+        // Conditionally launch add index idx_sid_stype.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        $index = new xmldb_index('idx_sid_stype_cid', XMLDB_INDEX_UNIQUE, ['sourceid', 'sourcetype', 'componentgradeid']);
+
+        // Conditionally launch add index idx_sid_stype_cid.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024072300, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

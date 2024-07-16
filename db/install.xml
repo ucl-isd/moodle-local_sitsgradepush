@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/sitsgradepush/db" VERSION="20240513" COMMENT="XMLDB file for Moodle local/sits_grade_push"
+<XMLDB PATH="local/sitsgradepush/db" VERSION="20240723" COMMENT="XMLDB file for Moodle local/sits_grade_push"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -12,15 +12,20 @@
         <FIELD NAME="sourcetype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Type of source like mod for course activity and gradeitem for gradebook item"/>
         <FIELD NAME="moduletype" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Module type"/>
         <FIELD NAME="componentgradeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Id for SITS component grade in local_sits_component_grades"/>
-        <FIELD NAME="reassessment" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="reassessment" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="reassessmentseq" TYPE="int" LENGTH="3" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="componentgradeid" TYPE="foreign-unique" FIELDS="componentgradeid" REFTABLE="local_sits_component_grades" REFFIELDS="id"/>
+        <KEY NAME="componentgradeid" TYPE="foreign" FIELDS="componentgradeid" REFTABLE="local_sits_component_grades" REFFIELDS="id"/>
       </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_courseid" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="idx_sid_stype" UNIQUE="false" FIELDS="sourceid, sourcetype"/>
+        <INDEX NAME="idx_sid_stype_cid" UNIQUE="true" FIELDS="sourceid, sourcetype, componentgradeid"/>
+      </INDEXES>
     </TABLE>
     <TABLE NAME="local_sitsgradepush_mab" COMMENT="Corresponding to SITS CAM_MAB table">
       <FIELDS>

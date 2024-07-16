@@ -46,6 +46,7 @@ async function selectAssessment(button) {
     let courseid = button.getAttribute('data-courseid');
     let sourcetype = button.getAttribute('data-sourcetype');
     let sourceid = button.getAttribute('data-sourceid');
+    let reassess = button.getAttribute('data-reassess');
     let partid = button.getAttribute('data-partid');
 
     // Find the closest row to the button.
@@ -63,14 +64,18 @@ async function selectAssessment(button) {
 
     await modal.show();
     modal.getRoot().on(ModalEvents.save, () => {
-        mapAssessment(courseid, sourcetype, sourceid, mabid, partid).then(
+        mapAssessment(courseid, sourcetype, sourceid, mabid, reassess, partid).then(
             (result) => {
                 if (result.success) {
                     // Store the success message in localStorage for display on the dashboard page.
                     localStorage.setItem('successMessage', result.message);
 
                     // Redirect to the dashboard page.
-                    window.location.href = '/local/sitsgradepush/dashboard.php?id=' + courseid;
+                    let url = '/local/sitsgradepush/dashboard.php?id=' + courseid;
+                    if (reassess === '1') {
+                        url += '&reassess=' + reassess;
+                    }
+                    window.location.href = url;
                 } else {
                     notification.addNotification({
                         message: result.message,
