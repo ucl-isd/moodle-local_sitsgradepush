@@ -30,9 +30,11 @@ interface iassessment {
      * Check if the assessment can be mapped to MAB.
      *
      * @param int|\stdClass $mab
+     * @param int $reassess
+     *
      * @return bool
      */
-    public function can_map_to_mab(int|\stdClass $mab): bool;
+    public function can_map_to_mab(int|\stdClass $mab, int $reassess): bool;
 
     /**
      * Get all participants of the assessment.

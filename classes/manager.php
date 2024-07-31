@@ -1145,8 +1145,8 @@ class manager {
             }
         }
 
-        // Do not allow mapping activity which is not from current academic year.
-        if (!$this->is_current_academic_year_activity($assessment->get_course_id())) {
+        // Do not allow mapping activity which is not from current academic year and not a re-assessment.
+        if (!$this->is_current_academic_year_activity($assessment->get_course_id()) && $reassess == 0) {
             throw new \moodle_exception('error:pastactivity', 'local_sitsgradepush');
         }
 

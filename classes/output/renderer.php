@@ -65,6 +65,12 @@ class renderer extends plugin_renderer_base {
         $totalmarkscount = 0;
         $runningtasks = [];
         foreach ($assessmentdata['mappings'] as $mapping) {
+            // Remove current academic year restriction for re-assessment.
+            // A source can only be either normal or re-assessment, not both.
+            if ($mapping->reassessment == 1) {
+                $iscurrentacademicyear = true;
+            }
+
             $students = null;
             // Modify the timestamp format and add the label for the last push result.
             if (!empty($mapping->students)) {
@@ -142,6 +148,12 @@ class renderer extends plugin_renderer_base {
 
         // Check if the course is in the current academic year.
         $iscurrentacademicyear = $this->manager->is_current_academic_year_activity($courseid);
+
+        // Remove the current academic year restriction for re-assessment.
+        if ($reassess == 1) {
+            $iscurrentacademicyear = true;
+        }
+
         $moduledeliverytables = [];
 
         // For user tour.
@@ -264,7 +276,7 @@ class renderer extends plugin_renderer_base {
 
         // Create the select source page.
         foreach ($assessments as $assessment) {
-            if (!$assessment->can_map_to_mab($mab->id)) {
+            if (!$assessment->can_map_to_mab($mab->id, $reassess)) {
                 continue;
             }
 

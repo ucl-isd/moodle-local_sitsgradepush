@@ -47,8 +47,8 @@ if (!$course = get_course($courseid)) {
 // Get the component grades.
 $manager = manager::get_manager();
 
-// Check if the course is in the current academic year.
-if (!$manager->is_current_academic_year_activity($courseid)) {
+// Throw exception if not mapping for re-assessment and the course is not in current academic year.
+if (!$manager->is_current_academic_year_activity($courseid) && $reassess == 0) {
     throw new moodle_exception('error:pastactivity', 'local_sitsgradepush');
 }
 

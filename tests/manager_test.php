@@ -1042,6 +1042,11 @@ final class manager_test extends \advanced_testcase {
                 );
             }
 
+            // Re-assessment is not restricted to the current academic year.
+            if ($type == 1) {
+                continue;
+            }
+
             // Test exception is thrown if the activity is not in the current academic year.
             try {
                 // Set LSA end date to a past date.

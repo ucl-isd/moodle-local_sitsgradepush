@@ -94,10 +94,11 @@ abstract class assessment implements iassessment {
      * Check if this assessment can be mapped to a given mab.
      *
      * @param int|\stdClass $mab
+     * @param int $reassess
      * @return bool
      * @throws \dml_exception
      */
-    public function can_map_to_mab(int|\stdClass $mab): bool {
+    public function can_map_to_mab(int|\stdClass $mab, int $reassess): bool {
         // Check the assessment is valid for marks transfer.
         $validity = $this->check_assessment_validity();
         if (!$validity->valid) {
@@ -117,6 +118,10 @@ abstract class assessment implements iassessment {
         // Check if the mab is valid for a new mapping if existing mappings are found.
         if (!empty($mappings)) {
             foreach ($mappings as $mapping) {
+                // An assessment can only map to one marks transfer type, i.e. normal or re-assessment.
+                if ($mapping->reassessment != $reassess) {
+                    return false;
+                }
                 // Check this assessment does not map to the same mab.
                 if ($mapping->componentgradeid == $mab->id) {
                     return false;
