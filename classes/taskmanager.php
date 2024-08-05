@@ -257,6 +257,10 @@ class taskmanager {
             throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mapping->componentgradeid);
         }
 
+        if (grade_needs_regrade_final_grades($mapping->courseid)) {
+            throw new \moodle_exception('error:gradesneedregrading', 'local_sitsgradepush');
+        }
+
         // Create and insert the task.
         $task = new \stdClass();
         $task->userid = $USER->id;

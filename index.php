@@ -109,6 +109,11 @@ if (!empty($content)) {
 
     // Transfer marks if it is a sync transfer and pushgrade is set.
     if ($totalmarkscount <= $syncthreshold && $pushgrade == 1) {
+        // Prevent sync push if course is regrading.
+        if (grade_needs_regrade_final_grades($courseid)) {
+            throw new \moodle_exception('error:gradesneedregrading', 'local_sitsgradepush');
+        }
+
         // Loop through each mapping.
         foreach ($content['mappings'] as $mapping) {
             // Skip if there is no student in the mapping.

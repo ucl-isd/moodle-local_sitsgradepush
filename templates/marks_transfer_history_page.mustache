@@ -40,6 +40,7 @@
             * lastgradepushtime - String, student last grade push time.
             * lastsublogpushresultlabel - String, student last submission log push result label.
             * lastsublogpushtime - String, student last submission log push time.
+        * warningmessage - String, warning message.
     * invalid-students - Array of invalid students.
         * tabletitle - String, table title.
         * students - Array of students.
@@ -75,7 +76,8 @@
                     "lastgradepushtime":"2019-01-01 00:00:00",
                     "lastsublogpushresultlabel":"<span class=\"badge badge-success\">Success</span> ",
                     "lastsublogpushtime":"2019-01-01 00:00:00"
-            }]
+            }],
+            "warningmessage":"Warning message"
         }],
         "invalid-students":[{
             "tabletitle":"Students not valid for the mapped assessment components",
@@ -92,7 +94,8 @@
                     "lastsublogpushresultlabel":"",
                     "lastsublogpushtime":"-"
             }]
-        }]
+        }],
+        "gradesneedregrading":false
     }
 }}
 {{^currentacademicyear}}
@@ -101,21 +104,28 @@
     </div>
 {{/currentacademicyear}}
 <!--Transfer marks button-->
-<div class="text-left py-3">
-    {{#currentacademicyear}}
-        {{> local_sitsgradepush/transfer_all_button }}
-    {{/currentacademicyear}}
-</div>
+{{#currentacademicyear}}
+    {{^gradesneedregrading}}
+        <div class="text-left py-3">
+            {{> local_sitsgradepush/transfer_all_button }}
+        </div>
+    {{/gradesneedregrading}}
+{{/currentacademicyear}}
 
 <!--Latest transferred datetime-->
 <p>{{latest-transferred-text}}</p>
 
+<!-- Show warning if grades need regrading -->
+{{#gradesneedregrading}}
+    <p class="alert alert-warning">{{#str}} error:gradesneedregrading, local_sitsgradepush {{/str}}</p>
+{{/gradesneedregrading}}
+
 <!--Module delivery tables-->
 {{#module-delivery-tables}}
     {{> local_sitsgradepush/marks_transfer_history_table }}
-    {{^students}}
-        <p class="alert alert-info">{{#str}} error:nostudentfoundformapping, local_sitsgradepush {{/str}}</p>
-    {{/students}}
+    {{#warningmessage}}
+        <p class="alert alert-info">{{warningmessage}}</p>
+    {{/warningmessage}}
 {{/module-delivery-tables}}
 
 <!--Invalid students-->

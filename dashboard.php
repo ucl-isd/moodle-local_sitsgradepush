@@ -82,6 +82,7 @@ if (!has_capability('local/sitsgradepush:pushgrade', $context)) {
 // Get renderer.
 $renderer = $PAGE->get_renderer('local_sitsgradepush');
 
+// Print the marks transfer type selector.
 echo $renderer->print_dashboard_selector($url, $reassess);
 
 // Get the component grades.
