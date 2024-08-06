@@ -1,0 +1,98 @@
+{
+  "LAWS0024A6UF": {
+    "001": [
+      {
+        "code": "23456781",
+        "spr_code": "23456781/1",
+        "assessment": {
+          "resit_number": 0
+        }
+      },
+      {
+        "code": "23456782",
+        "spr_code": "23456782/1",
+        "assessment": {
+          "resit_number": 0
+        }
+      },
+      {
+        "code": "23456783",
+        "spr_code": "23456783/1",
+        "assessment": {
+          "resit_number": 0
+        }
+      }
+    ],
+    "002": [
+      {
+        "code": "23456781",
+        "spr_code": "23456781/1",
+        "assessment": {
+          "resit_number": 0
+        }
+      },
+      {
+        "code": "23456782",
+        "spr_code": "23456782/1",
+        "assessment": {
+          "resit_number": 0
+        }
+      },
+      {
+        "code": "23456783",
+        "spr_code": "23456783/1",
+        "assessment": {
+          "resit_number": 0
+        }
+      }
+    ]
+  },
+  "PHAY0063A7PF": {
+    "001": [
+      {
+        "code": "23456781",
+        "spr_code": "23456781/1",
+        "assessment": {
+          "resit_number": 1
+        }
+      },
+      {
+        "code": "23456782",
+        "spr_code": "23456782/1",
+        "assessment": {
+          "resit_number": 1
+        }
+      },
+      {
+        "code": "23456783",
+        "spr_code": "23456783/1",
+        "assessment": {
+          "resit_number": 1
+        }
+      }
+    ],
+    "002": [
+      {
+        "code": "23456781",
+        "spr_code": "23456781/1",
+        "assessment": {
+          "resit_number": 1
+        }
+      },
+      {
+        "code": "23456782",
+        "spr_code": "23456782/1",
+        "assessment": {
+          "resit_number": 1
+        }
+      },
+      {
+        "code": "23456783",
+        "spr_code": "23456783/1",
+        "assessment": {
+          "resit_number": 1
+        }
+      }
+    ]
+  }
+}

@@ -26,7 +26,6 @@ use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
-use local_sitsgradepush\tests\fixtures\tests_data_provider;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -90,6 +89,9 @@ final class manager_test extends \advanced_testcase {
     /** @var \stdClass Default test teacher 1 */
     private \stdClass $teacher1;
 
+    /** @var array Marks transfer types, i.e. Main transfer / Re-assessment */
+    private array $markstransfertype = ['main' => 0, 'reassessment' => 1];
+
     /**
      * Set up the test.
      *
@@ -123,18 +125,6 @@ final class manager_test extends \advanced_testcase {
 
         // Set up reflection for the manager.
         $this->reflectionmanager = new \ReflectionClass($this->manager);
-    }
-
-    /**
-     * Tear down the test.
-     *
-     * @return void
-     * @throws \ddl_exception
-     * @throws \ddl_table_missing_exception
-     */
-    protected function tearDown(): void {
-        tests_data_provider::tear_down_mim_tables();
-        parent::tearDown();
     }
 
     /**
@@ -324,12 +314,6 @@ final class manager_test extends \advanced_testcase {
      * @throws \moodle_exception
      */
     public function test_get_component_grade_options(): void {
-        global $DB;
-
-        // Skip test if database family is postgres, the SQL query in the portico enrolment block is not supported.
-        if ($DB->get_dbfamily() === 'postgres') {
-            $this->markTestSkipped('This test is not supported on PostgreSQL.');
-        }
         $this->setup_testing_environment();
         $options = $this->manager->get_component_grade_options($this->course1->id);
         $this->assertCount(4, $options);
@@ -476,33 +460,43 @@ final class manager_test extends \advanced_testcase {
         // Set up the test environment.
         $this->setup_testing_environment();
 
-        // Test component grade is found.
-        $this->assertNotEmpty($this->manager->get_local_component_grade_by_id($this->mab1->id));
+        // Test for each marks transfer type.
+        foreach ($this->markstransfertype as $type) {
+            // Test component grade is found.
+            $this->assertNotEmpty($this->manager->get_local_component_grade_by_id($this->mab1->id));
 
-        // Test that the component grade is not mapped.
-        $this->assertFalse($this->manager->is_component_grade_mapped($this->mab1->id));
+            // Test that the component grade is not mapped.
+            $this->assertFalse($this->manager->is_component_grade_mapped($this->mab1->id, $type));
 
-        $data  = new \stdClass();
-        $data->componentgradeid = $this->mab1->id;
-        $data->sourcetype = 'mod';
-        $data->sourceid = $this->assign1->cmid;
-        $this->manager->save_assessment_mapping($data);
+            // Create a test assignment.
+            $assign = $this->dg->create_module('assign', ['course' => $this->course1->id]);
 
-        $assessment = assessmentfactory::get_assessment('mod', $this->assign1->cmid);
+            $data  = new \stdClass();
+            $data->componentgradeid = $this->mab1->id;
+            $data->sourcetype = 'mod';
+            $data->sourceid = $assign->cmid;
+            $data->reassessment = $type;
+            $this->manager->save_assessment_mapping($data);
 
-        // Test that the mapping has been saved.
-        $mapping = $this->manager->get_assessment_mappings($assessment, $this->mab1->id);
-        $this->assertEquals($this->assign1->cmid, $mapping->sourceid);
+            $assessment = assessmentfactory::get_assessment('mod', $assign->cmid);
 
-        // Test that the mapping can be updated.
-        $data->sourceid = $this->quiz1->cmid;
-        $this->manager->save_assessment_mapping($data);
-        $assessment = assessmentfactory::get_assessment('mod', $this->quiz1->cmid);
-        $mapping = $this->manager->get_assessment_mappings($assessment, $this->mab1->id);
-        $this->assertEquals($this->quiz1->cmid, $mapping->sourceid);
+            // Test that the mapping has been saved.
+            $mapping = $this->manager->get_assessment_mappings($assessment, $this->mab1->id);
+            $this->assertEquals($assign->cmid, $mapping->sourceid);
 
-        // Test that the component grade is mapped.
-        $this->assertNotEmpty($this->manager->is_component_grade_mapped($this->mab1->id));
+            // Create a test quiz.
+            $quiz = $this->dg->create_module('quiz', ['course' => $this->course1->id]);
+
+            // Test that the mapping can be updated.
+            $data->sourceid = $quiz->cmid;
+            $this->manager->save_assessment_mapping($data);
+            $assessment = assessmentfactory::get_assessment('mod', $quiz->cmid);
+            $mapping = $this->manager->get_assessment_mappings($assessment, $this->mab1->id);
+            $this->assertEquals($quiz->cmid, $mapping->sourceid);
+
+            // Test that the component grade is mapped.
+            $this->assertNotEmpty($this->manager->is_component_grade_mapped($this->mab1->id, $type));
+        }
     }
 
     /**
@@ -542,7 +536,8 @@ final class manager_test extends \advanced_testcase {
         cache::make('local_sitsgradepush', cachemanager::CACHE_AREA_STUDENTSPR)->purge();
 
         // Test student is found.
-        $this->assertEquals('12345678/1', $this->manager->get_student_from_sits($this->mab1, $this->student1->id));
+        $student = $this->manager->get_student_from_sits($this->mab1, $this->student1->id);
+        $this->assertEquals('12345678/1', $student['spr_code'] );
 
         // Get student cache.
         $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $this->mab1->mapcode, $this->mab1->mabseq]);
@@ -551,10 +546,13 @@ final class manager_test extends \advanced_testcase {
         // Test student is found in cache.
         $this->assertSame($students, $this->manager->get_students_from_sits($this->mab1));
 
+        // Test null is returned if student is not found.
+        $this->assertNull($this->manager->get_student_from_sits($this->mab1, $this->student2->id));
+
         // Test exception is thrown if stutalkdirect api client is used.
         set_config('apiclient', 'stutalkdirect', 'local_sitsgradepush');
         $apiclient = $this->get_apiclient_for_testing(false, [
-          0 => ['code' => 12345678, 'spr_code' => '12345678/1', 'forename' => 'Test', 'surname' => 'Student'],
+          ['code' => 12345678, 'spr_code' => '12345678/1', 'forename' => 'Test', 'surname' => 'Student'],
         ]);
         tests_data_provider::set_protected_property($this->manager, 'apiclient', $apiclient);
         $this->expectException(\moodle_exception::class);
@@ -629,7 +627,7 @@ final class manager_test extends \advanced_testcase {
 
         // Test exception is thrown when validate for mapping changes.
         try {
-            $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->assign1->cmid);
+            $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->assign1->cmid, $mapping->reassessment);
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString(
               get_string('error:mab_has_push_records', 'local_sitsgradepush', $this->mab1->mapcode . '-' .$this->mab1->mabseq),
@@ -757,29 +755,61 @@ final class manager_test extends \advanced_testcase {
      * @throws \moodle_exception|\ReflectionException
      */
     public function test_get_required_data_for_pushing(): void {
-        global $USER;
+        global $DB, $USER;
 
-        // Get assessment.
+        // Map the assignment to a SITS component grade.
         $assessment = assessmentfactory::get_assessment('mod', $this->assign1->cmid);
-
-        // Set up the testing environment.
         $this->setup_testing_environment($assessment);
 
-        $expected = (object)[
-            'mapcode' => 'LAWS0024A6UF',
-            'mabseq' => '001',
-            'sprcode' => '12345678/1',
-            'academicyear' => '2023',
-            'pslcode' => 'T1/2',
-            'reassessment' => null,
-            'source' => 'moodle-course'. $this->course1->id . '-mapping' . $this->mappingid1 . '-user' . $USER->id,
-            'srarseq' => '001',
-        ];
+        // Test exception is thrown when no student is found.
+        try {
+            $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student2->id);
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(
+              get_string('error:nostudentfoundformapping', 'local_sitsgradepush'),
+              $e->getMessage()
+            );
+        }
 
-        $this->assertEquals(
-          $expected,
-          $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id)
-        );
+        // Test exception is thrown if student resit number is 0 for a re-assessment mapping.
+        try {
+            // Update the mapping to be a re-assessment, the student should have a resit number greater than 0, but it is 0 now.
+            $DB->set_field('local_sitsgradepush_mapping', 'reassessment', 1, ['id' => $this->assessmentmapping1->id]);
+            $this->assessmentmapping1 = $this->manager->get_assessment_mappings($assessment, $this->mab1->id);
+            $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id);
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(
+              get_string('error:resit_number_zero_for_reassessment', 'local_sitsgradepush'),
+              $e->getMessage()
+            );
+        }
+
+        // Test required data is correctly returned for each marks transfer type.
+        foreach ($this->markstransfertype as $type) {
+            $assignmod = $this->dg->create_module('assign', ['course' => $this->course1->id]);
+
+            // Get assessment.
+            $assessment = assessmentfactory::get_assessment('mod', $assignmod->cmid);
+
+            // Set up the testing environment.
+            $this->setup_testing_environment($assessment, $type, true);
+
+            $expected = (object)[
+              'mapcode' => 'LAWS0024A6UF',
+              'mabseq' => '001',
+              'sprcode' => '12345678/1',
+              'academicyear' => '2023',
+              'pslcode' => 'T1/2',
+              'reassessment' => $type,
+              'source' => 'moodle-course'. $this->course1->id . '-mapping' . $this->mappingid1 . '-user' . $USER->id,
+              'srarseq' => $type,
+            ];
+
+            $this->assertEquals(
+              $expected,
+              $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id)
+            );
+        }
     }
 
     /**
@@ -943,72 +973,91 @@ final class manager_test extends \advanced_testcase {
      */
     public function test_validate_component_grade(): void {
         global $DB;
-        // Test exception is thrown if the component grade is not found.
-        try {
-            $this->manager->validate_component_grade(0, 'mod', $this->assign1->cmid);
-        } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(get_string('error:mab_not_found', 'local_sitsgradepush', 0), $e->getMessage());
-        }
 
-        // Set up the test environment.
-        $assign1 = assessmentfactory::get_assessment('mod', $this->assign1->cmid);
-        $this->setup_testing_environment($assign1);
+        foreach ($this->markstransfertype as $type) {
+            // Test exception is thrown if the component grade is not found.
+            $assignmod = $this->dg->create_module('assign', ['course' => $this->course1->id]);
 
-        // Test exception is thrown if try to map the same activity again.
-        try {
-            $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->assign1->cmid);
-        } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(
-              get_string('error:no_update_for_same_mapping', 'local_sitsgradepush'),
-              $e->getMessage()
-            );
-        }
-
-        // Test exception is thrown if try to map another component grade with same map code.
-        try {
-            $mab2 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
-            $this->manager->validate_component_grade($mab2->id, 'mod', $this->assign1->cmid);
-        } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(
-              get_string('error:same_map_code_for_same_activity', 'local_sitsgradepush'),
-              $e->getMessage()
-            );
-        }
-
-        // Test exception is thrown when trying to map a gradebook item or category while gradebook feature is disabled.
-        try {
-            set_config('gradebook_enabled', 0, 'local_sitsgradepush');
-            $this->manager->validate_component_grade($this->mab1->id, 'gradeitem', $this->gradeitem1->id);
-        } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(get_string('error:gradebook_disabled', 'local_sitsgradepush'), $e->getMessage());
-        }
-
-        // Test exception is thrown if no grade item is found.
-        try {
-            $quiz = assessmentfactory::get_assessment('mod', $this->quiz1->cmid);
-            $gradeitems = $quiz->get_grade_items();
-            foreach ($gradeitems as $gradeitem) {
-                $DB->delete_records('grade_items', ['id' => $gradeitem->id]);
+            try {
+                $this->manager->validate_component_grade(0, 'mod', $assignmod->cmid, $type);
+            } catch (\moodle_exception $e) {
+                $this->assertStringContainsString(get_string('error:mab_not_found', 'local_sitsgradepush', 0), $e->getMessage());
             }
-            $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->quiz1->cmid);
-        } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(get_string('error:grade_items_not_found', 'local_sitsgradepush'), $e->getMessage());
-        }
 
-        // Test exception is thrown when trying to map an assessment with grade type which is not 'value' type.
-        try {
-            $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->assign2->cmid);
-        } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(get_string('error:gradetype_not_supported', 'local_sitsgradepush'), $e->getMessage());
-        }
+            // Set up the test environment.
+            $assign1 = assessmentfactory::get_assessment('mod', $assignmod->cmid);
+            $this->setup_testing_environment($assign1, $type);
 
-        // Test exception is thrown if the activity is not in the current academic year.
-        try {
-            // Set LSA end date to a past date.
-            set_config('late_summer_assessment_end_' . date('Y'), date('Y-m-d', strtotime('-2 month')), 'block_lifecycle');
-            $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->assign1->cmid);
-        } catch (\moodle_exception $e) {
-            $this->assertStringContainsString(get_string('error:pastactivity', 'local_sitsgradepush'), $e->getMessage());
+            // Test exception is thrown if try to map the same activity again.
+            try {
+                $this->manager->validate_component_grade($this->mab1->id, 'mod', $assignmod->cmid, $type);
+            } catch (\moodle_exception $e) {
+                $this->assertStringContainsString(
+                  get_string('error:no_update_for_same_mapping', 'local_sitsgradepush'),
+                  $e->getMessage()
+                );
+            }
+
+            // Test exception is thrown if try to map another component grade with same map code.
+            try {
+                $mab2 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
+                $this->manager->validate_component_grade($mab2->id, 'mod', $assignmod->cmid, $type);
+            } catch (\moodle_exception $e) {
+                $this->assertStringContainsString(
+                  get_string('error:same_map_code_for_same_activity', 'local_sitsgradepush'),
+                  $e->getMessage()
+                );
+            }
+
+            // Test exception is thrown when trying to map a gradebook item or category while gradebook feature is disabled.
+            try {
+                set_config('gradebook_enabled', 0, 'local_sitsgradepush');
+                $this->manager->validate_component_grade($this->mab1->id, 'gradeitem', $this->gradeitem1->id, $type);
+            } catch (\moodle_exception $e) {
+                $this->assertStringContainsString(get_string('error:gradebook_disabled', 'local_sitsgradepush'), $e->getMessage());
+            }
+
+            // Test exception is thrown if no grade item is found.
+            try {
+                $quiz = assessmentfactory::get_assessment('mod', $this->quiz1->cmid);
+                $gradeitems = $quiz->get_grade_items();
+                foreach ($gradeitems as $gradeitem) {
+                    $DB->delete_records('grade_items', ['id' => $gradeitem->id]);
+                }
+                $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->quiz1->cmid, $type);
+            } catch (\moodle_exception $e) {
+                $this->assertStringContainsString(
+                  get_string('error:grade_items_not_found', 'local_sitsgradepush'),
+                  $e->getMessage()
+                );
+            }
+
+            // Test exception is thrown when trying to map an assessment with grade type which is not 'value' type.
+            try {
+                $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->assign2->cmid, $type);
+            } catch (\moodle_exception $e) {
+                $this->assertStringContainsString(
+                  get_string('error:gradetype_not_supported', 'local_sitsgradepush'),
+                  $e->getMessage()
+                );
+            }
+
+            // Re-assessment is not restricted to the current academic year.
+            if ($type == 1) {
+                continue;
+            }
+
+            // Test exception is thrown if the activity is not in the current academic year.
+            try {
+                // Set LSA end date to a past date.
+                set_config('late_summer_assessment_end_' . date('Y'), date('Y-m-d', strtotime('-2 month')), 'block_lifecycle');
+                $this->manager->validate_component_grade($this->mab1->id, 'mod', $assignmod->cmid, $type);
+            } catch (\moodle_exception $e) {
+                $this->assertStringContainsString(get_string('error:pastactivity', 'local_sitsgradepush'), $e->getMessage());
+            }
+
+            // Reset LSA end date to a future date.
+            set_config('late_summer_assessment_end_' . date('Y'), date('Y-m-d', strtotime('+2 month')), 'block_lifecycle');
         }
     }
 
@@ -1159,24 +1208,28 @@ final class manager_test extends \advanced_testcase {
     public function test_can_change_source(): void {
         global $DB;
 
-        // Set up the test environment.
-        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
+        foreach ($this->markstransfertype as $type) {
+            $assignmod = $this->dg->create_module('assign', ['course' => $this->course1->id]);
 
-        // Test the component grade can change source.
-        $this->assertTrue($this->manager->can_change_source($this->mab1->id));
+            // Set up the test environment.
+            $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $assignmod->cmid), $type);
 
-        // Test the component grade can change source if it has no mapping.
-        $mab2 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
-        $this->assertTrue($this->manager->can_change_source($mab2->id));
+            // Test the component grade can change source.
+            $this->assertTrue($this->manager->can_change_source($this->mab1->id, $type));
 
-        // Set the current user to user who has grade push capability.
-        $this->setUser($this->teacher1);
+            // Test the component grade can change source if it has no mapping.
+            $mab2 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
+            $this->assertTrue($this->manager->can_change_source($mab2->id, $type));
 
-        // Set the component grade as pushed.
-        taskmanager::schedule_push_task($this->mappingid1);
+            // Set the current user to user who has grade push capability.
+            $this->setUser($this->teacher1);
 
-        // Test the component grade can not change source once it has been pushed.
-        $this->assertFalse($this->manager->can_change_source($this->mab1->id));
+            // Set the component grade as pushed.
+            taskmanager::schedule_push_task($this->mappingid1);
+
+            // Test the component grade can not change source once it has been pushed.
+            $this->assertFalse($this->manager->can_change_source($this->mab1->id, $type));
+        }
     }
 
     /**
@@ -1223,9 +1276,6 @@ final class manager_test extends \advanced_testcase {
 
         // Set Easikit API client.
         set_config('apiclient', 'easikit', 'local_sitsgradepush');
-
-        // Set MIM database name.
-        set_config('ucl_sf3_dbname', $CFG->dbname);
 
         // Set AST codes.
         set_config('moodle_ast_codes',
@@ -1317,18 +1367,23 @@ final class manager_test extends \advanced_testcase {
     /**
      * Setup testing environment for marks transfer of an assignment.
      *
-     * @param  \local_sitsgradepush\assessment\assessment|null  $assessment
+     * @param  \local_sitsgradepush\assessment\assessment|null $assessment
+     * @param  int $reassess
+     * @param  bool $clearcache
+     *
      * @return void
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception|\ReflectionException
      */
-    private function setup_testing_environment(?assessment $assessment = null): void {
+    private function setup_testing_environment(?assessment $assessment = null, int $reassess = 0, bool $clearcache = false): void {
         global $DB;
 
-        // Setup MIM.
-        tests_data_provider::create_mim_tables();
-        tests_data_provider::import_data_into_mim_tables();
+        // Clear cache.
+        if ($clearcache) {
+            cache::make('local_sitsgradepush', cachemanager::CACHE_AREA_MARKINGSCHEMES)->purge();
+            cache::make('local_sitsgradepush', cachemanager::CACHE_AREA_STUDENTSPR)->purge();
+        }
 
         // Import component grades.
         tests_data_provider::import_sitsgradepush_grade_components();
@@ -1341,7 +1396,15 @@ final class manager_test extends \advanced_testcase {
 
         // Set the return student data from SITS.
         $students = [
-          0 => ['code' => 12345678, 'spr_code' => '12345678/1', 'forename' => 'Test', 'surname' => 'Student'],
+          [
+            'code' => 12345678,
+            'spr_code' => '12345678/1',
+            'forename' => 'Test',
+            'surname' => 'Student',
+            'assessment' => [
+              "resit_number" => $reassess,
+            ],
+          ],
         ];
         $apiclient = $this->get_apiclient_for_testing(false, $students);
         tests_data_provider::set_protected_property($this->manager, 'apiclient', $apiclient);
@@ -1353,6 +1416,7 @@ final class manager_test extends \advanced_testcase {
               'componentgradeid' => $this->mab1->id,
               'sourcetype' => $assessment->get_type(),
               'sourceid' => $assessment->get_id(),
+              'reassessment' => $reassess,
             ]);
 
             // Set assessment mapping.
@@ -1366,6 +1430,7 @@ final class manager_test extends \advanced_testcase {
      * @return array
      * @throws \coding_exception
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
     private function create_grade_category_and_grade_item(): array {
         global $DB;
@@ -1385,7 +1450,11 @@ final class manager_test extends \advanced_testcase {
         ]);
 
         $course = $DB->get_record('course', ['id' => $this->course1->id], '*', MUST_EXIST);
-        grade_regrade_final_grades_if_required($course);
+        if (getenv('PLUGIN_CI')) {
+            grade_regrade_final_grades($course->id);
+        } else {
+            grade_regrade_final_grades($course->id, async: false);
+        }
 
         return [$gradecategory, $gradeitem];
     }

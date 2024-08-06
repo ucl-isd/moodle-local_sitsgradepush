@@ -71,7 +71,10 @@ class pushgrade extends request {
      */
     public static function transform_data(\stdClass &$data) {
         // Add required data.
-        $rseq = empty($data->reassessment) ? '0' : $data->srarseq;
+        // The last part of the student identifier should be in 3 digits for re-assessment, e.g. 001, 002, 003.
+        // But the resit number getting from the easikit api is in 1 digit, e.g. 1, 2, 3. (0 means not a re-assessment).
+        // Therefore, we need to pad it to form a valid student identifier, e.g. 23456789_1-2023-T1-001.
+        $rseq = $data->reassessment == 1 ? str_pad($data->srarseq, 3, '0', STR_PAD_LEFT) : '0';
         $data->assessmentcomponent = sprintf('%s-%s', $data->mapcode, $data->mabseq);
         $data->student = sprintf(
             '%s-%s-%s-%s',

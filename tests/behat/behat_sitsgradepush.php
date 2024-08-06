@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-use Behat\Behat\Tester\Exception\PendingException;
 use Behat\Gherkin\Node\TableNode;
-use local_sitsgradepush\cachemanager;
+use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\manager;
 
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
@@ -33,56 +32,16 @@ require_once(__DIR__ . '/../fixtures/tests_data_provider.php');
 class behat_sitsgradepush extends behat_base {
 
     /**
-     * Set up before feature.
-     *
-     * @BeforeFeature
-     * @return void
-     */
-    public static function setup_before_feature(): void {
-        global $DB;
-
-        // Skip test if database family is postgres, the SQL query in the portico enrolment block is not supported.
-        if ($DB->get_dbfamily() === 'postgres') {
-            throw new PendingException('Skipping test because it is not supported for Postgres.');
-        }
-    }
-
-    /**
      * Set up before scenario.
      *
      * @BeforeScenario
      * @return void
-     * @throws \ddl_exception
      */
     public function setup_before_scenario(): void {
         set_config('apiclient', 'easikit', 'local_sitsgradepush');
 
-        // Set the MIM database name.
-        set_config('ucl_sf3_dbname', 'moodle');
-
-        // Set the get token url.
-        $tokenurl = new moodle_url('/local/sitsgradepush/tests/fixtures/mock_apis/easikit/get_token.php');
-        set_config('mstokenendpoint', $tokenurl->out(false), 'sitsapiclient_easikit');
-
-        // Set the push grade url.
-        $pushgradeurl = new moodle_url('/local/sitsgradepush/tests/fixtures/mock_apis/easikit/push_grade.php');
-        set_config('endpoint_grade_push', $pushgradeurl->out(false), 'sitsapiclient_easikit');
-
         // Set block_lifecycle 'late_summer_assessment_end_date'.
         set_config('late_summer_assessment_end_' . date('Y'), date('Y-m-d', strtotime('+2 month')), 'block_lifecycle');
-
-        \local_sitsgradepush\tests\fixtures\tests_data_provider::create_mim_tables();
-    }
-
-    /**
-     * Clean up after scenario.
-     *
-     * @AfterScenario
-     * @return void
-     * @throws \ddl_exception
-     */
-    public static function clean_up_after_scenario(): void {
-        \local_sitsgradepush\tests\fixtures\tests_data_provider::tear_down_mim_tables();
     }
 
     /**
@@ -126,6 +85,17 @@ class behat_sitsgradepush extends behat_base {
           'name' => $data['name'],
           'type' => $data['type'],
           'categoryid' => $category->id,
+          'sortorder' => 0,
+          'configdata'   => json_encode([
+            "required" => 0,
+            "uniquevalues" => 0,
+            "maxlength" => 4,
+            "defaultvalue" => "",
+            "ispassword" => 0,
+            "displaysize" => 4,
+            "locked" => 1,
+            "visibility" => 0,
+          ]),
           'timecreated' => time(),
           'timemodified' => time(),
         ];
@@ -214,14 +184,27 @@ class behat_sitsgradepush extends behat_base {
      * @Given the course :shortname is set up for marks transfer
      */
     public function the_course_is_setup_for_marks_transfer(string $shortname): void {
-        \local_sitsgradepush\tests\fixtures\tests_data_provider::import_data_into_mim_tables();
-        \local_sitsgradepush\tests\fixtures\tests_data_provider::import_sitsgradepush_grade_components();
-        \local_sitsgradepush\tests\fixtures\tests_data_provider::set_marking_scheme_data();
-        self::set_students();
+        \local_sitsgradepush\tests_data_provider::import_sitsgradepush_grade_components();
+        \local_sitsgradepush\tests_data_provider::set_marking_scheme_data();
     }
 
     /**
-     * Map a source to a SITS assessment component.
+     * Map a re-assessment source to a SITS assessment component.
+     *
+     * @param string $sourcetype
+     * @param string $sourcename
+     * @param string $mabname
+     *
+     * @throws \dml_exception|\moodle_exception
+     *
+     * @Given the :sourcetype :sourcename is a re-assessment and mapped to :mabname
+     */
+    public function the_source_is_a_reassessment_and_mapped_to(string $sourcetype, string $sourcename, string $mabname): void {
+        $this->map_source($sourcetype, $sourcename, $mabname, true);
+    }
+
+    /**
+     * Map a normal source to a SITS assessment component.
      *
      * @param string $sourcetype
      * @param string $sourcename
@@ -232,6 +215,20 @@ class behat_sitsgradepush extends behat_base {
      * @Given the :sourcetype :sourcename is mapped to :mabname
      */
     public function the_source_is_mapped_to(string $sourcetype, string $sourcename, string $mabname): void {
+        $this->map_source($sourcetype, $sourcename, $mabname, false);
+    }
+
+    /**
+     * Map a source to a SITS assessment component.
+     *
+     * @param string $sourcetype
+     * @param string $sourcename
+     * @param string $mabname
+     * @param bool $reassessment
+     *
+     * @throws \dml_exception|\moodle_exception
+     */
+    public function map_source(string $sourcetype, string $sourcename, string $mabname, bool $reassessment): void {
         global $DB;
         $manager = manager::get_manager();
 
@@ -257,15 +254,23 @@ class behat_sitsgradepush extends behat_base {
         // Get the SITS component grade.
         $mab = $DB->get_record('local_sitsgradepush_mab', ['mabname' => $mabname]);
 
-        // Create the data object.
-        $data = (object) [
-          'componentgradeid' => $mab->id,
-          'sourcetype' => $sourcetype,
-          'sourceid' => $source->id,
-        ];
+        // Get the assessment.
+        $assessment = assessmentfactory::get_assessment($sourcetype, $source->id);
 
-        // Map the source to the MAB.
-        $manager->save_assessment_mapping($data);
+        // Insert new mapping.
+        $record = new \stdClass();
+        $record->courseid = $assessment->get_course_id();
+        $record->sourcetype = $assessment->get_type();
+        $record->sourceid = $assessment->get_id();
+        if ($assessment->get_type() == assessmentfactory::SOURCETYPE_MOD) {
+            $record->moduletype = $assessment->get_module_name();
+        }
+        $record->componentgradeid = $mab->id;
+        $record->reassessment = $reassessment;
+        $record->timecreated = time();
+        $record->timemodified = time();
+
+        $DB->insert_record($manager::TABLE_ASSESSMENT_MAPPING, $record);
     }
 
     /**
@@ -279,7 +284,12 @@ class behat_sitsgradepush extends behat_base {
     public function the_course_is_regraded(string $shortname): void {
         global $DB;
         $course = $DB->get_record('course', ['shortname' => $shortname]);
-        grade_regrade_final_grades($course->id);
+
+        if (getenv('PLUGIN_CI')) {
+            grade_regrade_final_grades($course->id);
+        } else {
+            grade_regrade_final_grades($course->id, async: false);
+        }
     }
 
     /**
@@ -309,39 +319,15 @@ class behat_sitsgradepush extends behat_base {
     }
 
     /**
-     * Set students data to cache.
+     * Click on the marks transfer types dropdown menu and select a transfer
+     * type.
      *
-     * @return void
+     * @param  string  $transfertype
+     *
+     * @Given I click on the marks transfer types dropdown menu and select :transfertype
+     * @throws \Exception
      */
-    public static function set_students(): void {
-        global $DB;
-
-        $students = [
-          [
-            'code' => '23456781',
-            'spr_code' => '23456781/1',
-          ],
-          [
-            'code' => '23456782',
-            'spr_code' => '23456782/1',
-          ],
-          [
-            'code' => '23456783',
-            'spr_code' => '23456783/1',
-          ],
-        ];
-
-        // Get all SITS component grades for 'LAWS0024A6UF'.
-        $sitscomponentgrades = $DB->get_records('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF']);
-
-        if (empty($sitscomponentgrades)) {
-            throw new Exception('No SITS component grades found for LAWS0024A6UF');
-        }
-
-        foreach ($sitscomponentgrades as $sitscomponentgrade) {
-            // Set student cache.
-            $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, 'LAWS0024A6UF', $sitscomponentgrade->mabseq]);
-            cachemanager::set_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key, $students, 3600);
-        }
+    public function i_click_on_the_transfer_type_menu_and_select(string $transfertype): void {
+        $this->execute('behat_forms::i_set_the_field_to', ['Dashboard Type', $transfertype]);
     }
 }

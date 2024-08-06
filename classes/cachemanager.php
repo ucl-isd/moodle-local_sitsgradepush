@@ -68,9 +68,26 @@ class cachemanager {
      * @param int $expiresafter
      * @return void
      */
-    public static function set_cache(string $area, string $key, mixed $value, int $expiresafter) {
+    public static function set_cache(string $area, string $key, mixed $value, int $expiresafter): void {
         $cache = cache::make('local_sitsgradepush', $area);
         $cache->set($key, $value);
         $cache->set('expires_' . $key, $expiresafter);
+    }
+
+    /**
+     * Purge cache.
+     *
+     * @param  string  $area
+     * @param  string  $key
+     *
+     * @return void
+     * @throws \coding_exception
+     */
+    public static function purge_cache(string $area, string $key): void {
+        $cache = cache::make('local_sitsgradepush', $area);
+        if (!empty($cache->get($key))) {
+            $cache->delete($key);
+            $cache->delete('expires_' . $key);
+        }
     }
 }

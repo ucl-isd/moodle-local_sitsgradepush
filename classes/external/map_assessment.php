@@ -43,6 +43,7 @@ class map_assessment extends external_api {
             'sourcetype' => new external_value(PARAM_TEXT, 'Source Type', VALUE_REQUIRED),
             'sourceid' => new external_value(PARAM_INT, 'Source ID', VALUE_REQUIRED),
             'mabid' => new external_value(PARAM_INT, 'Assessment Component ID', VALUE_REQUIRED),
+            'reassess' => new external_value(PARAM_INT, 'Reassessment Flag', VALUE_REQUIRED),
             'partid' => new external_value(PARAM_INT, 'Assessment Part ID', VALUE_DEFAULT, null),
         ]);
     }
@@ -66,10 +67,12 @@ class map_assessment extends external_api {
      * @param string $sourcetype
      * @param int $sourceid
      * @param int $mabid
+     * @param int $reassess
      * @param int|null $partid
      * @return array
      */
-    public static function execute(int $courseid, string $sourcetype, int $sourceid, int $mabid, ?int $partid = null) {
+    public static function execute(
+      int $courseid, string $sourcetype, int $sourceid, int $mabid, int $reassess, ?int $partid = null) {
         try {
             if (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($courseid))) {
                 throw new \moodle_exception('error:mapassessment', 'local_sitsgradepush');
@@ -82,6 +85,7 @@ class map_assessment extends external_api {
                     'sourcetype' => $sourcetype,
                     'sourceid' => $sourceid,
                     'mabid' => $mabid,
+                    'reassess' => $reassess,
                     'partid' => $partid,
                 ]
             );
@@ -92,8 +96,24 @@ class map_assessment extends external_api {
             $data->componentgradeid = $params['mabid'];
             $data->sourcetype = $params['sourcetype'];
             $data->sourceid = $params['sourceid'];
+            $data->reassessment = $params['reassess'];
             $data->partid = $params['partid'];
-            $manager->save_assessment_mapping($data);
+            $mappingid = $manager->save_assessment_mapping($data);
+
+            // Fail to map assessment.
+            if (!$mappingid) {
+                throw new \moodle_exception('error:failtomapassessment', 'local_sitsgradepush');
+            }
+
+            // Trigger assessment mapping event.
+            $event = \local_sitsgradepush\event\assessment_mapped::create([
+              'context' => context_course::instance($data->courseid),
+              'other' => [
+                'mappingid' => $mappingid,
+                'mabid' => $data->componentgradeid,
+              ],
+            ]);
+            $event->trigger();
 
             return [
                 'success' => true,

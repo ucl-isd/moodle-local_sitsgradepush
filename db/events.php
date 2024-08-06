@@ -45,4 +45,9 @@ $observers = [
         'callback' => 'local_sitsgradepush_observer::quiz_attempt_regraded',
         'priority' => 200,
     ],
+    [
+      'eventname' => '\local_sitsgradepush\event\assessment_mapped',
+      'callback' => 'local_sitsgradepush_observer::assessment_mapped',
+      'priority' => 200,
+    ],
 ];

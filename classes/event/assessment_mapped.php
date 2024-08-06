@@ -14,21 +14,44 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// This file is providing a fake API to get push grade response.
-// Therefore, it is OK for it to be accessed publicly.
-// phpcs:disable moodle.Files.MoodleInternal.MoodleInternalGlobalState
+namespace local_sitsgradepush\event;
 
 /**
- * Fake API to push grade.
+ * Event class for assessment_mapped event.
  *
  * @package    local_sitsgradepush
  * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
+class assessment_mapped extends \core\event\base {
 
-// Set the response headers.
-header('Content-Type: application/json');
+    /**
+     * Init method.
+     *
+     * @return void
+     */
+    protected function init(): void {
+        $this->data['crud'] = 'c';
+        $this->data['edulevel'] = self::LEVEL_OTHER;
+    }
 
-// Output the response as JSON.
-echo "";
+    /**
+     * Returns localised name of the event.
+     *
+     * @return string
+     * @throws \coding_exception
+     */
+    public static function get_name(): string {
+        return get_string('eventname', 'local_sitsgradepush');
+    }
+
+    /**
+     * Returns description of what happened.
+     *
+     * @return string
+     */
+    public function get_description(): string {
+        return "An assessment is mapped to a SITS assessment component.";
+    }
+}

@@ -34,6 +34,7 @@ require_once('../../config.php');
 // Course ID.
 $courseid = required_param('courseid', PARAM_INT);
 $mabid = required_param('mabid', PARAM_INT);
+$reassess = optional_param('reassess', 0, PARAM_INT);
 
 // Get course context.
 $context = context_course::instance($courseid);
@@ -46,8 +47,8 @@ if (!$course = get_course($courseid)) {
 // Get the component grades.
 $manager = manager::get_manager();
 
-// Check if the course is in the current academic year.
-if (!$manager->is_current_academic_year_activity($courseid)) {
+// Throw exception if not mapping for re-assessment and the course is not in current academic year.
+if (!$manager->is_current_academic_year_activity($courseid) && $reassess == 0) {
     throw new moodle_exception('error:pastactivity', 'local_sitsgradepush');
 }
 
@@ -63,18 +64,25 @@ if (!$mabvalid) {
 }
 
 // Check there is no task running and no marks transfer records.
-if (!$manager->can_change_source($mabid)) {
+if (!$manager->can_change_source($mabid, $reassess)) {
     throw new moodle_exception('error:cannot_change_source', 'local_sitsgradepush');
 }
 
 // Make sure user is authenticated.
-require_login();
+require_login($course);
 
 // Check user's capability.
 require_capability('local/sitsgradepush:mapassessment', $context);
 
 // Set the required data into the PAGE object.
 $param = ['courseid' => $courseid, 'mabid' => $mabid];
+if ($reassess == 1) {
+    // Check re-assessment marks transfer is enabled.
+    if (get_config('local_sitsgradepush', 'reassessment_enabled') !== '1') {
+        throw new moodle_exception('error:reassessmentdisabled', 'local_sitsgradepush');
+    }
+    $param['reassess'] = $reassess;
+}
 $url = new moodle_url('/local/sitsgradepush/select_source.php', $param);
 $PAGE->set_context($context);
 $PAGE->set_url($url);
@@ -94,7 +102,7 @@ echo $OUTPUT->header();
 
 // Render the page.
 $renderer = $PAGE->get_renderer('local_sitsgradepush');
-echo $renderer->render_select_source_page($courseid, $mab);
+echo $renderer->render_select_source_page($courseid, $mab, $reassess);
 
 // Include JS.
 $PAGE->requires->js_call_amd('local_sitsgradepush/select_source', 'init', []);
