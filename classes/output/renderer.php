@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\output;
 
+use local_sitsgradepush\assessment\gradebook;
 use local_sitsgradepush\errormanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\taskmanager;
@@ -99,6 +100,7 @@ class renderer extends plugin_renderer_base {
             $mappingtable->showsublogcolumn = $showsublogcolumn;
             $mappingtable->taskrunning = false;
             $mappingtable->taskprogress = 0;
+            $mappingtable->warningmessage = $this->get_warning_message_for_history_page_table($mapping, $courseid);
 
             // Check if there is a task running for the assessment mapping.
             if ($taskrunning = taskmanager::get_pending_task_in_queue($mapping->id)) {
@@ -128,6 +130,7 @@ class renderer extends plugin_renderer_base {
             'invalid-students' => !empty($assessmentdata['invalidstudents']->students) ? $assessmentdata['invalidstudents'] : null,
             'sync' => $totalmarkscount <= $syncthreshold ? 1 : 0,
             'taskrunning' => !empty($runningtasks),
+            'gradesneedregrading' => grade_needs_regrade_final_grades($courseid),
         ]);
     }
 
@@ -245,6 +248,7 @@ class renderer extends plugin_renderer_base {
                 'jump-to-options' => $options,
                 'jump-to-label' => get_string('label:jumpto', 'local_sitsgradepush'),
                 'transfer-all-button-label' => get_string('label:pushall', 'local_sitsgradepush'),
+                'gradesneedregrading' => grade_needs_regrade_final_grades($courseid),
             ]
         );
     }
@@ -413,5 +417,30 @@ class renderer extends plugin_renderer_base {
             'id'    => 'tertiary-navigation',
           ]
         );
+    }
+
+    /**
+     * Render the warning message for the history page table.
+     *
+     * @param \stdClass $mapping
+     * @param int $courseid
+     *
+     * @return string
+     * @throws \coding_exception
+     */
+    private function get_warning_message_for_history_page_table(\stdClass $mapping, int $courseid): string {
+        $warningmessage = '';
+
+        // No students.
+        if (empty($mapping->students)) {
+            $warningmessage = get_string('error:nostudentfoundformapping', 'local_sitsgradepush');
+        }
+
+        // While course is regrading, no grade is shown for grade item / grade category on the history page.
+        if ($mapping->source instanceof gradebook && grade_needs_regrade_final_grades($courseid)) {
+            $warningmessage = get_string('error:cannotdisplaygradesforgradebookwhileregrading', 'local_sitsgradepush');
+        }
+
+        return $warningmessage;
     }
 }

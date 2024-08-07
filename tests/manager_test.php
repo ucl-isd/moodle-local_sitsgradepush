@@ -801,7 +801,8 @@ final class manager_test extends \advanced_testcase {
               'academicyear' => '2023',
               'pslcode' => 'T1/2',
               'reassessment' => $type,
-              'source' => 'moodle-course'. $this->course1->id . '-mapping' . $this->mappingid1 . '-user' . $USER->id,
+              'source' => 'moodle-course'. $this->course1->id . '-' .$assessment->get_type() . $assessment->get_id()
+                          . '-user' . $USER->id,
               'srarseq' => $type,
             ];
 

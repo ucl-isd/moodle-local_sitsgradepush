@@ -797,9 +797,10 @@ class manager {
         $data->pslcode = $assessmentmapping->periodslotcode;
         $data->reassessment = $assessmentmapping->reassessment;
         $data->source = sprintf(
-            'moodle-course%s-mapping%s-user%s',
+            'moodle-course%s-%s%s-user%s',
             $assessmentmapping->courseid,
-            $assessmentmapping->id,
+            $assessmentmapping->sourcetype,
+            $assessmentmapping->sourceid,
             $USER->id
         );
         $data->srarseq = $student['assessment']['resit_number'];
@@ -866,7 +867,12 @@ class manager {
 
         $assessmentdata = [];
         $assessmentdata['studentsnotrecognized'] = [];
-        $students = $assessment->get_all_participants();
+
+        try {
+            $students = $assessment->get_all_participants();
+        } catch (\moodle_exception $e) {
+            $students = [];
+        }
 
         // Get assessment mappings.
         $mappings = $this->get_assessment_mappings($assessment);
