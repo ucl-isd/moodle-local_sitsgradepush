@@ -59,4 +59,12 @@ $functions = [
         'readonlysession' => true,
         'loginrequired' => true,
     ],
+    'local_sitsgradepush_is_coursemodule_mapped' => [
+      'classname' => 'local_sitsgradepush\external\is_coursemodule_mapped',
+      'description' => 'Check if a course module is mapped',
+      'ajax' => true,
+      'type' => 'read',
+      'readonlysession' => true,
+      'loginrequired' => true,
+    ],
 ];

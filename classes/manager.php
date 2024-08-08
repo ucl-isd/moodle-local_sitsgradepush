@@ -1396,6 +1396,19 @@ class manager {
     }
 
     /**
+     * Check if the course module is mapped.
+     *
+     * @param int $coursemoduleid Course module id.
+     *
+     * @return bool
+     * @throws \dml_exception
+     */
+    public function is_course_module_mapped(int $coursemoduleid): bool {
+        global $DB;
+        return $DB->record_exists(self::TABLE_ASSESSMENT_MAPPING, ['sourcetype' => assessmentfactory::SOURCETYPE_MOD, 'sourceid' => $coursemoduleid]);
+    }
+
+    /**
      * Save transfer log.
      *
      * @param string $type
