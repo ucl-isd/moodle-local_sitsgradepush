@@ -140,6 +140,9 @@
     require(['jquery'], function($) {
         $('.js-btn-transfer-all-marks').on('click', function() {
             $('#js-transfer-modal-button').attr('data-sync', $(this).attr('data-sync'));
+
+            // Reset the non-submission checkbox
+            $('#recordnonsubmission').prop('checked', false);
         });
     });
 {{/js}}

@@ -4,14 +4,16 @@ import Ajax from 'core/ajax';
  * Schedule a task to push grades to SITS.
  *
  * @param {int} assessmentmappingid The assessment mapping ID.
+ * @param {boolean} recordnonsubmission Record non-submission.
  * @return {Promise} Promise.
  */
-export const schedulePushTask = async(assessmentmappingid) => {
+export const schedulePushTask = async(assessmentmappingid, recordnonsubmission = false) => {
     return new Promise((resolve, reject) => {
         Ajax.call([{
             methodname: 'local_sitsgradepush_schedule_push_task',
             args: {
                 'assessmentmappingid': assessmentmappingid,
+                'recordnonsubmission': recordnonsubmission,
             },
         }])[0].done(function(response) {
             resolve(response);

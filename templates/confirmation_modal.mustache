@@ -50,11 +50,43 @@
                     {{#str}} confirmmodal:body:partone, local_sitsgradepush {{/str}}
                 </div>
                 {{#str}} confirmmodal:body:parttwo, local_sitsgradepush {{/str}}
+                {{#recordnonsubmission}}
+                <div id="recordnonsubmission-container" class="custom-check custom-switch">
+                    <input class="custom-control-input" type="checkbox" id="recordnonsubmission">
+                    <label class="custom-control-label" for="recordnonsubmission">
+                        <strong>{{#str}} confirmmodal:nonsubmission, local_sitsgradepush {{/str}}</strong>
+                    </label>
+                </div>
+                {{/recordnonsubmission}}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">{{#str}} confirmmodal:cancel, local_sitsgradepush {{/str}}</button>
-                <button id="js-transfer-modal-button" data-assessmentmappingid="" data-sync="" type="button" class="btn btn-primary" data-dismiss="modal">{{#str}} confirmmodal:confirm, local_sitsgradepush {{/str}}</button>
+                <button id="js-transfer-modal-button" data-assessmentmappingid="" data-sync="" data-markscount="" data-nonsubmittedcount="" type="button" class="btn btn-primary" data-dismiss="modal">
+                    {{#str}} confirmmodal:confirm, local_sitsgradepush {{/str}}
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+{{#js}}
+    require(['jquery'], function($) {
+        $('#recordnonsubmission').on('change', function() {
+            // If there are marks to transfer, no need to check the record non-submission checkbox.
+            // The confirm button should be always enabled.
+            if (parseInt($('#js-transfer-modal-button').attr('data-markscount')) > 0) {
+                return;
+            }
+
+            // No marks to transfer but there are some non submitted records,
+            // then enable the confirm button when the record non-submission checkbox is checked.
+            if (parseInt($('#js-transfer-modal-button').attr('data-nonsubmittedcount')) > 0) {
+                if ($(this).is(':checked')) {
+                    $('#js-transfer-modal-button').prop('disabled', false);
+                } else {
+                    $('#js-transfer-modal-button').prop('disabled', true);
+                }
+            }
+        });
+    });
+{{/js}}
