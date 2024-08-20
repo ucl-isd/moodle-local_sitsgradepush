@@ -31,6 +31,9 @@ abstract class assessment implements iassessment {
     /** @var string Grade failed */
     const GRADE_FAIL = 'F';
 
+    /** @var string Grade absent */
+    const GRADE_ABSENT = 'AB';
+
     /** @var int Source instance id. E.g. course module id for activities, grade item id for grade items. */
     public int $id;
 
