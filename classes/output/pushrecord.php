@@ -31,6 +31,9 @@ use local_sitsgradepush\submission\submissionfactory;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class pushrecord {
+    /** @var string mark transferred as absent */
+    public string $absent;
+
     /** @var string SITS component grade */
     public string $componentgrade = '';
 
@@ -242,7 +245,6 @@ class pushrecord {
                     $errortype = $log->errortype ?: errormanager::ERROR_UNKNOWN;
                 }
 
-                // Get <MAP CODE>-<MAB SEQ> from request url.
                 // The Easikit Get Student API will remove the students whose marks had been transferred successfully.
                 // Find the assessment component <MAP CODE>-<MAB SEQ> for that transfer log,
                 // so that we can display the transfer status of mark transfer in the corresponding assessment component mapping.
@@ -253,11 +255,12 @@ class pushrecord {
 
                 if ($log->type == manager::PUSH_GRADE) {
                     // Check if marks updated after transfer.
-                    if ($response->code == '0') {
+                    if ($response->code == 0) {
                         $requestbody = json_decode($log->requestbody);
                         $this->transferredmark = $this->manager->get_formatted_marks($this->courseid, $requestbody->actual_mark);
                         $this->marksupdatedaftertransfer =
                             $this->is_marks_updated_after_transfer($this->rawmarks, $requestbody->actual_mark);
+                        $this->absent = ($requestbody->actual_grade === assessment::GRADE_ABSENT);
                     }
                     $this->lastgradepushresult = $result;
                     $this->lastgradepusherrortype = $errortype;
@@ -303,6 +306,12 @@ class pushrecord {
      * @return bool
      */
     private function is_marks_updated_after_transfer(string $rawmarks, string $transferredmarks): bool {
+        // Return false if the raw marks is not numeric.
+        // For example, the raw marks is '-' when no mark is given.
+        if (!is_numeric($rawmarks)) {
+            return false;
+        }
+
         // As some of the marks were not transferred in raw marks, e.g. 66.67 instead of 66.66666
         // so need to format the raw marks to the same decimal places as the transferred marks for comparison.
         // Future marks transfer will be all in 5 decimal places as raw marks is stored in 5 decimal places.

@@ -1226,7 +1226,7 @@ final class manager_test extends \advanced_testcase {
             $this->setUser($this->teacher1);
 
             // Set the component grade as pushed.
-            taskmanager::schedule_push_task($this->mappingid1);
+            taskmanager::schedule_push_task($this->mappingid1, ['recordnonsubmission' => false]);
 
             // Test the component grade can not change source once it has been pushed.
             $this->assertFalse($this->manager->can_change_source($this->mab1->id, $type));

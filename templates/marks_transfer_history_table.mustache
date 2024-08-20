@@ -84,11 +84,15 @@
         <tr>
             <th scope="row">{{firstname}} {{lastname}}</th>
             <td>{{idnumber}}</td>
-            <td>{{^marksupdatedaftertransfer}}{{marks}}{{/marksupdatedaftertransfer}}
-            {{#marksupdatedaftertransfer}}
-                {{transferredmark}}<br>
-                <span class="badge badge-danger">{{#str}} index:mark_changed_to, local_sitsgradepush, {{marks}} {{/str}}</span>
-            {{/marksupdatedaftertransfer}}
+            <td>
+                {{#absent}}
+                    <span class="badge badge-warning">{{#str}} index:absent, local_sitsgradepush {{/str}}</span>
+                {{/absent}}
+                {{^marksupdatedaftertransfer}}{{marks}}{{/marksupdatedaftertransfer}}
+                {{#marksupdatedaftertransfer}}
+                    {{transferredmark}}<br>
+                    <span class="badge badge-danger">{{#str}} index:mark_changed_to, local_sitsgradepush, {{marks}} {{/str}}</span>
+                {{/marksupdatedaftertransfer}}
             </td>
             <td>{{handindatetime}}</td>
             <td>{{{lastgradepushresultlabel}}}{{lastgradepushtimestring}}</td>

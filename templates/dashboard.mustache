@@ -206,7 +206,7 @@
                                         </a>
                                     </p>
                                     {{#currentacademicyear}}
-                                        <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}d-none{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
+                                        <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks" data-toggle="modal" data-target="#transferModal">
                                             <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
                                             <span class="sr-only">for {{mabseq}} {{mabname}}</span>
                                         </button>
@@ -252,14 +252,37 @@
 
 {{#js}}
     require(['jquery'], function($) {
+        // Transfer marks button
         $('.js-btn-transfer-marks').on('click', function() {
             let mappingid = $(this).closest('.marks-col-field').attr('data-assessmentmappingid');
             $('#js-transfer-modal-button').attr('data-assessmentmappingid', mappingid);
+
+            let markscount = $(this).closest('.marks-col-field').attr('data-markscount');
+            $('#js-transfer-modal-button').attr('data-markscount', markscount);
+
+            if (markscount > 0) {
+                $('#js-transfer-modal-button').prop('disabled', false);
+            } else {
+                $('#js-transfer-modal-button').prop('disabled', true);
+            }
+
+            // Show the non-submission checkbox for single mark transfer
+            $('#recordnonsubmission-container').removeClass('d-none');
+
+            // Reset the non-submission checkbox
+            $('#recordnonsubmission').prop('checked', false);
         });
 
+        // Transfer all marks button
         $('.js-btn-transfer-all-marks').on('click', function() {
             let mappingid = $(this).attr('data-assessmentmappingid');
             $('#js-transfer-modal-button').attr('data-assessmentmappingid', mappingid);
+
+            // Enable the transfer button
+            $('#js-transfer-modal-button').prop('disabled', false);
+
+            // Remove the non-submission checkbox
+            $('#recordnonsubmission-container').addClass('d-none');
         });
     });
 {{/js}}

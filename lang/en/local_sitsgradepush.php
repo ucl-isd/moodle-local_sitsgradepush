@@ -37,6 +37,7 @@ $string['confirmmodal:body:parttwo'] = '
 <p>You will receive an email once the task has completed, and can check the marks transfer status page for progress.</p>';
 $string['confirmmodal:cancel'] = 'Cancel';
 $string['confirmmodal:confirm'] = 'Confirm';
+$string['confirmmodal:nonsubmission'] = 'Record non-submission as 0 AB - only use when certain all submissions are in';
 $string['confirmmodal:header'] = 'Confirm mark transfer?';
 $string['confirmmodal:warning'] = 'Warning';
 $string['dashboard:academicyear'] = 'ACADEMIC YEAR: {$a}';
@@ -127,6 +128,7 @@ $string['form:alert_no_mab_found'] = 'No assessment components found';
 $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Marks Transfer.';
 $string['gradepushassessmentselect'] = 'Select SITS assessment';
 $string['gradepushassessmentselect_help'] = 'Select SITS assessment to link to this activity.';
+$string['index:absent'] = 'AB';
 $string['index:grade'] = 'Mark';
 $string['index:header'] = 'SITS Marks Transfer Status';
 $string['index:lastmarktransfer'] = 'Mark Transferred';

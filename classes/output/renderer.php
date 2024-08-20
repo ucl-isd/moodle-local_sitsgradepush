@@ -249,6 +249,7 @@ class renderer extends plugin_renderer_base {
                 'jump-to-label' => get_string('label:jumpto', 'local_sitsgradepush'),
                 'transfer-all-button-label' => get_string('label:pushall', 'local_sitsgradepush'),
                 'gradesneedregrading' => grade_needs_regrade_final_grades($courseid),
+                'recordnonsubmission' => true, // Show the record non-submission as 0 AB checkbox.
             ]
         );
     }

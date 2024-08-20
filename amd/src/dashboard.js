@@ -81,12 +81,16 @@ function initConfirmationModal(page) {
     // Add event listener to the confirmation modal.
     confirmTransferButton.addEventListener("click", async function() {
         let assessmentmappingid = confirmTransferButton.getAttribute('data-assessmentmappingid');
+
+        // Check should we record non-submission as 0 AB.
+        let recordnonsubmission = document.getElementById('recordnonsubmission').checked;
+
         if (assessmentmappingid !== null && assessmentmappingid !== 'all') {
             // Single transfer.
-            await pushMarks(assessmentmappingid);
+            await pushMarks(assessmentmappingid, recordnonsubmission);
         } else if (assessmentmappingid === 'all') {
             // Bulk transfer.
-            await pushAllMarks(page);
+            await pushAllMarks(page, recordnonsubmission);
         }
     });
 }
@@ -121,12 +125,13 @@ function initAssessmentUpdate(courseid) {
  * Schedule a push task when the user clicks on a push button.
  *
  * @param {int} assessmentmappingid The button element.
+ * @param {boolean} recordnonsubmission Record non-submission as 0 AB.
  * @return {Promise|boolean} Promise.
  */
-async function pushMarks(assessmentmappingid) {
+async function pushMarks(assessmentmappingid, recordnonsubmission = false) {
     try {
         // Schedule a push task.
-        let result = await schedulePushTask(assessmentmappingid);
+        let result = await schedulePushTask(assessmentmappingid, recordnonsubmission);
 
         // Check if the push task is successfully scheduled.
         if (result.success) {
@@ -268,14 +273,6 @@ function updateMarksColumn(assessments) {
 
             // Update the marks count.
             marksCountElement.innerHTML = assessment.markscount;
-
-            // Show the transfer button if there are marks to transfer.
-            let transferButton = marksColumnField.querySelector('.js-btn-transfer-marks');
-            if (assessment.markscount > 0) {
-                transferButton.classList.remove('d-none');
-            } else {
-                transferButton.classList.add('d-none');
-            }
 
             // Show marks information if no task running.
             if (assessment.task === null) {

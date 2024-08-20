@@ -663,13 +663,16 @@ class manager {
      *
      * @param \stdClass $assessmentmapping
      * @param int $userid
-     * @param int|null $taskid
+     * @param \stdClass|null $task
      * @return bool
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid, ?int $taskid = null): bool {
+    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid, ?\stdClass $task = null): bool {
         try {
+            // Get task id.
+            $taskid = (!empty($task)) ? $task->id : null;
+
             // Check if last push was succeeded, exit if succeeded.
             if ($this->last_push_succeeded($assessmentmapping->id, $userid, self::PUSH_GRADE)) {
                 return false;
@@ -681,10 +684,26 @@ class manager {
             // Get grade.
             [$rawmarks, $equivalentgrade] = $assessmentmapping->source->get_user_grade($userid);
 
+            // Transfer marks through task, check task options.
+            if ($task && !empty($task->options)) {
+                $options = json_decode($task->options);
+                if ($options->recordnonsubmission) {
+                    // Get submission.
+                    $submission = submissionfactory::get_submission($assessmentmapping->source->get_coursemodule_id(), $userid);
+                    // If no submission and no marks found, set rawmarks to 0 and equivalent grade to absent
+                    // with record non submission option on.
+                    if (empty($rawmarks) && !$submission->get_submission_data()) {
+                        $rawmarks = 0;
+                        $equivalentgrade = assessment::GRADE_ABSENT;
+                    }
+                }
+            }
             // Push if grade is found.
-            if ($rawmarks) {
+            if (is_numeric($rawmarks) && $rawmarks >= 0) {
                 $data->marks = $rawmarks;
                 $data->grade = $equivalentgrade ?? '';
+
+                error_log("Pushing grade to SITS: " . var_export($data, true));
 
                 $request = $this->apiclient->build_request(self::PUSH_GRADE, $data);
                 if (defined('BEHAT_SITE_RUNNING')) {
