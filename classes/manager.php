@@ -660,13 +660,16 @@ class manager {
      *
      * @param \stdClass $assessmentmapping
      * @param int $userid
-     * @param int|null $taskid
+     * @param \stdClass|null $task
      * @return bool
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid, ?int $taskid = null): bool {
+    public function push_grade_to_sits(\stdClass $assessmentmapping, int $userid, ?\stdClass $task = null): bool {
         try {
+            // Get task id.
+            $taskid = (!empty($task)) ? $task->id : null;
+
             // Check if last push was succeeded, exit if succeeded.
             if ($this->last_push_succeeded($assessmentmapping->id, $userid, self::PUSH_GRADE)) {
                 return false;
@@ -678,8 +681,27 @@ class manager {
             // Get grade.
             [$rawmarks, $equivalentgrade] = $assessmentmapping->source->get_user_grade($userid);
 
+            // Transfer marks through task, check task options.
+            if ($task && !empty($task->options)) {
+                $options = json_decode($task->options);
+                // Records non-submission.
+                if ($options->recordnonsubmission) {
+                    // Get submission if the source is of type MOD, no submission for other types
+                    // such as manual grade and category.
+                    if ($assessmentmapping->source->get_type() == assessmentfactory::SOURCETYPE_MOD) {
+                        $submission = submissionfactory::get_submission($assessmentmapping->source->get_coursemodule_id(), $userid);
+                    }
+
+                    // If no submission and no marks found, set rawmarks to 0 and equivalent grade to absent.
+                    if (empty($rawmarks) && (!isset($submission) || !$submission->get_submission_data())) {
+                        $rawmarks = 0;
+                        $equivalentgrade = assessment::GRADE_ABSENT;
+                    }
+                }
+            }
+
             // Push if grade is found.
-            if ($rawmarks) {
+            if (is_numeric($rawmarks) && $rawmarks >= 0) {
                 $data->marks = $rawmarks;
                 $data->grade = $equivalentgrade ?? '';
 
@@ -909,11 +931,13 @@ class manager {
         // Fetch students from SITS.
         foreach ($mappings as $mapping) {
             $mabkey = $mapping->mapcode . '-' . $mapping->mabseq;
-            $studentsfromsits[$mabkey] =
-                array_column($this->get_students_from_sits($mapping), null, 'code');
-            $assessmentdata['mappings'][$mabkey] = $mapping;
-            $assessmentdata['mappings'][$mabkey]->markscount = 0;
-            $assessmentdata['mappings'][$mabkey]->source = $assessment;
+            $studentsfromsits[$mabkey] = array_column($this->get_students_from_sits($mapping), null, 'code');
+
+            // Add additional properties to the $mapping object.
+            $mapping->markscount = 0;
+            $mapping->nonsubmittedcount = 0;
+            $mapping->source = $assessment;
+            $mapping->students = [];
 
             // Students here is all the participants in that assessment.
             foreach ($students as $key => $student) {
@@ -922,13 +946,18 @@ class manager {
                 // are in the studentsfromsits array and valid to the mapping type, e.g. main or re-assessment.
                 $validrecord = $studentrecord->check_record_from_sits($mapping, $studentsfromsits[$mabkey]);
                 if ($studentrecord->componentgrade == $mabkey || $validrecord) {
-                    $assessmentdata['mappings'][$mabkey]->students[] = $studentrecord;
+                    $mapping->students[] = $studentrecord;
                     if ($studentrecord->should_transfer_mark()) {
-                        $assessmentdata['mappings'][$mabkey]->markscount++;
+                        $mapping->markscount++;
+                    }
+                    if ($studentrecord->is_non_submitted()) {
+                        $mapping->nonsubmittedcount++;
                     }
                     unset($students[$key]);
                 }
             }
+
+            $assessmentdata['mappings'][$mabkey] = $mapping;
         }
 
         // Remaining students are not valid for pushing.
@@ -1268,6 +1297,7 @@ class manager {
             $result->sourcetype = $sourcetype;
             $result->sourceid = $sourceid;
             $result->markscount = $assessmentdata->markscount;
+            $result->nonsubmittedcount = $assessmentdata->nonsubmittedcount;
             $result->task = !empty($task) ? $task : null;
             $result->lasttransfertime = taskmanager::get_last_push_task_time($mapping->id);
             $results[] = $result;

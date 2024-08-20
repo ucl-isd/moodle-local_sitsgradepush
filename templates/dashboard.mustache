@@ -193,6 +193,7 @@
                                     class="marks-col-field"
                                     data-assessmentmappingid="{{id}}"
                                     data-markscount="{{markstotransfer}}"
+                                    data-nonsubmittedcount="{{nonsubmittedcount}}"
                                     data-task-running="{{taskrunning}}"
                             >
                                 <div class="marks-container {{#taskrunning}}d-none{{/taskrunning}}">
@@ -206,7 +207,7 @@
                                         </a>
                                     </p>
                                     {{#currentacademicyear}}
-                                        <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}d-none{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
+                                        <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}{{^nonsubmittedcount}}d-none{{/nonsubmittedcount}}{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
                                             <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
                                             <span class="sr-only">for {{mabseq}} {{mabname}}</span>
                                         </button>
@@ -252,14 +253,41 @@
 
 {{#js}}
     require(['jquery'], function($) {
+        // Transfer marks button
         $('.js-btn-transfer-marks').on('click', function() {
             let mappingid = $(this).closest('.marks-col-field').attr('data-assessmentmappingid');
             $('#js-transfer-modal-button').attr('data-assessmentmappingid', mappingid);
+
+            // Get the marks count.
+            let markscount = $(this).closest('.marks-col-field').attr('data-markscount');
+            $('#js-transfer-modal-button').attr('data-markscount', markscount);
+
+            // Get the non-submitted count.
+            let nonsubmittedcount = $(this).closest('.marks-col-field').attr('data-nonsubmittedcount');
+            $('#js-transfer-modal-button').attr('data-nonsubmittedcount', nonsubmittedcount);
+
+            if (markscount > 0) {
+                // There are marks to transfer, enable the confirm button.
+                $('#js-transfer-modal-button').prop('disabled', false);
+            } else if (markscount == 0 && nonsubmittedcount > 0) {
+                // No marks to transfer but there are some non submitted records, disable the confirm button by default.
+                $('#js-transfer-modal-button').prop('disabled', true);
+            }
+
+            // Reset the non-submission checkbox every time the modal is opened.
+            $('#recordnonsubmission').prop('checked', false);
         });
 
+        // Transfer all marks button
         $('.js-btn-transfer-all-marks').on('click', function() {
             let mappingid = $(this).attr('data-assessmentmappingid');
             $('#js-transfer-modal-button').attr('data-assessmentmappingid', mappingid);
+
+            // Enable the confirm button
+            $('#js-transfer-modal-button').prop('disabled', false);
+
+            // Reset the non-submission checkbox every time the modal is opened.
+            $('#recordnonsubmission').prop('checked', false);
         });
     });
 {{/js}}

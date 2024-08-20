@@ -39,6 +39,7 @@ class schedule_push_task extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters([
             'assessmentmappingid' => new external_value(PARAM_INT, 'Assessment mapping ID', VALUE_REQUIRED),
+            'recordnonsubmission' => new external_value(PARAM_BOOL, 'Record non-submission as 0 AB', VALUE_REQUIRED),
         ]);
     }
 
@@ -58,17 +59,26 @@ class schedule_push_task extends external_api {
     /**
      * Schedule a push task.
      *
-     * @param int $assessmentmappingid
+     * @param int $assessmentmappingid Assessment mapping ID.
+     * @param bool $recordnonsubmission Record non-submission as 0 AB.
      * @return array
      */
-    public static function execute(int $assessmentmappingid) {
+    public static function execute(int $assessmentmappingid, bool $recordnonsubmission) {
         try {
             $params = self::validate_parameters(
                 self::execute_parameters(),
-                ['assessmentmappingid' => $assessmentmappingid]
+                [
+                  'assessmentmappingid' => $assessmentmappingid,
+                  'recordnonsubmission' => $recordnonsubmission,
+                ]
             );
 
-            taskmanager::schedule_push_task($params['assessmentmappingid']);
+            // Add task options.
+            $options = [
+                'recordnonsubmission' => $params['recordnonsubmission'],
+            ];
+
+            taskmanager::schedule_push_task($params['assessmentmappingid'], $options);
 
             return [
                 'success' => true,
