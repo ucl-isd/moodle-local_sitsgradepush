@@ -675,7 +675,7 @@ class manager {
             $data = $this->get_required_data_for_pushing($assessmentmapping, $userid);
 
             // Get grade.
-            list($rawmarks, $equivalentgrade) = $assessmentmapping->source->get_user_grade($userid);
+            [$rawmarks, $equivalentgrade] = $assessmentmapping->source->get_user_grade($userid);
 
             // Push if grade is found.
             if ($rawmarks) {
@@ -851,6 +851,24 @@ class manager {
     }
 
     /**
+     * Get component grade details for a given assessment mapping ID.
+     *
+     * @param int $id Assessment mapping ID.
+     *
+     * @return false|mixed
+     * @throws \dml_exception
+     */
+    public function get_mab_by_mapping_id(int $id): mixed {
+        global $DB;
+        $sql = "SELECT cg.*
+                FROM {" . self::TABLE_COMPONENT_GRADE . "} cg
+                JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am ON cg.id = am.componentgradeid
+                WHERE am.id = :id";
+
+        return $DB->get_record_sql($sql, ['id' => $id]);
+    }
+
+    /**
      * Get the assessment data.
      *
      * @param string $sourcetype
@@ -891,7 +909,7 @@ class manager {
         foreach ($mappings as $mapping) {
             $mabkey = $mapping->mapcode . '-' . $mapping->mabseq;
             $studentsfromsits[$mabkey] =
-                array_column($this->get_students_from_sits($mapping), 'code');
+                array_column($this->get_students_from_sits($mapping), null, 'code');
             $assessmentdata['mappings'][$mabkey] = $mapping;
             $assessmentdata['mappings'][$mabkey]->markscount = 0;
             $assessmentdata['mappings'][$mabkey]->source = $assessment;
@@ -900,11 +918,11 @@ class manager {
             foreach ($students as $key => $student) {
                 $studentrecord = new pushrecord($student, $assessment, $mapping);
                 // Add participants who have push records of this mapping or
-                // are in the studentsfromsits array to the mapping's students array.
-                if ($studentrecord->componentgrade == $mabkey || in_array($studentrecord->idnumber, $studentsfromsits[$mabkey])) {
+                // are in the studentsfromsits array and valid to the mapping type, e.g. main or re-assessment.
+                $validrecord = $studentrecord->check_record_from_sits($mapping, $studentsfromsits[$mabkey]);
+                if ($studentrecord->componentgrade == $mabkey || $validrecord) {
                     $assessmentdata['mappings'][$mabkey]->students[] = $studentrecord;
-                    if ($studentrecord->marks != '-' &&
-                        !($studentrecord->isgradepushed && $studentrecord->lastgradepushresult === 'success')) {
+                    if ($studentrecord->should_transfer_mark()) {
                         $assessmentdata['mappings'][$mabkey]->markscount++;
                     }
                     unset($students[$key]);
