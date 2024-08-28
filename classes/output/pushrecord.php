@@ -145,6 +145,34 @@ class pushrecord {
     }
 
     /**
+     * Check if the student record from SITS matches the mapping type, e.g. main or reassessment.
+     *
+     * @param \stdClass $mapping Current assessment mapping
+     * @param array $students Student records from SITS
+     * @return bool
+     */
+    public function check_record_from_sits(\stdClass $mapping, array $students): bool {
+        // Check if this student exists in the student records from SITS.
+        if (!array_key_exists($this->idnumber, $students)) {
+            return false;
+        }
+        if ($mapping->reassessment == 1) {
+            return $students[$this->idnumber]['assessment']['resit_number'] > 0;
+        } else {
+            return $students[$this->idnumber]['assessment']['resit_number'] == 0;
+        }
+    }
+
+    /**
+     * Should transfer mark for this student or not.
+     *
+     * @return bool
+     */
+    public function should_transfer_mark(): bool {
+        return $this->marks != '-' && !($this->isgradepushed && $this->lastgradepushresult === 'success');
+    }
+
+    /**
      * Set grade.
      *
      * @param assessment $assessment
@@ -152,7 +180,7 @@ class pushrecord {
      * @return void
      */
     protected function set_grade(assessment $assessment, int $studentid): void {
-        list($rawmarks, $equivalentgrade, $formattedmarks) = $assessment->get_user_grade($studentid);
+        [$rawmarks, $equivalentgrade, $formattedmarks] = $assessment->get_user_grade($studentid);
         $this->rawmarks = $rawmarks ?? '-';
         $this->equivalentgrade = $equivalentgrade ?? '-';
         $this->marks = $formattedmarks ?? '-';
@@ -216,11 +244,13 @@ class pushrecord {
 
                 // Get <MAP CODE>-<MAB SEQ> from request url.
                 // The Easikit Get Student API will remove the students whose marks had been transferred successfully.
-                // Here we use the request url of a successful transfer log to get the assessment component <MAP CODE>-<MAB SEQ>,
+                // Find the assessment component <MAP CODE>-<MAB SEQ> for that transfer log,
                 // so that we can display the transfer status of mark transfer in the corresponding assessment component mapping.
-                if (!empty($log->request) && preg_match('#moodle/(.*?)/student#', $log->request, $matches)) {
-                    $this->componentgrade = $matches[1];
+                $mab = $this->manager->get_mab_by_mapping_id($assessmentmappingid);
+                if (!empty($mab)) {
+                    $this->componentgrade = $mab->mapcode . '-' . $mab->mabseq;
                 }
+
                 if ($log->type == manager::PUSH_GRADE) {
                     // Check if marks updated after transfer.
                     if ($response->code == '0') {
