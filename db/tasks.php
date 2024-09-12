@@ -35,4 +35,13 @@ $tasks = [
         'month' => '*',
         'dayofweek' => '*',
     ],
+    [
+      'classname' => 'local_sitsgradepush\task\assesstypetask',
+      'blocking' => 0,
+      'minute' => 0,
+      'hour' => '*',
+      'day' => '*',
+      'month' => '*',
+      'dayofweek' => '*',
+    ],
 ];

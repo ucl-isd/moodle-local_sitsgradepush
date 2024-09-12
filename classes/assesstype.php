@@ -30,6 +30,12 @@ use local_sitsgradepush\assessment\assessmentfactory;
  */
 class assesstype {
 
+    /** @var string Action lock */
+    const ACTION_LOCK = 'lock';
+
+    /** @var string Action unlock */
+    const ACTION_UNLOCK = 'unlock';
+
     /**
      * Update assessment type and lock status.
      *
@@ -69,9 +75,9 @@ class assesstype {
             }
 
             // Set assessment type and lock status.
-            if ($action === 'lock') {
+            if ($action === self::ACTION_LOCK) {
                 assess_type::update_type($mapping->courseid, assess_type::ASSESS_TYPE_SUMMATIVE, $cmid, $gradeitemid, 1);
-            } else if ($action === 'unlock') {
+            } else if ($action === self::ACTION_UNLOCK) {
                 assess_type::update_type($mapping->courseid, assess_type::ASSESS_TYPE_SUMMATIVE, $cmid, $gradeitemid, 0);
             }
         } catch (\Exception $e) {
