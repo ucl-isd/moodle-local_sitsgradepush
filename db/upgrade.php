@@ -24,6 +24,8 @@
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 
+use local_sitsgradepush\assesstype;
+
 /**
  * Execute local_sitsgradepush upgrade from the given old version.
  *
@@ -496,6 +498,25 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
 
         // Sitsgradepush savepoint reached.
         upgrade_plugin_savepoint(true, 2024072300, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2024091200) {
+        global $DB;
+
+        // Add assessment type records for all previously mapped assessments if assessment type plugin is installed.
+        if (assesstype::is_assess_type_installed()) {
+            $mappings = $DB->get_records('local_sitsgradepush_mapping');
+
+            // Add assessment type records for all previously mapped assessments.
+            if (!empty($mappings)) {
+                foreach ($mappings as $mapping) {
+                    assesstype::update_assess_type($mapping, assesstype::ACTION_LOCK);
+                }
+            }
+
+            // Sitsgradepush savepoint reached.
+            upgrade_plugin_savepoint(true, 2024091200, 'local', 'sitsgradepush');
+        }
     }
 
     return true;

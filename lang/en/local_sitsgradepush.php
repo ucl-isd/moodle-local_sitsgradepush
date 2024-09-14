@@ -212,6 +212,7 @@ $string['sitsgradepush:showsubmissionlogcolumn'] = 'Show Submission Log column';
 $string['subplugintype_sitsapiclient'] = 'API client used for data integration.';
 $string['subplugintype_sitsapiclient_plural'] = 'API clients used for data integration.';
 $string['task:adhoctask'] = 'Adhoc Task';
+$string['task:assesstype:name'] = 'Insert Assessment Type for Pre-mapped Assessments';
 $string['task:pushtask:name'] = 'Schedule Transfer Task';
 $string['task:requested:success'] = 'Transfer task requested successfully';
 $string['task:status:completed'] = 'completed';

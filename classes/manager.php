@@ -331,7 +331,7 @@ class manager {
                 foreach ($records as $record) {
                     $record->unavailablereasons = '';
                     // Check if the component grade is valid for mapping.
-                    list($valid, $unavailablereasons) = $this->is_component_grade_valid_for_mapping($record);
+                    [$valid, $unavailablereasons] = $this->is_component_grade_valid_for_mapping($record);
                     $record->available = $valid;
                     if (!$valid) {
                         $record->unavailablereasons = implode('<br>', $unavailablereasons);
@@ -473,10 +473,11 @@ class manager {
           $data->reassessment
         );
 
-        if ($mapping = $this->is_component_grade_mapped($data->componentgradeid, $data->reassessment)) {
+        if ($existingmapping = $this->is_component_grade_mapped($data->componentgradeid, $data->reassessment)) {
             // Checked in the above validation, the current mapping to this component grade
             // can be deleted as it does not have push records nor mapped to the current activity.
-            $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mapping->id]);
+            $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $existingmapping->id]);
+            assesstype::update_assess_type($existingmapping, 'unlock');
         }
 
         // Insert new mapping.
@@ -492,7 +493,10 @@ class manager {
         $record->timecreated = time();
         $record->timemodified = time();
 
-        return $DB->insert_record(self::TABLE_ASSESSMENT_MAPPING, $record);
+        $newmappingid = $DB->insert_record(self::TABLE_ASSESSMENT_MAPPING, $record);
+        assesstype::update_assess_type($newmappingid, 'lock');
+
+        return $newmappingid;
     }
 
     /**
@@ -1323,7 +1327,7 @@ class manager {
     public function get_gradebook_assessments(int $courseid): array {
         global $DB;
 
-        list($insql, $params) = $DB->get_in_or_equal(['category', 'manual'], SQL_PARAMS_NAMED);
+        [$insql, $params] = $DB->get_in_or_equal(['category', 'manual'], SQL_PARAMS_NAMED);
         $params = array_merge(
             $params,
             [
