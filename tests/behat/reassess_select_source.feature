@@ -14,7 +14,7 @@ Feature: Map Moodle source to SITS assessment component for re-assessment
       | student2 | Student2  | Test     | 23456782 | student2@example.com |
       | student3 | Student3  | Test     | 23456783 | student3@example.com |
       | teacher1 | Teacher1  | Test     | tea1     | teacher1@example.com |
-    And the following custom field exists:
+    And the following custom field exists for grade push:
       | category  | CLC |
       | shortname | course_year |
       | name      | Course Year |
