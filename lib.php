@@ -45,7 +45,7 @@ function local_sitsgradepush_extend_settings_navigation(settings_navigation $set
     }
 
     // Must be one of the allowed activities.
-    if (!in_array($cm->modname, manager::ALLOWED_ACTIVITIES)) {
+    if (!in_array($cm->modname, manager::allowed_activities())) {
         return null;
     }
 
