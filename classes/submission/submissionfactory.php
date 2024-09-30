@@ -41,18 +41,18 @@ class submissionfactory {
 
         // Throw exception if the course module is not found.
         if (empty($coursemodule)) {
-            throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $coursemoduleid);
+            throw new \moodle_exception(
+                'error:coursemodulenotfound', 'local_sitsgradepush', '', null, "ID $coursemoduleid"
+            );
         }
 
-        switch ($coursemodule->modname) {
-            case 'quiz':
-                return new quiz($coursemodule, $userid);
-            case 'assign':
-                return new assign($coursemodule, $userid);
-            case 'turnitintooltwo':
-                return new turnitintooltwo($coursemodule, $userid);
-            default:
-                throw new \moodle_exception('Mod name '. $coursemodule->modulename .' not found.');
+        $classname = "\\local_sitsgradepush\\submission\\$coursemodule->modname";
+        if (class_exists($classname)) {
+            return new $classname($coursemodule, $userid);
         }
+        throw new \moodle_exception(
+            'error:coursemodulenotfound', 'local_sitsgradepush', '', null,
+            'Mod name '. $coursemodule->modulename .' not found.'
+        );
     }
 }

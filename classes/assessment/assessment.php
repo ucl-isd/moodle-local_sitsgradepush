@@ -223,4 +223,12 @@ abstract class assessment implements iassessment {
         }
         return $equivalentgrade;
     }
+
+    /**
+     * Get all participants for the assessment.
+     *
+     * @return array
+     */
+    abstract public function get_all_participants(): array;
+
 }

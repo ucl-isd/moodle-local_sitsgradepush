@@ -91,9 +91,6 @@ class manager {
         'mkscode' => 'MKS_CODE',
     ];
 
-    /** @var string[] Allowed activity types */
-    const ALLOWED_ACTIVITIES = ['assign', 'quiz', 'turnitintooltwo'];
-
     /** @var string Existing activity */
     const SOURCE_EXISTING_ACTIVITY = 'existing';
 
@@ -414,7 +411,7 @@ class manager {
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function save_component_grades(array $componentgrades) {
+    public function save_component_grades(array $componentgrades): void {
         global $DB;
 
         if (!empty($componentgrades)) {
@@ -1218,7 +1215,7 @@ class manager {
      */
     public function get_all_course_activities(int $courseid): array {
         $activities = [];
-        foreach (self::ALLOWED_ACTIVITIES as $modname) {
+        foreach (self::allowed_activities() as $modname) {
             // Skip if the activity is not installed.
             if (!array_key_exists($modname, core_component::get_plugin_list('mod'))) {
                 continue;
@@ -1535,5 +1532,16 @@ class manager {
 
         // Add failed transfer log.
         $this->save_transfer_log($requestidentifier, $assessmentmappingid, $userid, null, $response, $taskid, intval($errorlogid));
+    }
+
+    /**
+     * Get a list of the allowed course modules for grade push.
+     * @return string[] e.g. ['assign', 'quiz', 'turnitintooltwo']
+     */
+    public static function allowed_activities(): array {
+        $mods = \core\plugininfo\mod::get_enabled_plugins();
+        return array_values(array_filter($mods, function($mod): bool {
+            return class_exists("\\local_sitsgradepush\\assessment\\$mod");
+        }));
     }
 }
