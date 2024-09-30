@@ -519,5 +519,20 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         }
     }
 
+    if ($oldversion < 2024101100) {
+
+        // Define field enableextension to be added to local_sitsgradepush_mapping.
+        $table = new xmldb_table('local_sitsgradepush_mapping');
+        $field = new xmldb_field('enableextension', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'reassessmentseq');
+
+        // Conditionally launch add field enableextension.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024101100, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
