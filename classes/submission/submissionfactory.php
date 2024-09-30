@@ -52,7 +52,7 @@ class submissionfactory {
         }
         throw new \moodle_exception(
             'error:coursemodulenotfound', 'local_sitsgradepush', '', null,
-            'Mod name '. $coursemodule->modulename .' not found.'
+            'Mod name '. $coursemodule->modname .' not found.'
         );
     }
 }
