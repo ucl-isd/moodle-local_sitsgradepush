@@ -171,6 +171,24 @@ class tests_data_provider {
     }
 
     /**
+     * Get the EC event data.
+     *
+     * @return string
+     */
+    public static function get_ec_event_data(): string {
+        return file_get_contents(__DIR__ . "/ec_event_data.json");
+    }
+
+    /**
+     * Get the SORA event data.
+     *
+     * @return string
+     */
+    public static function get_sora_event_data(): string {
+        return file_get_contents(__DIR__ . "/sora_event_data.json");
+    }
+
+    /**
      * Set a protected property.
      *
      * @param  object|string  $obj
