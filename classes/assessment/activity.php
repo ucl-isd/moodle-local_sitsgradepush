@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\assessment;
 
+use core\context\module;
 use grade_item;
 use local_sitsgradepush\manager;
 
@@ -32,6 +33,9 @@ abstract class activity extends assessment {
     /** @var \stdClass Course module object */
     public \stdClass $coursemodule;
 
+    /** @var module Context module */
+    protected module $context;
+
     /**
      * Constructor.
      *
@@ -39,6 +43,7 @@ abstract class activity extends assessment {
      */
     public function __construct(\stdClass $coursemodule) {
         $this->coursemodule = $coursemodule;
+        $this->context = \context_module::instance($coursemodule->id);
         parent::__construct(assessmentfactory::SOURCETYPE_MOD, $coursemodule->id);
     }
 
@@ -101,6 +106,15 @@ abstract class activity extends assessment {
      */
     public function get_module_name(): string {
         return $this->coursemodule->modname;
+    }
+
+    /**
+     * Get the module context.
+     *
+     * @return module
+     */
+    public function get_module_context(): module {
+        return $this->context;
     }
 
     /**

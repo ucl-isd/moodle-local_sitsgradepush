@@ -16,6 +16,10 @@
 
 namespace local_sitsgradepush\assessment;
 
+use local_sitsgradepush\extension\ec;
+use local_sitsgradepush\extension\sora;
+use mod_quiz\local\override_manager;
+
 /**
  * Class for assessment quiz.
  *
@@ -25,14 +29,24 @@ namespace local_sitsgradepush\assessment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class quiz extends activity {
+
+    /**
+     * Is the user a participant in the quiz.
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public function is_user_a_participant(int $userid): bool {
+        return is_enrolled($this->get_module_context(), $userid, 'mod/quiz:attempt');
+    }
+
     /**
      * Get all participants.
      *
      * @return array
      */
     public function get_all_participants(): array {
-        $context = \context_module::instance($this->coursemodule->id);
-        return get_enrolled_users($context, 'mod/quiz:attempt');
+        return get_enrolled_users($this->get_module_context(), 'mod/quiz:attempt');
     }
 
     /**
@@ -51,5 +65,86 @@ class quiz extends activity {
      */
     public function get_end_date(): ?int {
         return $this->get_source_instance()->timeclose;
+    }
+
+    /**
+     * Apply EC extension to the quiz.
+     *
+     * @param ec $ec EC extension object.
+     * @return void
+     */
+    protected function apply_ec_extension(ec $ec): void {
+        // EC is using a new deadline without time. Extract the time part from the original deadline.
+        $time = date('H:i:s', $this->get_end_date());
+
+        // Get the new date and time.
+        $newduedate = strtotime($ec->get_new_deadline() . ' ' . $time);
+
+        // Save the override.
+        $this->get_override_manager()->save_override(['userid' => $ec->get_userid(), 'timeclose' => $newduedate]);
+    }
+
+    /**
+     * Apply SORA extension to the quiz.
+     *
+     * @param sora $sora SORA extension object.
+     * @return void
+     * @throws \moodle_exception
+     */
+    protected function apply_sora_extension(sora $sora): void {
+        global $DB;
+
+        // Get extra time from SORA.
+        $timeextension = $sora->get_time_extension();
+
+        // Calculate the new time limit.
+        $originaltimelimit = $this->get_source_instance()->timelimit;
+        $newtimelimit = $originaltimelimit + (($originaltimelimit / HOURSECS) * $timeextension);
+
+        // Get the group id.
+        $groupid = $sora->get_sora_group_id($this->get_course_id(), $sora->get_userid());
+
+        if (!$groupid) {
+            throw new \moodle_exception('error:cannotgetsoragroupid', 'local_sitsgradepush');
+        }
+
+        $overridedata = [
+            'quiz' => $this->get_source_instance()->id,
+            'groupid' => $groupid,
+            'timelimit' => round($newtimelimit),
+        ];
+
+        // Get the override record if it exists.
+        $override = $DB->get_record(
+            'quiz_overrides',
+            [
+                'quiz' => $this->get_source_instance()->id,
+                'groupid' => $groupid,
+                'userid' => null,
+            ]
+        );
+
+        if ($override) {
+            $overridedata['id'] = $override->id;
+        }
+
+        // Save the override.
+        $this->get_override_manager()->save_override($overridedata);
+    }
+
+    /**
+     * Get the quiz override manager.
+     *
+     * @return override_manager
+     * @throws \coding_exception
+     */
+    private function get_override_manager(): override_manager {
+        $quiz = $this->get_source_instance();
+        $quiz->cmid = $this->get_coursemodule_id();
+
+        return new override_manager(
+            $quiz,
+            $this->get_module_context()
+        );
     }
 }

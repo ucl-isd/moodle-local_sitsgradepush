@@ -16,6 +16,9 @@
 
 namespace local_sitsgradepush\assessment;
 
+use local_sitsgradepush\extension\ec;
+use local_sitsgradepush\extension\extension;
+use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\manager;
 
 /**
@@ -50,6 +53,27 @@ abstract class assessment implements iassessment {
         $this->id = $sourceid;
         $this->type = $sourcetype;
         $this->set_instance();
+    }
+
+    /**
+     * Apply extension to the assessment.
+     *
+     * @param extension $extension
+     * @return void
+     * @throws \moodle_exception
+     */
+    public function apply_extension(extension $extension): void {
+        $check = $this->is_valid_for_extension();
+        if (!$check->valid) {
+            throw new \moodle_exception($check->errorcode, 'local_sitsgradepush');
+        }
+
+        // Do extension base on the extension type.
+        if ($extension instanceof ec) {
+            $this->apply_ec_extension($extension);
+        } else if ($extension instanceof sora) {
+            $this->apply_sora_extension($extension);
+        }
     }
 
     /**
@@ -197,6 +221,19 @@ abstract class assessment implements iassessment {
     }
 
     /**
+     * Check if the assessment is valid for EC or SORA extension.
+     *
+     * @return \stdClass
+     */
+    public function is_valid_for_extension(): \stdClass {
+        if ($this->get_start_date() === null || $this->get_end_date() === null) {
+            return $this->set_validity_result(false, 'error:assessmentdatesnotset');
+        }
+
+        return $this->set_validity_result(true);
+    }
+
+    /**
      * Set validity result.
      *
      * @param bool $valid
@@ -225,10 +262,33 @@ abstract class assessment implements iassessment {
     }
 
     /**
+     * Apply EC extension.
+     *
+     * @param ec $ec
+     * @return void
+     * @throws \moodle_exception
+     */
+    protected function apply_ec_extension(ec $ec): void {
+        // Default not supported. Override in child class if needed.
+        throw new \moodle_exception('error:ecextensionnotsupported', 'local_sitsgradepush');
+    }
+
+    /**
+     * Apply SORA extension.
+     *
+     * @param sora $sora
+     * @return void
+     * @throws \moodle_exception
+     */
+    protected function apply_sora_extension(sora $sora): void {
+        // Default not supported. Override in child class if needed.
+        throw new \moodle_exception('error:soraextensionnotsupported', 'local_sitsgradepush');
+    }
+
+    /**
      * Get all participants for the assessment.
      *
      * @return array
      */
     abstract public function get_all_participants(): array;
-
 }
