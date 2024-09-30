@@ -149,6 +149,14 @@ if ($hassiteconfig) {
           get_string('settings:reassessment_enabled:desc', 'local_sitsgradepush'),
           '0'
         ));
+
+        // Setting to enable/disable submission log push.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/extension_enabled',
+            get_string('settings:enableextension', 'local_sitsgradepush'),
+            get_string('settings:enableextension:desc', 'local_sitsgradepush'),
+            '0'
+        ));
     }
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
