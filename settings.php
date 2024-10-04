@@ -26,6 +26,7 @@
 
 use local_sitsgradepush\manager;
 use local_sitsgradepush\plugininfo\sitsapiclient;
+use local_sitsgradepush\settings\admin_setting_configdate;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -148,6 +149,13 @@ if ($hassiteconfig) {
           get_string('settings:reassessment_enabled', 'local_sitsgradepush'),
           get_string('settings:reassessment_enabled:desc', 'local_sitsgradepush'),
           '0'
+        ));
+
+        // Setting to set extension start date.
+        $settings->add(new admin_setting_configdate('local_sitsgradepush/extension_start_date',
+            get_string('settings:extension_start_date', 'local_sitsgradepush'),
+            get_string('settings:extension_start_date:desc', 'local_sitsgradepush'),
+            date('Y-m-d'),
         ));
     }
 
