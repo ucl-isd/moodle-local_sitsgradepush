@@ -20,7 +20,7 @@ namespace local_sitsgradepush\submission;
  * Class for coursework plugin (mod_coursework) submission.
  *
  * @package    local_sitsgradepush
- * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     David Watson <david-watson@ucl.ac.uk>
  */
