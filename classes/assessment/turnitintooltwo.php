@@ -89,4 +89,14 @@ class turnitintooltwo extends activity {
         }
         return parent::check_assessment_validity();
     }
+
+    /**
+     * Is the underlying course module instance grade push eligible?
+     * E.g. a "practice" lesson is not.
+     * @return bool
+     */
+    public function grade_push_eligible(): bool {
+        // For turnitintootwo, we always return true here.
+        return true;
+    }
 }

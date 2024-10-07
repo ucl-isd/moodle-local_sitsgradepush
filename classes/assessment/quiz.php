@@ -52,4 +52,14 @@ class quiz extends activity {
     public function get_end_date(): ?int {
         return $this->get_source_instance()->timeclose;
     }
+
+    /**
+     * Is the underlying course module instance grade push eligible?
+     * E.g. a "practice" lesson is not.
+     * @return bool
+     */
+    public function grade_push_eligible(): bool {
+        // For quiz, we always return true here.
+        return true;
+    }
 }

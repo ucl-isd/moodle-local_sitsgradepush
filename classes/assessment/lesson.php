@@ -32,7 +32,7 @@ class lesson extends activity {
      * @return array
      */
     public function get_all_participants(): array {
-        if ($this->sourceinstance->practice) {
+        if (!self::grade_push_eligible()) {
             // If this is a "Practice Lesson" it does not appear in gradebook.
             return [];
         }
@@ -46,7 +46,7 @@ class lesson extends activity {
      * @return int|null
      */
     public function get_start_date(): ?int {
-        return !$this->sourceinstance->practice && $this->sourceinstance->available > 0
+        return self::grade_push_eligible() && $this->sourceinstance->available > 0
             ? $this->sourceinstance->available : null;
     }
 
@@ -56,7 +56,18 @@ class lesson extends activity {
      * @return int|null
      */
     public function get_end_date(): ?int {
-        return !$this->sourceinstance->practice && $this->sourceinstance->deadline > 0
+        return self::grade_push_eligible() && $this->sourceinstance->deadline > 0
             ? $this->sourceinstance->deadline : null;
+    }
+
+
+    /**
+     * Is the underlying course module instance grade push eligible?
+     * E.g. a "practice" lesson is not.
+     * @return bool
+     */
+    public function grade_push_eligible(): bool {
+        // A "practice" lesson is not eligible (so will not be shown under "Select source").
+       return !$this->sourceinstance->practice;
     }
 }

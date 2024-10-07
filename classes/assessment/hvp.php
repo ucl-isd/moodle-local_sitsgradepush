@@ -58,4 +58,15 @@ class hvp extends activity {
         // Activity does not have an end date.
         return null;
     }
+
+
+    /**
+     * Is the underlying course module instance grade push eligible?
+     * E.g. a "practice" lesson is not.
+     * @return bool
+     */
+    public function grade_push_eligible(): bool {
+        // For hvp we always return true here.
+        return true;
+    }
 }

@@ -1216,15 +1216,10 @@ class manager {
     public function get_all_course_activities(int $courseid): array {
         $activities = [];
         foreach (self::allowed_activities() as $modname) {
-            // Skip if the activity is not installed.
-            if (!array_key_exists($modname, core_component::get_plugin_list('mod'))) {
-                continue;
-            }
-
             if (!empty($results = get_coursemodules_in_course($modname, $courseid))) {
                 foreach ($results as $result) {
-                    $assessemnt = assessmentfactory::get_assessment(assessmentfactory::SOURCETYPE_MOD, $result->id);
-                    $activities[] = $assessemnt;
+                    $assessment = assessmentfactory::get_assessment(assessmentfactory::SOURCETYPE_MOD, $result->id);
+                    $activities[] = $assessment;
                 }
             }
         }

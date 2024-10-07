@@ -126,4 +126,11 @@ interface iassessment {
      * @return int|null
      */
     public function get_end_date(): ?int;
+
+    /**
+     * Is the underlying course module instance grade push eligible?
+     * E.g. a "practice" lesson is not.
+     * @return bool
+     */
+    public function grade_push_eligible(): bool;
 }

@@ -101,6 +101,7 @@ $PAGE->navbar->add(get_string('selectsource:header', 'local_sitsgradepush'),
 echo $OUTPUT->header();
 
 // Render the page.
+/** @var $renderer \local_sitsgradepush\output\renderer */
 $renderer = $PAGE->get_renderer('local_sitsgradepush');
 echo $renderer->render_select_source_page($courseid, $mab, $reassess);
 

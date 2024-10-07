@@ -76,4 +76,14 @@ abstract class gradebook extends assessment {
             return null;
         }
     }
+
+    /**
+     * Is the underlying instance grade push eligible?
+     * E.g. a mod instance "practice" lesson is not.
+     * @return bool
+     */
+    public function grade_push_eligible(): bool {
+        // For gradebook instances we always return true here.
+        return true;
+    }
 }
