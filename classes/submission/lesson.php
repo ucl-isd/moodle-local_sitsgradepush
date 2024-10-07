@@ -17,7 +17,7 @@
 namespace local_sitsgradepush\submission;
 
 /**
- * Class for coursework plugin (mod_coursework) submission.
+ * Class for lesson submission.
  *
  * @package    local_sitsgradepush
  * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
