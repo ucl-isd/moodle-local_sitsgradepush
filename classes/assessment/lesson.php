@@ -59,4 +59,16 @@ class lesson extends activity {
         return !$this->sourceinstance->practice && $this->sourceinstance->deadline > 0
             ? $this->sourceinstance->deadline : null;
     }
+
+    /**
+     * Check assessment is valid for mapping.
+     *
+     * @return \stdClass
+     */
+    public function check_assessment_validity(): \stdClass {
+        if ($this->sourceinstance->practice) {
+            return $this->set_validity_result(false, 'error:lesson_practice');
+        }
+        return parent::check_assessment_validity();
+    }
 }
