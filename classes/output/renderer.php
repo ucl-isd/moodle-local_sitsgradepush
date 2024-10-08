@@ -284,6 +284,10 @@ class renderer extends plugin_renderer_base {
                 continue;
             }
 
+            if (!$assessment->check_assessment_validity()->valid) {
+                continue;
+            }
+
             $formattedassessment = new \stdClass();
             $formattedassessment->courseid = $assessment->get_course_id();
             $formattedassessment->mabid = $mab->id;
