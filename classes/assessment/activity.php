@@ -146,6 +146,9 @@ abstract class activity extends assessment {
      * @return array
      */
     public function get_grade_items(): array {
+        global $CFG;
+        require_once("$CFG->libdir/gradelib.php");
+
         $gradeitems = grade_item::fetch_all([
             'itemtype' => $this->get_type(),
             'itemmodule' => $this->get_module_name(),
