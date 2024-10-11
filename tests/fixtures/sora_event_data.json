@@ -1,0 +1,47 @@
+{
+  "identifier": "",
+  "sequence_number": "",
+  "timestamp": "2022-10-13T15:57:02.089Z",
+  "event": {
+    "name": "person-sora",
+    "type": "update",
+    "source": "SITS",
+    "changes": [
+      {
+        "attribute": "sora.extra_duration",
+        "from": "15",
+        "to": "30"
+      },
+      {
+        "attribute": "sora.person.identifier",
+        "from": "ABCDE12",
+        "to": "EDCBA21"
+      }
+    ]
+  },
+  "entity": {
+    "metadata": {
+      "sora": {
+        "identifier": "",
+        "type": {
+          "code": "",
+          "name": ""
+        },
+        "accessibility_assessment_arrangement_sequence_number": "",
+        "arrangement_record_sequence_number": "",
+        "approved_indicator": "",
+        "extra_duration": "30",
+        "rest_duration": "5",
+        "post_deadline_details": "",
+        "expiry_date": "",
+        "last_updated": "",
+        "note": "",
+        "person": {
+          "identifier": "ABCDE12",
+          "student_code": "12345678",
+          "userid": "123456"
+        }
+      }
+    }
+  }
+}

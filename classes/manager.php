@@ -487,6 +487,7 @@ class manager {
         }
         $record->componentgradeid = $data->componentgradeid;
         $record->reassessment = $data->reassessment;
+        $record->enableextension = get_config('local_sitsgradepush', 'extension_enabled') ? 1 : 0;
         $record->timecreated = time();
         $record->timemodified = time();
 

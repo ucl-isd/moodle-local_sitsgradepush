@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/sitsgradepush/db" VERSION="20240723" COMMENT="XMLDB file for Moodle local/sits_grade_push"
+<XMLDB PATH="local/sitsgradepush/db" VERSION="20241011" COMMENT="XMLDB file for Moodle local/sits_grade_push"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -14,6 +14,7 @@
         <FIELD NAME="componentgradeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Id for SITS component grade in local_sits_component_grades"/>
         <FIELD NAME="reassessment" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="reassessmentseq" TYPE="int" LENGTH="3" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="enableextension" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="A mapping with this field set to 1 allows extensions to be applied."/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
