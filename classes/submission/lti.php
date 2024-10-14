@@ -69,12 +69,17 @@ class lti extends submission {
 
         // User may have multiple attempts.
         // In that case we return the most recent attempt details.
+        // The activity type just writes the most recent attempt to the gradebook.
+        // When adding LTI to a course, teacher is not given the option (as in Quiz or Lesson) of use highest mark, average etc.
         $params = ['ltiid' => $this->modinstance->id, 'userid' => $this->userid];
         $attempts = $DB->get_records(
             'lti_submission', $params, 'datesubmitted DESC', '*', 0, 1
         );
         if (!empty($attempts)) {
-            $this->submissiondata = reset($attempts);
+            $attempt = reset($attempts);
+            if ($attempt->datesubmitted) {
+                $this->submissiondata = $attempt;
+            }
         }
     }
 }
