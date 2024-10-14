@@ -32,12 +32,11 @@ class coursework extends activity {
      * @return \stdClass[]
      */
     public function get_all_participants(): array {
-        $context = \context_module::instance($this->coursemodule->id);
         $modinfo = get_fast_modinfo($this->get_course_id());
         $cm = $modinfo->get_cm($this->coursemodule->id);
         $info = new \core_availability\info_module($cm);
 
-        $users = get_enrolled_users($context, 'mod/coursework:submit');
+        $users = get_enrolled_users($this->context, 'mod/coursework:submit');
         return $info->filter_user_list($users);
     }
 

@@ -32,8 +32,7 @@ class assign extends activity {
      * @return array
      */
     public function get_all_participants(): array {
-        $context = \context_module::instance($this->coursemodule->id);
-        return get_enrolled_users($context, 'mod/assign:submit');
+        return get_enrolled_users($this->context, 'mod/assign:submit');
     }
 
     /**

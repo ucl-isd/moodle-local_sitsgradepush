@@ -35,8 +35,12 @@ class hvp extends activity {
      * @return array
      */
     public function get_all_participants(): array {
-        $context = \context_module::instance($this->coursemodule->id);
-        return get_enrolled_users($context, 'mod/hvp:view');
+        $enrolledusers = get_enrolled_users($this->context, 'mod/hvp:view');
+        // Filter out non-gradeable users e.g. teachers.
+        $gradeableids = self::get_gradeable_user_ids();
+        return array_filter($enrolledusers, function($u) use ($gradeableids) {
+            return in_array($u->id, $gradeableids);
+        });
     }
 
     /**

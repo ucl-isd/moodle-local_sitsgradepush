@@ -35,8 +35,12 @@ class lti extends activity {
         if (!self::check_assessment_validity()->valid) {
             return [];
         }
-        $context = \context_module::instance($this->coursemodule->id);
-        return get_enrolled_users($context, 'mod/lti:view');
+        $enrolledusers = get_enrolled_users($this->context, 'mod/lti:view');
+        // Filter out non-gradeable users e.g. teachers.
+        $gradeableids = self::get_gradeable_user_ids();
+        return array_filter($enrolledusers, function($u) use ($gradeableids) {
+            return in_array($u->id, $gradeableids);
+        });
     }
 
     /**

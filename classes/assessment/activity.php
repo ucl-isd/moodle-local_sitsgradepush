@@ -32,6 +32,9 @@ abstract class activity extends assessment {
     /** @var \stdClass Course module object */
     public \stdClass $coursemodule;
 
+    /** @var \stdClass Context object */
+    public \context_module $context;
+
     /**
      * Constructor.
      *
@@ -39,6 +42,7 @@ abstract class activity extends assessment {
      */
     public function __construct(\stdClass $coursemodule) {
         $this->coursemodule = $coursemodule;
+        $this->context = \context_module::instance($this->coursemodule->id);
         parent::__construct(assessmentfactory::SOURCETYPE_MOD, $coursemodule->id);
     }
 
@@ -167,5 +171,30 @@ abstract class activity extends assessment {
     protected function set_instance(): void {
         global $DB;
         $this->sourceinstance = $DB->get_record($this->coursemodule->modname, ['id' => $this->coursemodule->instance]);
+    }
+
+    /**
+     * Get the user IDs of gradeable users in this context i.e. students not teachers.
+     * Can be used to get list of participants where activity has no student only capability like 'mod/xxx:submit'.
+     * @return int[] user IDs
+     */
+    protected function get_gradeable_user_ids(): array {
+        global $DB, $CFG;
+
+        // Code adapted from grade/report/lib.php to limit to users with a gradeable role, i.e. students.
+        // The $CFG->gradebookroles setting is exposed on /admin/search.php?query=gradebookroles admin page.
+        $gradebookroles = explode(',', $CFG->gradebookroles);
+        if (empty($gradebookroles)) {
+            return[];
+        }
+        list($gradebookrolessql, $gradebookrolesparams) =
+            $DB->get_in_or_equal($gradebookroles, SQL_PARAMS_NAMED, 'gradebookroles');
+
+        // We want to query both the current context and parent contexts.
+        list($relatedctxsql, $relatedctxparams) = $DB->get_in_or_equal(
+            $this->context->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx'
+        );
+        $sql = "SELECT DISTINCT userid FROM {role_assignments} WHERE roleid $gradebookrolessql AND contextid $relatedctxsql";
+        return  $DB->get_fieldset_sql($sql, array_merge($gradebookrolesparams, $relatedctxparams));
     }
 }
