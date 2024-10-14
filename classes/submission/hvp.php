@@ -57,13 +57,36 @@ class hvp extends submission {
 
     /**
      * Set submission.
-     *
+     * The submission log transfer will be skipped without this data.
+     * ({@link \local_sitsgradepush\manager::push_submission_log_to_sits()})
+     * We get the item time from the gradebook.  (We don't have submissions stored in the mod_hvp local tables).
      * @return void
+     * @see
      */
     protected function set_submission_data(): void {
-        // We don't have the time submitted stored in the mod_hvp local tables so can't use that.
-        // The timecreated and timemodified fields are not set in grade_grades either.
-        // There is a timemodified in mdl_grade_items_history, but we can't rely on "loggeduser" being our user ID.
-        // So we can't set any data for hand in time here.
+        $grades = grade_get_grades(
+            $this->coursemodule->course->id, 'mod', $this->coursemodule->modname, $this->modinstance->id, $this->userid
+        );
+        $gradedsubmissions = [];
+        foreach ($grades->items as $item) {
+            foreach ($item->grades as $grade) {
+                if ($grade->grade) {
+                    if (is_numeric($grade->grade)) {
+                        $gradedsubmissions[] = $grade;
+                    }
+                }
+                if (count($gradedsubmissions) > 1) {
+                    // We don't expect more than one graded submission per user - mod_hvp records latest grade only.
+                    // If there is more than one, our code is incorrect (maybe mod_hvp has changed).
+                    throw new \coding_exception("Unexpected multiple grades found for user " . $this->userid);
+                }
+            }
+        }
+        if (count($gradedsubmissions) === 1) {
+            $gradedtime = reset($gradedsubmissions)->dategraded;
+            if ($gradedtime) {
+                $this->submissiondata = [(object)['timesubmitted' => $gradedtime]];
+            }
+        }
     }
 }
