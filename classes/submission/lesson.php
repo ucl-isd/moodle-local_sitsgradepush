@@ -90,7 +90,9 @@ class lesson extends submission {
                       WHERE lessonid = :lessonid AND userid = :userid AND grade = :maxgrade",
                     $params
                 );
-                $this->submissiondata = (object)['timesubmitted' => $mostrecentmaxgradetime];
+                if ($mostrecentmaxgradetime) {
+                    $this->submissiondata = (object)['timesubmitted' => $mostrecentmaxgradetime];
+                }
             }
         } else {
             // We want the mean grade, or retakes is set to not allowed, so just use most recent submit time.
@@ -99,7 +101,9 @@ class lesson extends submission {
                       WHERE lessonid = :lessonid AND userid = :userid",
                 $params
             );
-            $this->submissiondata = (object)['timesubmitted' => $mostrecentgradetime];
+            if ($mostrecentgradetime) {
+                $this->submissiondata = (object)['timesubmitted' => $mostrecentgradetime];
+            }
         }
     }
 }
