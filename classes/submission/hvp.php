@@ -31,9 +31,11 @@ class hvp extends submission {
      * @return string
      */
     public function get_handin_datetime(): string {
-        // We cannot provide a hand in time as we don't have one.
-        // See notes under set_submission_data() below.
-        return "";
+        if ($this->submissiondata) {
+            return $this->get_iso8601_datetime($this->submissiondata->timesubmitted);
+        } else {
+            return "";
+        }
     }
 
     /**
