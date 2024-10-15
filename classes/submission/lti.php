@@ -17,22 +17,22 @@
 namespace local_sitsgradepush\submission;
 
 /**
- * Class for Turnitin assignment submission.
+ * Class for coursework plugin (mod_coursework) submission.
  *
  * @package    local_sitsgradepush
- * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author     Alex Yeung <k.yeung@ucl.ac.uk>
+ * @author     David Watson <david-watson@ucl.ac.uk>
  */
-class turnitintooltwo extends submission {
+class lti extends submission {
     /**
      * Get hand in datetime.
      *
      * @return string
      */
     public function get_handin_datetime(): string {
-        if ($this->submissiondata) {
-            return $this->get_iso8601_datetime($this->submissiondata->submission_modified);
+        if ($this->submissiondata->datesubmitted ?? null) {
+            return $this->get_iso8601_datetime($this->submissiondata->datesubmitted);
         } else {
             return "";
         }
@@ -47,11 +47,14 @@ class turnitintooltwo extends submission {
      */
     protected function set_module_instance() {
         global $DB;
-        if (!$turnitintooltwo = $DB->get_record('turnitintooltwo', ['id' => $this->coursemodule->instance])) {
-            throw new \moodle_exception('Turnitin assignment not found, id: ' . $this->coursemodule->instance);
+        if (!$instance = $DB->get_record('lti', ['id' => $this->coursemodule->instance])) {
+            throw new \moodle_exception(
+                'error:coursemodulenotfound', 'local_sitsgradepush', '', null,
+                "Instance ID: " . $this->coursemodule->instance
+            );
         }
 
-        $this->modinstance = $turnitintooltwo;
+        $this->modinstance = $instance;
     }
 
     /**
@@ -62,28 +65,21 @@ class turnitintooltwo extends submission {
      * @throws \moodle_exception
      */
     protected function set_submission_data(): void {
-        $this->submissiondata = $this->get_turnitintooltwo_submission();
-    }
-
-    /**
-     * Return the latest Turnitin submission for a user.
-     *
-     * @return false|mixed|null
-     * @throws \dml_exception
-     */
-    private function get_turnitintooltwo_submission() {
         global $DB;
 
-        // Get student's submission.
-        $submission = $DB->get_record(
-            'turnitintooltwo_submissions',
-            ['turnitintooltwoid' => $this->coursemodule->instance, 'userid' => $this->userid],
+        // User may have multiple attempts.
+        // In that case we return the most recent attempt details.
+        // The activity type just writes the most recent attempt to the gradebook.
+        // When adding LTI to a course, teacher is not given the option (as in Quiz or Lesson) of use highest mark, average etc.
+        $params = ['ltiid' => $this->modinstance->id, 'userid' => $this->userid];
+        $attempts = $DB->get_records(
+            'lti_submission', $params, 'datesubmitted DESC', '*', 0, 1
         );
-
-        if ($submission) {
-            return $submission;
+        if (!empty($attempts)) {
+            $attempt = reset($attempts);
+            if ($attempt->datesubmitted) {
+                $this->submissiondata = $attempt;
+            }
         }
-
-        return null;
     }
 }

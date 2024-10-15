@@ -70,6 +70,9 @@ class pushrecord {
     /** @var string|null Last grade push result */
     public ?string $lastgradepushresult = null;
 
+    /** @var string|null Last grade push result label */
+    public ?string $lastgradepushresultlabel = null;
+
     /** @var int Last grade push error type */
     public int $lastgradepusherrortype = 0;
 
@@ -81,6 +84,10 @@ class pushrecord {
 
     /** @var string|null Last submission log push result */
     public ?string $lastsublogpushresult = null;
+
+    /** @var string|null Last submission log push result label */
+    public ?string $lastsublogpushresultlabel = null;
+
 
     /** @var int Last submission log push error type */
     public int $lastsublogpusherrortype = 0;

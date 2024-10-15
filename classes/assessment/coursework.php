@@ -17,22 +17,27 @@
 namespace local_sitsgradepush\assessment;
 
 /**
- * Class for assignment assessment.
+ * Class for coursework plugin (mod_coursework) assessment.
  *
  * @package    local_sitsgradepush
- * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author     Alex Yeung <k.yeung@ucl.ac.uk>
+ * @author     David Watson <david-watson@ucl.ac.uk>
  */
-class assign extends activity {
+class coursework extends activity {
 
     /**
      * Get all participants.
-     *
-     * @return array
+     * @see \mod_coursework\models\coursework::get_students() which we don't use as it returns objects.
+     * @return \stdClass[]
      */
     public function get_all_participants(): array {
-        return get_enrolled_users($this->context, 'mod/assign:submit');
+        $modinfo = get_fast_modinfo($this->get_course_id());
+        $cm = $modinfo->get_cm($this->coursemodule->id);
+        $info = new \core_availability\info_module($cm);
+
+        $users = get_enrolled_users($this->context, 'mod/coursework:submit');
+        return $info->filter_user_list($users);
     }
 
     /**
@@ -41,7 +46,7 @@ class assign extends activity {
      * @return int|null
      */
     public function get_start_date(): ?int {
-        return $this->sourceinstance->allowsubmissionsfromdate;
+        return $this->sourceinstance->startdate > 0 ? $this->sourceinstance->startdate : null;
     }
 
     /**
@@ -50,6 +55,6 @@ class assign extends activity {
      * @return int|null
      */
     public function get_end_date(): ?int {
-        return $this->sourceinstance->duedate;
+        return $this->sourceinstance->deadline > 0 ? $this->sourceinstance->deadline : null;
     }
 }

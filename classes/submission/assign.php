@@ -61,7 +61,7 @@ class assign extends submission {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    protected function set_submission_data() {
+    protected function set_submission_data(): void {
         $this->submissiondata = $this->get_assign_submission();
     }
 
