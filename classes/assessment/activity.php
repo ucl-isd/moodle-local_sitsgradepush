@@ -175,7 +175,6 @@ abstract class activity extends assessment {
 
     /**
      * Get the user IDs of gradeable users in this context i.e. students not teachers.
-     * Can be used to get list of participants where activity has no student only capability like 'mod/xxx:submit'.
      * @return int[] user IDs
      */
     protected function get_gradeable_user_ids(): array {
@@ -196,5 +195,19 @@ abstract class activity extends assessment {
         );
         $sql = "SELECT DISTINCT userid FROM {role_assignments} WHERE roleid $gradebookrolessql AND contextid $relatedctxsql";
         return  $DB->get_fieldset_sql($sql, array_merge($gradebookrolesparams, $relatedctxparams));
+    }
+
+    /**
+     * Get the details of gradeable (i.e. students not teachers) enrolled users in this context with specified capability.
+     * Can be used to get list of participants where activity has no 'student only' capability like 'mod/xxx:submit'.
+     * @return array user details
+     */
+    protected function get_gradeable_enrolled_users_with_capability(string $capability): array {
+        $enrolledusers = get_enrolled_users($this->context, $capability);
+        // Filter out non-gradeable users e.g. teachers.
+        $gradeableids = self::get_gradeable_user_ids();
+        return array_filter($enrolledusers, function($u) use ($gradeableids) {
+            return in_array($u->id, $gradeableids);
+        });
     }
 }

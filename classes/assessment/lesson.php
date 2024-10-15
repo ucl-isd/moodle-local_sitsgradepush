@@ -36,12 +36,7 @@ class lesson extends activity {
             // If this is a "Practice Lesson" it does not appear in gradebook.
             return [];
         }
-        $enrolledusers = get_enrolled_users($this->context, 'mod/lesson:view');
-        // Filter out non-gradeable users e.g. teachers.
-        $gradeableids = self::get_gradeable_user_ids();
-        return array_filter($enrolledusers, function($u) use ($gradeableids) {
-            return in_array($u->id, $gradeableids);
-        });
+        return self::get_gradeable_enrolled_users_with_capability('mod/lesson:view');
     }
 
     /**

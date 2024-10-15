@@ -32,15 +32,7 @@ class lti extends activity {
      * @return array
      */
     public function get_all_participants(): array {
-        if (!self::check_assessment_validity()->valid) {
-            return [];
-        }
-        $enrolledusers = get_enrolled_users($this->context, 'mod/lti:view');
-        // Filter out non-gradeable users e.g. teachers.
-        $gradeableids = self::get_gradeable_user_ids();
-        return array_filter($enrolledusers, function($u) use ($gradeableids) {
-            return in_array($u->id, $gradeableids);
-        });
+        return self::get_gradeable_enrolled_users_with_capability('mod/lti:view');
     }
 
     /**

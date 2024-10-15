@@ -60,7 +60,7 @@ class hvp extends submission {
     /**
      * Set submission.
      * The submission log transfer will be skipped without this data.
-     * ({@link \local_sitsgradepush\manager::push_submission_log_to_sits()})
+     * {@see \local_sitsgradepush\manager::push_submission_log_to_sits()}
      * We get the item time from the gradebook.  (We don't have submissions stored in the mod_hvp local tables).
      * @return void
      * @see
@@ -87,7 +87,7 @@ class hvp extends submission {
         if (count($gradedsubmissions) === 1) {
             $gradedtime = reset($gradedsubmissions)->dategraded;
             if ($gradedtime) {
-                $this->submissiondata = [(object)['timesubmitted' => $gradedtime]];
+                $this->submissiondata = (object)['timesubmitted' => $gradedtime];
             }
         }
     }
