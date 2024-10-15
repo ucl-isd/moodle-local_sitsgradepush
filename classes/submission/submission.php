@@ -167,6 +167,14 @@ abstract class submission implements isubmission {
     }
 
     /**
+     * Set submission data.
+     * The submission log transfer will be skipped without this data.
+     * {@see \local_sitsgradepush\manager::push_submission_log_to_sits()}
+     * @return void
+     */
+    abstract protected function set_submission_data(): void;
+
+    /**
      * Get ISO 8601 format datetime.
      *
      * @param int|null $time

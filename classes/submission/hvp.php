@@ -63,7 +63,6 @@ class hvp extends submission {
      * {@see \local_sitsgradepush\manager::push_submission_log_to_sits()}
      * We get the item time from the gradebook.  (We don't have submissions stored in the mod_hvp local tables).
      * @return void
-     * @see
      */
     protected function set_submission_data(): void {
         $grades = grade_get_grades(
