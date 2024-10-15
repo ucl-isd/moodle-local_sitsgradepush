@@ -67,7 +67,7 @@ class hvp extends submission {
      */
     protected function set_submission_data(): void {
         $grades = grade_get_grades(
-            $this->coursemodule->course->id, 'mod', $this->coursemodule->modname, $this->modinstance->id, $this->userid
+            $this->coursemodule->course, 'mod', $this->coursemodule->modname, $this->modinstance->id, $this->userid
         );
         $gradedsubmissions = [];
         foreach ($grades->items as $item) {
