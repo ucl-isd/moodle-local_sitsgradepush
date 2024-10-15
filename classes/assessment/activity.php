@@ -200,7 +200,7 @@ abstract class activity extends assessment {
     /**
      * Get the details of gradeable (i.e. students not teachers) enrolled users in this context with specified capability.
      * Can be used to get list of participants where activity has no 'student only' capability like 'mod/xxx:submit'.
-     * @param string $capability the capability string e.g. 'mod/lit:view'.
+     * @param string $capability the capability string e.g. 'mod/lti:view'.
      * @return array user details
      */
     protected function get_gradeable_enrolled_users_with_capability(string $capability): array {
