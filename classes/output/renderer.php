@@ -208,6 +208,7 @@ class renderer extends plugin_renderer_base {
 
                     $assessmentmapping = new \stdClass();
                     $assessmentmapping->markstotransfer = $assessmentdata->markscount ?? 0;
+                    $assessmentmapping->nonsubmittedcount = $assessmentdata->nonsubmittedcount ?? 0;
                     $assessmentmapping->id = $mapping->id;
                     $assessmentmapping->type = $assessmentdata->source->get_display_type_name();
                     $assessmentmapping->name = $assessmentdata->source->get_assessment_name();
@@ -249,6 +250,7 @@ class renderer extends plugin_renderer_base {
                 'jump-to-label' => get_string('label:jumpto', 'local_sitsgradepush'),
                 'transfer-all-button-label' => get_string('label:pushall', 'local_sitsgradepush'),
                 'gradesneedregrading' => grade_needs_regrade_final_grades($courseid),
+                'recordnonsubmission' => true, // Show the record non-submission as 0 AB checkbox.
             ]
         );
     }

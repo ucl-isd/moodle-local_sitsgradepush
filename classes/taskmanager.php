@@ -50,7 +50,7 @@ class taskmanager {
      * @param int $taskid
      * @throws \dml_exception|\moodle_exception
      */
-    public static function run_task(int $taskid) {
+    public static function run_task(int $taskid): void {
         global $DB;
 
         $manager = manager::get_manager();
@@ -86,7 +86,7 @@ class taskmanager {
                 $i = 0;
                 // Push mark and submission log for each student in the mapping.
                 foreach ($mapping->students as $student) {
-                    $manager->push_grade_to_sits($mapping, $student->userid, $task->id);
+                    $manager->push_grade_to_sits($mapping, $student->userid, $task);
                     $manager->push_submission_log_to_sits($mapping, $student->userid, $task->id);
                     $i++;
 
@@ -229,11 +229,13 @@ class taskmanager {
      * Schedule push task.
      *
      * @param int $assessmentmappingid Assessment mapping id
+     * @param array $options Extra options for the task, e.g. records non-submission as zero.
+     *
      * @return bool
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function schedule_push_task(int $assessmentmappingid) {
+    public static function schedule_push_task(int $assessmentmappingid, array $options) {
         global $DB, $USER;
 
         // Check if the assessment mapping exists.
@@ -266,6 +268,7 @@ class taskmanager {
         $task->userid = $USER->id;
         $task->timescheduled = time();
         $task->assessmentmappingid = $assessmentmappingid;
+        $task->options = json_encode($options);
         $task->status = self::PUSH_TASK_STATUS_REQUESTED;
 
         // Check the number of students in the mapping.
