@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\extension;
 
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\logger;
 
 /**
  * Class for extenuating circumstance (EC).
@@ -33,19 +34,6 @@ class ec extends extension {
 
     /** @var string MAB identifier, e.g. CCME0158A6UF-001 */
     protected string $mabidentifier;
-
-    /**
-     * Constructor.
-     *
-     * @param string $message
-     * @throws \dml_exception
-     */
-    public function __construct(string $message) {
-        parent::__construct($message);
-
-        // Set the EC properties that we need.
-        $this->set_ec_properties();
-    }
 
     /**
      * Returns the new deadline.
@@ -75,30 +63,40 @@ class ec extends extension {
                     $assessment->apply_extension($this);
                 }
             } catch (\Exception $e) {
-                // Consider logging the error here.
-                continue;
+                logger::log($e->getMessage(), null, "Mapping ID: $mapping->id");
             }
         }
     }
 
     /**
-     * Set the EC properties.
+     * Set the EC properties from the AWS EC update message.
+     * Note: The AWS EC update message is not yet developed, will implement this when the message is available.
      *
+     * @param string $message
      * @return void
-     * @throws \dml_exception
+     * @throws \dml_exception|\moodle_exception
      */
-    private function set_ec_properties(): void {
-        global $DB;
+    public function set_properties_from_aws_message(string $message): void {
+        // Decode the JSON message.
+        $messagedata = $this->parse_event_json($message);
 
-        // Find and set the user ID from the student.
-        $idnumber = $this->message->student_code;
-        $user = $DB->get_record('user', ['idnumber' => $idnumber], 'id', MUST_EXIST);
-        $this->userid = $user->id;
+        // Set the user ID of the student.
+        $this->set_userid($messagedata->student_code);
 
         // Set the MAB identifier.
-        $this->mabidentifier = $this->message->identifier;
+        $this->mabidentifier = $messagedata->identifier;
 
         // Set new deadline.
-        $this->newdeadline = $this->message->new_deadline;
+        $this->newdeadline = $messagedata->new_deadline;
+    }
+
+    /**
+     * Set the EC properties from the get students API.
+     *
+     * @param array $student
+     * @return void
+     */
+    public function set_properties_from_get_students_api(array $student): void {
+        // Will implement this when the get students API includes EC data.
     }
 }
