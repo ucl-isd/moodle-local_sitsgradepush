@@ -31,21 +31,27 @@ abstract class extension implements iextension {
     /** @var array Supported module types */
     const SUPPORTED_MODULE_TYPES = ['assign', 'quiz'];
 
-    /** @var \stdClass Message from AWS */
-    protected \stdClass $message;
-
     /** @var int User ID */
     protected int $userid;
 
+    /** @var bool Used to check if the extension data is set. */
+    protected bool $dataisset = false;
+
     /**
-     * Constructor.
+     * Set properties from JSON message like SORA / EC update message from AWS.
      *
      * @param string $message
-     * @throws \Exception
+     * @return void
      */
-    public function __construct(string $message) {
-        $this->message = $this->parse_event_json($message);
-    }
+    abstract public function set_properties_from_aws_message(string $message): void;
+
+    /**
+     * Set properties from get students API.
+     *
+     * @param array $student
+     * @return void
+     */
+    abstract public function set_properties_from_get_students_api(array $student): void;
 
     /**
      * Get the user ID.
@@ -155,5 +161,20 @@ abstract class extension implements iextension {
             throw new \Exception('Invalid message data');
         }
         return $messageobject;
+    }
+
+    /**
+     * Set the user ID of the student.
+     *
+     * @param string $studentcode
+     * @return void
+     * @throws \dml_exception
+     */
+    protected function set_userid(string $studentcode): void {
+        global $DB;
+
+        // Find and set the user ID of the student.
+        $user = $DB->get_record('user', ['idnumber' => $studentcode], 'id', MUST_EXIST);
+        $this->userid = $user->id;
     }
 }

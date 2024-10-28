@@ -16,9 +16,13 @@
 
 namespace local_sitsgradepush;
 
+use local_sitsgradepush\extension\ec;
+use local_sitsgradepush\extension\sora;
+
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_provider.php');
+require_once($CFG->dirroot . '/local/sitsgradepush/tests/base_test_class.php');
 
 /**
  * Tests for the extension class.
@@ -28,7 +32,7 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_pro
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-final class extension_test extends \advanced_testcase {
+final class extension_test extends base_test_class {
 
     /** @var \stdClass $course1 Default test course 1 */
     private \stdClass $course1;
@@ -56,6 +60,9 @@ final class extension_test extends \advanced_testcase {
 
         // Get data generator.
         $dg = $this->getDataGenerator();
+
+        // Set Easikit API client.
+        set_config('apiclient', 'easikit', 'local_sitsgradepush');
 
         // Setup testing environment.
         set_config('late_summer_assessment_end_' . date('Y'), date('Y-m-d', strtotime('+2 month')), 'block_lifecycle');
@@ -111,6 +118,7 @@ final class extension_test extends \advanced_testcase {
      * @covers \local_sitsgradepush\extension\ec::process_extension
      * @return void
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
     public function test_no_overrides_for_mapping_without_extension_enabled(): void {
         global $DB;
@@ -121,7 +129,8 @@ final class extension_test extends \advanced_testcase {
         $message = $this->setup_for_ec_testing('LAWS0024A6UF', '001', $this->assign1, 'assign');
 
         // Process the extension.
-        $ec = new extension\ec($message);
+        $ec = new ec();
+        $ec->set_properties_from_aws_message($message);
         $ec->process_extension();
 
         $override = $DB->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => $this->student1->id]);
@@ -137,6 +146,7 @@ final class extension_test extends \advanced_testcase {
      * @covers \local_sitsgradepush\assessment\assign::apply_ec_extension
      * @return void
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
     public function test_ec_process_extension_assign(): void {
         global $DB;
@@ -145,7 +155,8 @@ final class extension_test extends \advanced_testcase {
         $message = $this->setup_for_ec_testing('LAWS0024A6UF', '001', $this->assign1, 'assign');
 
         // Process the extension by passing the JSON event data.
-        $ec = new extension\ec($message);
+        $ec = new ec();
+        $ec->set_properties_from_aws_message($message);
         $ec->process_extension();
 
         // Calculate the new deadline.
@@ -169,6 +180,7 @@ final class extension_test extends \advanced_testcase {
      * @covers \local_sitsgradepush\assessment\quiz::apply_ec_extension
      * @return void
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
     public function test_ec_process_extension_quiz(): void {
         global $DB;
@@ -177,7 +189,8 @@ final class extension_test extends \advanced_testcase {
         $message = $this->setup_for_ec_testing('LAWS0024A6UF', '002', $this->quiz1, 'quiz');
 
         // Process the extension by passing the JSON event data.
-        $ec = new extension\ec($message);
+        $ec = new ec();
+        $ec->set_properties_from_aws_message($message);
         $ec->process_extension();
 
         // Calculate the new deadline.
@@ -204,6 +217,7 @@ final class extension_test extends \advanced_testcase {
      * @covers \local_sitsgradepush\assessment\quiz::apply_sora_extension
      * @throws \coding_exception
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
     public function test_sora_process_extension(): void {
         global $DB;
@@ -212,11 +226,66 @@ final class extension_test extends \advanced_testcase {
         $this->setup_for_sora_testing();
 
         // Process the extension by passing the JSON event data.
-        $sora = new extension\sora(tests_data_provider::get_sora_event_data());
+        $sora = new sora();
+        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
         $sora->process_extension();
 
         // Test SORA override group exists.
         $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name()]);
+        $this->assertNotEmpty($groupid);
+
+        // Test user is added to the SORA group.
+        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
+        $this->assertNotEmpty($groupmember);
+
+        // Test group override set in the assignment.
+        $override = $DB
+            ->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => null, 'groupid' => $groupid]);
+        $this->assertEquals($override->groupid, $groupid);
+
+        // Test group override set in the quiz.
+        $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id, 'userid' => null, 'groupid' => $groupid]);
+        $this->assertEquals($override->groupid, $groupid);
+    }
+
+    /**
+     * Test the update SORA extension for students in a mapping.
+     *
+     * @covers \local_sitsgradepush\extensionmanager::update_sora_for_mapping
+     * @return void
+     * @throws \dml_exception|\coding_exception|\ReflectionException
+     */
+    public function test_update_sora_for_mapping(): void {
+        global $DB;
+
+        // Test error is logged when the MAB is not found.
+        $mapid = 0;
+        extensionmanager::update_sora_for_mapping($mapid);
+
+        // Check error log.
+        $errormessage = get_string('error:mab_not_found', 'local_sitsgradepush', $mapid);
+        $sql = "SELECT * FROM {local_sitsgradepush_err_log} WHERE message = :message AND data = :data";
+        $params = ['message' => $errormessage, 'data' => "Mapping ID: $mapid"];
+        $log = $DB->get_record_sql($sql, $params);
+        $this->assertNotEmpty($log);
+
+        // Set up the SORA extension.
+        $this->setup_for_sora_testing();
+        $manager = manager::get_manager();
+        $apiclient = $this->get_apiclient_for_testing(
+            false,
+            [['code' => 12345678, 'assessment' => ['sora_assessment_duration' => 20, 'sora_rest_duration' => 5]]]
+        );
+        tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
+
+        // Process all mappings for SORA.
+        $mappings = $DB->get_records('local_sitsgradepush_mapping');
+        foreach ($mappings as $mapping) {
+            extensionmanager::update_sora_for_mapping($mapping->id);
+        }
+
+        // Test SORA override group exists.
+        $groupid = $DB->get_field('groups', 'id', ['name' => sora::SORA_GROUP_PREFIX . '25']);
         $this->assertNotEmpty($groupid);
 
         // Test user is added to the SORA group.
