@@ -17,7 +17,10 @@
 namespace local_sitsgradepush;
 
 use context_user;
+use core\task\manager as coretaskmanager;
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extension\extension;
+use local_sitsgradepush\task\process_extensions;
 
 /**
  * Manager class which handles push task.
@@ -400,6 +403,35 @@ class taskmanager {
             email_to_user($user, $user, get_string('email:subject', 'local_sitsgradepush', $result->mab), $content);
         } else {
             throw new \moodle_exception('error:tasknotfound', 'local_sitsgradepush');
+        }
+    }
+
+    /**
+     * Add an adhoc task to process extensions for a mapping.
+     *
+     * @param int $mappingid
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function add_process_extensions_adhoc_task(int $mappingid): void {
+        global $DB;
+
+        try {
+            $mapping = $DB->get_record(manager::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid]);
+
+            // Check if the assessment mapping exists.
+            if (!$mapping) {
+                throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $mappingid);
+            }
+
+            // Add an adhoc task to process extensions if the mapped assessment is supported.
+            if (in_array($mapping->moduletype, extension::SUPPORTED_MODULE_TYPES) ) {
+                $task = new process_extensions();
+                $task->set_custom_data((object)['mapid' => $mappingid]);
+                coretaskmanager::queue_adhoc_task($task);
+            }
+        } catch (\moodle_exception $e) {
+            logger::log($e->getMessage());
         }
     }
 }
