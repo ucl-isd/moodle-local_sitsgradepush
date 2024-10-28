@@ -20,20 +20,19 @@ This does require some development to adopt but the barrier is greatly reduced.
 - push numerical grades 0-100
 - manual trigger for push
 - push the submission date & time
-- Activities supported: Moodle Assignment, Turnitin Assignment (only with 1 part - most common) and Quiz.
+- Activities supported: Moodle Assignment, Quiz, LTI, Lesson, H5P (plugin), Coursework and Turnitin Assignment V2 (only with 1 part - most common).
 - Select a Gradebook [grade item](https://docs.moodle.org/403/en/Grade_items) (covering LTIs, etc) and [grade category](https://docs.moodle.org/403/en/Grade_categories)
 - Limit Assessment Component availability to ensure only compatible SITS Marking Schemes and SITS Assessment Types can be mapped. And for Exam Assessment types, only allow those components where the exam room code = EXAMMDLE
-- Support for resits, retakes, repeats, re-assessments, Late Summer Assessments 
+- Support for resits, retakes, repeats, re-assessments, Late Summer Assessments
+- Late / non-submission reporting
 
 ## Roadmap
 We had our initial launch stage in March 2024, we are planning to keep improving the tool, by implementing the following features in 2024:
 
-- Add support for LTI, Lesson, H5P, Coursework as source of marks
 - Automatically populate extra time / deadline extensions for [SORAs](https://www.ucl.ac.uk/students/support-and-wellbeing/disability-support/reasonable-adjustments-your-assessments) and [ECs](https://www.ucl.ac.uk/academic-manual/chapters/chapter-2-student-support-framework/2-short-term-illness-and-other-extenuating)
-- Late / non-submission reporting
 - Ability to transfer marks before they have been released to the Gradebook
 
-### Uncommitted feature requests 
-We are aware of these but have not yet scheduled time for these to be developed
+### Turnitin V2 specific feature requests 
+we have decided not to implement the following feature requests as they are specific to the Turnitin V2 plugin which has published End of Support and End of Life dates
 - Select the marks from a specific part of a Turnitin Assignment with multiple parts
 - Combining the source of the marks from multiple Turnitin assignments where these are used to handle seperate deadlines & multiple markers 
