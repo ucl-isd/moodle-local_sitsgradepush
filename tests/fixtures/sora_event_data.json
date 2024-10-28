@@ -1,47 +1,43 @@
 {
-  "identifier": "",
-  "sequence_number": "",
-  "timestamp": "2022-10-13T15:57:02.089Z",
+  "identifier": "0b5aa7a5-5693-46ca-8669-f4e640392cf3",
+  "timestamp": "20241003T140010.357794UTC",
   "event": {
-    "name": "person-sora",
-    "type": "update",
-    "source": "SITS",
-    "changes": [
-      {
-        "attribute": "sora.extra_duration",
-        "from": "15",
-        "to": "30"
-      },
-      {
-        "attribute": "sora.person.identifier",
-        "from": "ABCDE12",
-        "to": "EDCBA21"
-      }
-    ]
+    "name": "person_sora",
+    "operation": "update",
+    "source": "sits"
   },
+  "changes": [
+    {
+      "attribute": "person_sora['sora']['type']['code']",
+      "from": "REGREQ",
+      "to": "SORATEXT"
+    }
+  ],
   "entity": {
-    "metadata": {
-      "sora": {
-        "identifier": "",
-        "type": {
-          "code": "",
-          "name": ""
-        },
-        "accessibility_assessment_arrangement_sequence_number": "",
-        "arrangement_record_sequence_number": "",
-        "approved_indicator": "",
-        "extra_duration": "30",
-        "rest_duration": "5",
-        "post_deadline_details": "",
-        "expiry_date": "",
-        "last_updated": "",
-        "note": "",
-        "person": {
-          "identifier": "ABCDE12",
-          "student_code": "12345678",
-          "userid": "123456"
+    "person_sora": {
+      "sora": [
+        {
+          "identifier": "AAAHM03-000001",
+          "type": {
+            "code": "EXAM",
+            "name": "Examinations"
+          },
+          "arrangement_record_sequence_number": "000001",
+          "accessibility_assessment_arrangement_sequence_number": "000001",
+          "approved_indicator": null,
+          "extra_duration": 30,
+          "rest_duration": 5,
+          "note": null,
+          "post_deadline_details": null,
+          "expiry_date": null,
+          "last_updated": null,
+          "person": {
+            "identifier": "AAAHM03",
+            "student_code": "12345678",
+            "userid": null
+          }
         }
-      }
+      ]
     }
   }
 }
