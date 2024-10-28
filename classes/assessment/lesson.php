@@ -17,14 +17,14 @@
 namespace local_sitsgradepush\assessment;
 
 /**
- * Class for assignment assessment.
+ * Class for lesson assessment.
  *
  * @package    local_sitsgradepush
- * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author     Alex Yeung <k.yeung@ucl.ac.uk>
+ * @author     David Watson <david-watson@ucl.ac.uk>
  */
-class assign extends activity {
+class lesson extends activity {
 
     /**
      * Get all participants.
@@ -32,7 +32,11 @@ class assign extends activity {
      * @return array
      */
     public function get_all_participants(): array {
-        return get_enrolled_users($this->context, 'mod/assign:submit');
+        if ($this->sourceinstance->practice) {
+            // If this is a "Practice Lesson" it does not appear in gradebook.
+            return [];
+        }
+        return self::get_gradeable_enrolled_users_with_capability('mod/lesson:view');
     }
 
     /**
@@ -41,7 +45,8 @@ class assign extends activity {
      * @return int|null
      */
     public function get_start_date(): ?int {
-        return $this->sourceinstance->allowsubmissionsfromdate;
+        return !$this->sourceinstance->practice && $this->sourceinstance->available > 0
+            ? $this->sourceinstance->available : null;
     }
 
     /**
@@ -50,6 +55,19 @@ class assign extends activity {
      * @return int|null
      */
     public function get_end_date(): ?int {
-        return $this->sourceinstance->duedate;
+        return !$this->sourceinstance->practice && $this->sourceinstance->deadline > 0
+            ? $this->sourceinstance->deadline : null;
+    }
+
+    /**
+     * Check assessment is valid for mapping.
+     *
+     * @return \stdClass
+     */
+    public function check_assessment_validity(): \stdClass {
+        if ($this->sourceinstance->practice) {
+            return $this->set_validity_result(false, 'error:lesson_practice');
+        }
+        return parent::check_assessment_validity();
     }
 }

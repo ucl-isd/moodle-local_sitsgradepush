@@ -32,6 +32,9 @@ abstract class activity extends assessment {
     /** @var \stdClass Course module object */
     public \stdClass $coursemodule;
 
+    /** @var \stdClass Context object */
+    public \context_module $context;
+
     /**
      * Constructor.
      *
@@ -39,6 +42,7 @@ abstract class activity extends assessment {
      */
     public function __construct(\stdClass $coursemodule) {
         $this->coursemodule = $coursemodule;
+        $this->context = \context_module::instance($this->coursemodule->id);
         parent::__construct(assessmentfactory::SOURCETYPE_MOD, $coursemodule->id);
     }
 
@@ -146,6 +150,9 @@ abstract class activity extends assessment {
      * @return array
      */
     public function get_grade_items(): array {
+        global $CFG;
+        require_once("$CFG->libdir/gradelib.php");
+
         $gradeitems = grade_item::fetch_all([
             'itemtype' => $this->get_type(),
             'itemmodule' => $this->get_module_name(),
@@ -164,5 +171,44 @@ abstract class activity extends assessment {
     protected function set_instance(): void {
         global $DB;
         $this->sourceinstance = $DB->get_record($this->coursemodule->modname, ['id' => $this->coursemodule->instance]);
+    }
+
+    /**
+     * Get the user IDs of gradeable users in this context i.e. students not teachers.
+     * @return int[] user IDs
+     */
+    protected function get_gradeable_user_ids(): array {
+        global $DB, $CFG;
+
+        // Code adapted from grade/report/lib.php to limit to users with a gradeable role, i.e. students.
+        // The $CFG->gradebookroles setting is exposed on /admin/search.php?query=gradebookroles admin page.
+        $gradebookroles = explode(',', $CFG->gradebookroles);
+        if (empty($gradebookroles)) {
+            return[];
+        }
+        list($gradebookrolessql, $gradebookrolesparams) =
+            $DB->get_in_or_equal($gradebookroles, SQL_PARAMS_NAMED, 'gradebookroles');
+
+        // We want to query both the current context and parent contexts.
+        list($relatedctxsql, $relatedctxparams) = $DB->get_in_or_equal(
+            $this->context->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx'
+        );
+        $sql = "SELECT DISTINCT userid FROM {role_assignments} WHERE roleid $gradebookrolessql AND contextid $relatedctxsql";
+        return  $DB->get_fieldset_sql($sql, array_merge($gradebookrolesparams, $relatedctxparams));
+    }
+
+    /**
+     * Get the details of gradeable (i.e. students not teachers) enrolled users in this context with specified capability.
+     * Can be used to get list of participants where activity has no 'student only' capability like 'mod/xxx:submit'.
+     * @param string $capability the capability string e.g. 'mod/lti:view'.
+     * @return array user details
+     */
+    protected function get_gradeable_enrolled_users_with_capability(string $capability): array {
+        $enrolledusers = get_enrolled_users($this->context, $capability);
+        // Filter out non-gradeable users e.g. teachers.
+        $gradeableids = self::get_gradeable_user_ids();
+        return array_filter($enrolledusers, function($u) use ($gradeableids) {
+            return in_array($u->id, $gradeableids);
+        });
     }
 }

@@ -17,14 +17,17 @@
 namespace local_sitsgradepush\assessment;
 
 /**
- * Class for assignment assessment.
+ * Class for hvp (mod_hvp plugin, not core H5P) assessment.
+ * Note that the default for "Grade > Maximum grade" when HVP is added to a course is 10.
+ * If it is to be a candidate for marks transfer, this needs to be set to 100 by the teacher.
+ * Otherwise it will not be shown as a source for marks transfer.
  *
  * @package    local_sitsgradepush
- * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author     Alex Yeung <k.yeung@ucl.ac.uk>
+ * @author     David Watson <david-watson@ucl.ac.uk>
  */
-class assign extends activity {
+class hvp extends activity {
 
     /**
      * Get all participants.
@@ -32,24 +35,26 @@ class assign extends activity {
      * @return array
      */
     public function get_all_participants(): array {
-        return get_enrolled_users($this->context, 'mod/assign:submit');
+        return self::get_gradeable_enrolled_users_with_capability('mod/hvp:view');
     }
 
     /**
-     * Get the start date of this assessment.
+     * Get the start date of the assessment.
      *
      * @return int|null
      */
     public function get_start_date(): ?int {
-        return $this->sourceinstance->allowsubmissionsfromdate;
+        // Activity does not have a start date.
+        return null;
     }
 
     /**
-     * Get the end date of this assessment.
+     * Get the end date of the assessment.
      *
      * @return int|null
      */
     public function get_end_date(): ?int {
-        return $this->sourceinstance->duedate;
+        // Activity does not have an end date.
+        return null;
     }
 }
