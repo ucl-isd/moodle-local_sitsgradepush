@@ -475,7 +475,7 @@ class manager {
             // Checked in the above validation, the current mapping to this component grade
             // can be deleted as it does not have push records nor mapped to the current activity.
             $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $existingmapping->id]);
-            assesstype::update_assess_type($existingmapping, 'unlock');
+            assesstype::update_assess_type($existingmapping, assesstype::ACTION_UNLOCK);
         }
 
         // Insert new mapping.
@@ -493,7 +493,9 @@ class manager {
         $record->timemodified = time();
 
         $newmappingid = $DB->insert_record(self::TABLE_ASSESSMENT_MAPPING, $record);
-        assesstype::update_assess_type($newmappingid, 'lock');
+
+        // Update assessment type of the mapped assessment for the assessment type plugin if it is installed.
+        assesstype::update_assess_type($newmappingid, assesstype::ACTION_LOCK);
 
         return $newmappingid;
     }

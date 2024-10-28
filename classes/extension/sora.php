@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\extension;
 
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\logger;
 
 /**
  * Class for Summary of Reasonable Adjustments (SORA).
@@ -31,26 +32,14 @@ class sora extends extension {
     /** @var string Prefix used to create SORA groups */
     const SORA_GROUP_PREFIX = 'DEFAULT-SORA-';
 
-    /** @var \stdClass Event data in the AWS message */
-    protected \stdClass $eventdata;
+    /** @var int Extra duration in minutes per hour */
+    protected int $extraduration;
 
-    /** @var \stdClass SORA data in the AWS message */
-    protected \stdClass $soradata;
+    /** @var int Rest duration in minutes per hour */
+    protected int $restduration;
 
     /** @var int Time extension in seconds, including extra and rest duration */
     protected int $timeextension;
-
-    /**
-     * Constructor.
-     *
-     * @param string $message
-     */
-    public function __construct(string $message) {
-        parent::__construct($message);
-
-        // Set the SORA properties that we need.
-        $this->set_sora_properties();
-    }
 
     /**
      * Return the whole time extension in seconds, including extra and rest duration.
@@ -67,7 +56,7 @@ class sora extends extension {
      * @return int
      */
     public function get_extra_duration(): int {
-        return (int) $this->soradata->extra_duration;
+        return $this->extraduration;
     }
 
     /**
@@ -76,7 +65,7 @@ class sora extends extension {
      * @return int
      */
     public function get_rest_duration(): int {
-        return (int) $this->soradata->rest_duration;
+        return $this->restduration;
     }
 
     /**
@@ -106,7 +95,7 @@ class sora extends extension {
             $newgroup->description = '';
             $newgroup->enrolmentkey = '';
             $newgroup->picture = 0;
-            $newgroup->visibility = GROUPS_VISIBILITY_MEMBERS;
+            $newgroup->visibility = GROUPS_VISIBILITY_OWN;
             $newgroup->hidepicture = 0;
             $newgroup->timecreated = time();
             $newgroup->timemodified = time();
@@ -134,6 +123,57 @@ class sora extends extension {
     }
 
     /**
+     * Set properties from AWS SORA update message.
+     *
+     * @param string $message
+     * @return void
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function set_properties_from_aws_message(string $message): void {
+
+        // Decode the JSON message.
+        $messagedata = $this->parse_event_json($message);
+
+        // Check the message is valid.
+        if (empty($messagedata->entity->person_sora->sora[0])) {
+            throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $message);
+        }
+
+        $soradata = $messagedata->entity->person_sora->sora[0];
+
+        // Set the user ID of the student.
+        $this->set_userid($soradata->person->student_code);
+
+        // Set properties.
+        $this->extraduration = (int) $soradata->extra_duration;
+        $this->restduration = (int) $soradata->rest_duration;
+
+        // Calculate and set the time extension in seconds.
+        $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
+        $this->dataisset = true;
+    }
+
+    /**
+     * Set properties from get students API.
+     *
+     * @param array $student
+     * @return void
+     */
+    public function set_properties_from_get_students_api(array $student): void {
+        // Set the user ID.
+        $this->set_userid($student['code']);
+
+        // Set properties.
+        $this->extraduration = (int) $student['assessment']['sora_assessment_duration'];
+        $this->restduration = (int) $student['assessment']['sora_rest_duration'];
+
+        // Calculate and set the time extension in seconds.
+        $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
+        $this->dataisset = true;
+    }
+
+    /**
      * Process the extension.
      *
      * @return void
@@ -141,6 +181,10 @@ class sora extends extension {
      * @throws \dml_exception
      */
     public function process_extension(): void {
+        if (!$this->dataisset) {
+            throw new \coding_exception('error:extensiondataisnotset', 'local_sitsgradepush');
+        }
+
         // Get all mappings for the student.
         $mappings = $this->get_mappings_by_userid($this->get_userid());
 
@@ -157,8 +201,7 @@ class sora extends extension {
                     $assessment->apply_extension($this);
                 }
             } catch (\Exception $e) {
-                // Consider logging the exception here.
-                continue;
+                logger::log($e->getMessage());
             }
         }
     }
@@ -194,23 +237,13 @@ class sora extends extension {
     }
 
     /**
-     * Set the SORA properties.
+     * Calculate the time extension in seconds.
+     *
+     * @param int $extraduration Extra duration in minutes.
+     * @param int $restduration Rest duration in minutes.
+     * @return int
      */
-    private function set_sora_properties(): void {
-        global $DB;
-
-        // Set the event data.
-        $this->eventdata = $this->message->event;
-
-        // Set the SORA data.
-        $this->soradata = $this->message->entity->metadata->sora;
-
-        // Find and set the user ID of the student.
-        $idnumber = $this->soradata->person->student_code;
-        $user = $DB->get_record('user', ['idnumber' => $idnumber], 'id', MUST_EXIST);
-        $this->userid = $user->id;
-
-        // Set the time extension in seconds.
-        $this->timeextension = ($this->get_extra_duration() + $this->get_rest_duration()) * MINSECS;
+    private function calculate_time_extension(int $extraduration, int $restduration): int {
+        return ($extraduration + $restduration) * MINSECS;
     }
 }

@@ -20,9 +20,7 @@ use assign;
 use cache;
 use context_course;
 use context_module;
-use local_sitsgradepush\api\client;
 use local_sitsgradepush\api\client_factory;
-use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
@@ -31,6 +29,7 @@ use moodle_exception;
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_provider.php');
+require_once(__DIR__ . '/base_test_class.php');
 
 /**
  * Tests for the manager class.
@@ -40,7 +39,7 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_pro
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-final class manager_test extends \advanced_testcase {
+final class manager_test extends base_test_class {
 
     /** @var \local_sitsgradepush\manager|null Manager object */
     private ?manager $manager;
@@ -1583,35 +1582,5 @@ final class manager_test extends \advanced_testcase {
         $assign->update_grade($grade);
 
         return $assignmodule1;
-    }
-
-    /**
-     * Get api client for testing.
-     *
-     * @param  bool  $shouldthrowexception
-     * @param  mixed|null  $response
-     *
-     * @return \local_sitsgradepush\api\iclient
-     * @throws \coding_exception
-     * @throws \dml_exception
-     */
-    private function get_apiclient_for_testing(bool $shouldthrowexception, mixed $response = null): iclient {
-        $apiclient = $this->createMock(client::class);
-        $apiclient->expects($this->any())
-            ->method('get_client_name')
-            ->willReturn(get_string('pluginname', 'sitsapiclient_' . get_config('local_sitsgradepush', 'apiclient')));
-        $apiclient->expects($this->any())
-            ->method('build_request')
-            ->willReturn($this->createMock(irequest::class));
-        if ($shouldthrowexception) {
-            $apiclient->expects($this->any())
-                ->method('send_request')
-                ->will($this->throwException(new \moodle_exception('error:webclient', 'sitsapiclient_easikit')));
-        } else {
-            $apiclient->expects($this->any())
-                ->method('send_request')
-                ->willReturn($response);
-        }
-        return $apiclient;
     }
 }
