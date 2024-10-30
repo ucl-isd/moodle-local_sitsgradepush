@@ -157,6 +157,40 @@ if ($hassiteconfig) {
             get_string('settings:enableextension:desc', 'local_sitsgradepush'),
             '0'
         ));
+
+        // Setting for AWS.
+        $settings->add(new admin_setting_heading('local_sitsgradepush_aws_settings',
+            get_string('settings:awssettings', 'local_sitsgradepush'),
+            get_string('settings:awssettings:desc', 'local_sitsgradepush')
+        ));
+
+        // AWS region.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_region',
+            get_string('settings:awsregion', 'local_sitsgradepush'),
+            get_string('settings:awsregion:desc', 'local_sitsgradepush'),
+            'eu-west-2'
+        ));
+
+        // AWS key.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_key',
+            get_string('settings:awskey', 'local_sitsgradepush'),
+            get_string('settings:awskey:desc', 'local_sitsgradepush'),
+            'AKIAX3UE2A7B2VLXHL2O'
+        ));
+
+        // AWS secret.
+        $settings->add(new admin_setting_configpasswordunmask('local_sitsgradepush/aws_secret',
+            get_string('settings:awssecret', 'local_sitsgradepush'),
+            get_string('settings:awssecret:desc', 'local_sitsgradepush'),
+            'CHANGEME'
+        ));
+
+        // AWS SORA queue URL.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_sora_sqs_queue_url',
+            get_string('settings:awssoraqueueurl', 'local_sitsgradepush'),
+            get_string('settings:awssoraqueueurl:desc', 'local_sitsgradepush'),
+            'https://sqs.eu-west-2.amazonaws.com/540370667459/person-sora-dev'
+        ));
     }
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
