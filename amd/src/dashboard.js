@@ -81,12 +81,16 @@ function initConfirmationModal(page) {
     // Add event listener to the confirmation modal.
     confirmTransferButton.addEventListener("click", async function() {
         let assessmentmappingid = confirmTransferButton.getAttribute('data-assessmentmappingid');
+
+        // Check should we record non-submission as 0 AB.
+        let recordnonsubmission = document.getElementById('recordnonsubmission').checked;
+
         if (assessmentmappingid !== null && assessmentmappingid !== 'all') {
             // Single transfer.
-            await pushMarks(assessmentmappingid);
+            await pushMarks(assessmentmappingid, recordnonsubmission);
         } else if (assessmentmappingid === 'all') {
             // Bulk transfer.
-            await pushAllMarks(page);
+            await pushAllMarks(page, recordnonsubmission);
         }
     });
 }
@@ -121,12 +125,13 @@ function initAssessmentUpdate(courseid) {
  * Schedule a push task when the user clicks on a push button.
  *
  * @param {int} assessmentmappingid The button element.
+ * @param {boolean} recordnonsubmission Record non-submission as 0 AB.
  * @return {Promise|boolean} Promise.
  */
-async function pushMarks(assessmentmappingid) {
+async function pushMarks(assessmentmappingid, recordnonsubmission) {
     try {
         // Schedule a push task.
-        let result = await schedulePushTask(assessmentmappingid);
+        let result = await schedulePushTask(assessmentmappingid, recordnonsubmission);
 
         // Check if the push task is successfully scheduled.
         if (result.success) {
@@ -150,14 +155,31 @@ async function pushMarks(assessmentmappingid) {
 /**
  *
  * @param {HTMLElement} page
+ * @param {boolean} recordnonsubmission Record non-submission as 0 AB.
  * @return {Promise<void>}
  */
-async function pushAllMarks(page) {
+async function pushAllMarks(page, recordnonsubmission) {
+    // Find all the mappings that have marks to push based on the recordnonsubmission setting.
     let assessmentmappings = Array.from(document.querySelectorAll('.marks-col-field'))
-        .filter(element =>
-            parseInt(element.getAttribute('data-markscount'), 10) > 0 &&
-            element.getAttribute('data-task-running') === 'false'
-        );
+        .filter(element => {
+            // Get current mapping statuses.
+            let marksCount = parseInt(element.getAttribute('data-markscount'), 10);
+            let nonSubmittedCount = parseInt(element.getAttribute('data-nonsubmittedcount'), 10);
+            let taskRunning = element.getAttribute('data-task-running') === 'true';
+
+            // Nothing to push if there are no marks and no non-submitted records.
+            if (marksCount === 0 && nonSubmittedCount === 0) {
+                return false;
+            }
+
+            if (recordnonsubmission) {
+                // Record non-submission enabled, return true when mapping has marks or non-submitted records and no task running.
+                return (marksCount > 0 || nonSubmittedCount > 0) && !taskRunning;
+            } else {
+                // Record non-submission disabled, return true when mapping has marks and no task running.
+                return marksCount > 0 && !taskRunning;
+            }
+        });
 
     // Number of not disabled push buttons.
     let total = assessmentmappings.length;
@@ -171,7 +193,7 @@ async function pushAllMarks(page) {
         // Get the assessment mapping ID.
         let assessmentmappingid = element.getAttribute('data-assessmentmappingid');
         // Create a Promise for each button and push it into the array.
-        let promise = pushMarks(assessmentmappingid)
+        let promise = pushMarks(assessmentmappingid, recordnonsubmission)
             .then(function(result) {
                 if (result.success) {
                     count = count + 1;
@@ -216,7 +238,7 @@ function updateUIOnTaskScheduling(assessmentmappingid) {
 
     // Hide the transfer button and show the progress bar immediately.
     let assessments = [
-        {task: {progress: 0}, assessmentmappingid: assessmentmappingid, markscount: 0},
+        {task: {progress: 0}, assessmentmappingid: assessmentmappingid, markscount: 0, nonsubmittedcount: 0},
     ];
     updateMarksColumn(assessments);
 }
@@ -263,15 +285,20 @@ function updateMarksColumn(assessments) {
             // Set the marks count attribute.
             marksColumnField.setAttribute('data-markscount', assessment.markscount);
 
+            // Set the non submitted count attribute.
+            marksColumnField.setAttribute('data-nonsubmittedcount', assessment.nonsubmittedcount);
+
             // Marks count element that displays the number of marks.
             let marksCountElement = marksColumnField.querySelector('.marks-count');
 
             // Update the marks count.
             marksCountElement.innerHTML = assessment.markscount;
 
-            // Show the transfer button if there are marks to transfer.
+            // Get the transfer button.
             let transferButton = marksColumnField.querySelector('.js-btn-transfer-marks');
-            if (assessment.markscount > 0) {
+
+            // Show the transfer button if there are marks or non-submitted records.
+            if (assessment.markscount > 0 || assessment.nonsubmittedcount > 0) {
                 transferButton.classList.remove('d-none');
             } else {
                 transferButton.classList.add('d-none');

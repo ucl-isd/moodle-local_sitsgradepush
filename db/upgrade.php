@@ -519,5 +519,20 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         }
     }
 
+    if ($oldversion < 2024101000) {
+
+        // Define field options to be added to local_sitsgradepush_tasks.
+        $table = new xmldb_table('local_sitsgradepush_tasks');
+        $field = new xmldb_field('options', XMLDB_TYPE_TEXT, null, null, null, null, null, 'assessmentmappingid');
+
+        // Conditionally launch add field options.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024101000, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
