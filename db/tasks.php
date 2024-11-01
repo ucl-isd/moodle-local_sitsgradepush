@@ -44,4 +44,13 @@ $tasks = [
       'month' => '*',
       'dayofweek' => '*',
     ],
+    [
+      'classname' => 'local_sitsgradepush\task\process_aws_sora_updates',
+      'blocking' => 0,
+      'minute' => '0',
+      'hour' => '0',
+      'day' => '*',
+      'month' => '*',
+      'dayofweek' => '*',
+    ],
 ];
