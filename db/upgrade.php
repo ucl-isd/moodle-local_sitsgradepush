@@ -549,5 +549,38 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2024101100, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2024110100) {
+
+        // Define table local_sitsgradepush_aws_log to be created.
+        $table = new xmldb_table('local_sitsgradepush_aws_log');
+
+        // Adding fields to table local_sitsgradepush_aws_log.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('messageid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('receipthandle', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('queueurl', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('payload', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('error_message', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table local_sitsgradepush_aws_log.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_sitsgradepush_aws_log.
+        $table->add_index('messageid', XMLDB_INDEX_NOTUNIQUE, ['messageid']);
+        $table->add_index('status', XMLDB_INDEX_NOTUNIQUE, ['status']);
+        $table->add_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated']);
+
+        // Conditionally launch create table for local_sitsgradepush_aws_log.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024110100, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
