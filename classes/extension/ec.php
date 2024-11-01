@@ -72,13 +72,13 @@ class ec extends extension {
      * Set the EC properties from the AWS EC update message.
      * Note: The AWS EC update message is not yet developed, will implement this when the message is available.
      *
-     * @param string $message
+     * @param string $messagebody
      * @return void
      * @throws \dml_exception|\moodle_exception
      */
-    public function set_properties_from_aws_message(string $message): void {
+    public function set_properties_from_aws_message(string $messagebody): void {
         // Decode the JSON message.
-        $messagedata = $this->parse_event_json($message);
+        $messagedata = $this->parse_event_json($messagebody);
 
         // Set the user ID of the student.
         $this->set_userid($messagedata->student_code);

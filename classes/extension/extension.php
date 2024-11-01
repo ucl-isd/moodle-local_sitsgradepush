@@ -40,10 +40,10 @@ abstract class extension implements iextension {
     /**
      * Set properties from JSON message like SORA / EC update message from AWS.
      *
-     * @param string $message
+     * @param string $messagebody
      * @return void
      */
-    abstract public function set_properties_from_aws_message(string $message): void;
+    abstract public function set_properties_from_aws_message(string $messagebody): void;
 
     /**
      * Set properties from get students API.
@@ -69,6 +69,19 @@ abstract class extension implements iextension {
      */
     public function get_mab_identifier(): string {
         return $this->mabidentifier;
+    }
+
+    /**
+     * Check if the module type is supported.
+     *
+     * @param string|null $module
+     * @return bool
+     */
+    public static function is_module_supported(?string $module): bool {
+        if (empty($module)) {
+            return false;
+        }
+        return in_array($module, self::SUPPORTED_MODULE_TYPES);
     }
 
     /**
@@ -157,8 +170,11 @@ abstract class extension implements iextension {
      */
     protected function parse_event_json(string $message): \stdClass {
         $messageobject = json_decode($message);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception(get_string('error:invalid_json_data', 'local_sitsgradepush', json_last_error_msg()));
+        }
         if (empty($messageobject)) {
-            throw new \Exception('Invalid message data');
+            throw new \Exception(get_string('error:empty_json_data', 'local_sitsgradepush'));
         }
         return $messageobject;
     }
