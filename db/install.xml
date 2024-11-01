@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/sitsgradepush/db" VERSION="20241011" COMMENT="XMLDB file for Moodle local/sits_grade_push"
+<XMLDB PATH="local/sitsgradepush/db" VERSION="20241101" COMMENT="XMLDB file for Moodle local/sits_grade_push"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -109,6 +109,27 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="idx_assessmentmappingid" UNIQUE="false" FIELDS="assessmentmappingid" COMMENT="Assessment mapping id index"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_sitsgradepush_aws_log" COMMENT="Store AWS update messages">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="messageid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="AWS SQS Message ID"/>
+        <FIELD NAME="receipthandle" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="AWS SQS Receipt Handle"/>
+        <FIELD NAME="queueurl" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="SQS Queue URL"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Process status"/>
+        <FIELD NAME="payload" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Original message content"/>
+        <FIELD NAME="error_message" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="messageid" UNIQUE="false" FIELDS="messageid"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated"/>
       </INDEXES>
     </TABLE>
   </TABLES>

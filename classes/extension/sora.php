@@ -125,32 +125,38 @@ class sora extends extension {
     /**
      * Set properties from AWS SORA update message.
      *
-     * @param string $message
+     * @param string $messagebody
      * @return void
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function set_properties_from_aws_message(string $message): void {
+    public function set_properties_from_aws_message(string $messagebody): void {
 
-        // Decode the JSON message.
-        $messagedata = $this->parse_event_json($message);
+        // Decode the JSON message body.
+        $messagedata = $this->parse_event_json($messagebody);
 
         // Check the message is valid.
         if (empty($messagedata->entity->person_sora->sora[0])) {
-            throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $message);
+            throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
         }
 
         $soradata = $messagedata->entity->person_sora->sora[0];
 
+        // Set properties.
+        $this->extraduration = (int) $soradata->extra_duration ?? 0;
+        $this->restduration = (int) $soradata->rest_duration ?? 0;
+
+        // A SORA update message must have at least one of the durations.
+        if ($this->extraduration == 0 && $this->restduration == 0) {
+            throw new \moodle_exception('error:invalid_duration', 'local_sitsgradepush');
+        }
+
+        // Calculate and set the time extension in seconds.
+        $this->timeextension = $this->calculate_time_extension($this->extraduration, $this->restduration);
+
         // Set the user ID of the student.
         $this->set_userid($soradata->person->student_code);
 
-        // Set properties.
-        $this->extraduration = (int) $soradata->extra_duration;
-        $this->restduration = (int) $soradata->rest_duration;
-
-        // Calculate and set the time extension in seconds.
-        $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
         $this->dataisset = true;
     }
 
