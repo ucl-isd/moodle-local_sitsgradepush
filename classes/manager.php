@@ -26,6 +26,7 @@ use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\output\pushrecord;
 use local_sitsgradepush\submission\submissionfactory;
 
@@ -488,7 +489,8 @@ class manager {
         }
         $record->componentgradeid = $data->componentgradeid;
         $record->reassessment = $data->reassessment;
-        $record->enableextension = get_config('local_sitsgradepush', 'extension_enabled') ? 1 : 0;
+        $record->enableextension = (get_config('local_sitsgradepush', 'extension_enabled') &&
+            (isset($record->moduletype) && extension::is_module_supported($record->moduletype))) ? 1 : 0;
         $record->timecreated = time();
         $record->timemodified = time();
 
