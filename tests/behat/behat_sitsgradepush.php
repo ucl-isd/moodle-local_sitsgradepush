@@ -120,10 +120,10 @@ class behat_sitsgradepush extends behat_base {
         $page = $this->getSession()->getPage();
 
         // Buttons which are button type, i.e. not links.
-        $buttons = ['Select', 'Transfer marks'];
+        $buttons = ['Select', 'Transfer marks', 'Remove source'];
 
         // Determine the XPath based on button type.
-        if (in_array($buttontext, ['Select source', 'Change source', 'Transfer marks'])) {
+        if (in_array($buttontext, ['Select source', 'Change source', 'Transfer marks', 'Remove source'])) {
             $xpath = "//tr[th[contains(text(), '$rowtext')]]";
         } else if ($buttontext == 'Select') {
             $xpath = "//tr[td[contains(text(), '$rowtext')]]";
@@ -176,6 +176,22 @@ class behat_sitsgradepush extends behat_base {
         // Check if the link is visible.
         if (!$link->isVisible()) {
             throw new Exception("Link with text '$linktext' is not visible in the row with SITS assessment '$sitsassessment'.");
+        }
+    }
+
+    /**
+     * Check if a SITS assessment is not mapped.
+     *
+     * @param  string $sitsassessment
+     * @throws \Exception
+     *
+     * @Then I should see :sitsassessment is not mapped
+     */
+    public function i_should_see_sits_assessment_is_not_mapped(string $sitsassessment): void {
+        global $DB;
+        $mab = $DB->get_record(manager::TABLE_COMPONENT_GRADE, ['mabname' => $sitsassessment]);
+        if (manager::get_manager()->is_component_grade_mapped($mab->id, 0)) {
+            throw new Exception("SITS assessment '$sitsassessment' is mapped.");
         }
     }
 

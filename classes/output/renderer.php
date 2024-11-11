@@ -214,14 +214,16 @@ class renderer extends plugin_renderer_base {
                     $assessmentmapping->name = $assessmentdata->source->get_assessment_name();
                     $assessmentmapping->url = $assessmentdata->source->get_assessment_url(false);
                     $assessmentmapping->transferhistoryurl = $assessmentdata->source->get_assessment_transfer_history_url(false);
+                    $assessmentmapping->removesourceurl = $this->get_remove_source_url($courseid, $mapping->id)->out(false);
 
                     // Check if there is a task running for the assessment mapping.
                     $taskrunning = taskmanager::get_pending_task_in_queue($mapping->id);
                     $assessmentmapping->taskrunning = !empty($taskrunning);
                     $assessmentmapping->taskprogress = $taskrunning && $taskrunning->progress ? $taskrunning->progress : 0;
 
-                    // Disable the change source button if there is a task running.
-                    $assessmentmapping->disablechangesource =
+                    // Disable the change source button / hide the remove source button
+                    // if grades have been pushed or there is a task running.
+                    $assessmentmapping->disablechangesource = $assessmentmapping->hideremovesourcebutton =
                         !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
 
                     $componentgrade->assessmentmapping = $assessmentmapping;
@@ -444,5 +446,20 @@ class renderer extends plugin_renderer_base {
         }
 
         return $warningmessage;
+    }
+
+    /**
+     * Get the remove source URL.
+     *
+     * @param int $courseid Course ID
+     * @param int $mapid Assessment mapping ID
+     *
+     * @return \moodle_url
+     */
+    private function get_remove_source_url(int $courseid, int $mapid): \moodle_url {
+        return new \moodle_url(
+            '/local/sitsgradepush/dashboard.php',
+            ['id' => $courseid, 'mapid' => $mapid, 'action' => 'removesource']
+        );
     }
 }

@@ -98,7 +98,8 @@
                             "transferhistoryurl": "http://test.m4.local:4001/local/sitsgradepush/index.php?id=22",
                             "taskrunning": false,
                             "taskprogress": "0",
-                            "disablechangesource": false
+                            "disablechangesource": false,
+                            "hideremovesourcebutton": false
                         }
                     }
                 },
@@ -169,6 +170,17 @@
                             {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
                             <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
                         </a>
+                        <button type="button"
+                                class="btn btn-danger btn-sm {{#hideremovesourcebutton}}d-none{{/hideremovesourcebutton}}"
+                                data-confirmation="modal"
+                                data-confirmation-title-str='["dashboard:remove_btn_title", "local_sitsgradepush"]'
+                                data-confirmation-content-str='["dashboard:remove_btn_content", "local_sitsgradepush", {"sourcename": "{{name}}", "mabseq": "{{mabseq}}", "mabname": "{{mabname}}"}]'
+                                data-confirmation-yes-button-str='["confirm"]'
+                                data-confirmation-destination="{{removesourceurl}}"
+                        >
+                            {{#str}} dashboard:remove_btn_title, local_sitsgradepush {{/str}}
+                            <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
+                        </button>
                     {{/currentacademicyear}}
                     {{/assessmentmapping}}
                     {{#currentacademicyear}}
