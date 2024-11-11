@@ -98,7 +98,8 @@
                             "transferhistoryurl": "http://test.m4.local:4001/local/sitsgradepush/index.php?id=22",
                             "taskrunning": false,
                             "taskprogress": "0",
-                            "disablechangesource": false
+                            "disablechangesource": false,
+                            "hideremovesourcebutton": false
                         }
                     }
                 },
@@ -169,6 +170,20 @@
                             {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
                             <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
                         </a>
+                        <button
+                                id="remove-source-button-{{id}}"
+                                class="btn btn-danger btn-sm js-btn-remove-source {{#hideremovesourcebutton}}d-none{{/hideremovesourcebutton}}"
+                                type="button"
+                                data-assessmentmappingid="{{id}}"
+                                data-seq="{{mabseq}}"
+                                data-mabname="{{mabname}}"
+                                data-sourcename="{{name}}"
+                                data-toggle="modal"
+                                data-target="#removeSourceConfirmModal"
+                        >
+                            Remove source
+                            <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
+                        </button>
                     {{/currentacademicyear}}
                     {{/assessmentmapping}}
                     {{#currentacademicyear}}
@@ -251,8 +266,11 @@
 {{! Modal }}
 {{> local_sitsgradepush/confirmation_modal }}
 
+{{! Remove source modal }}
+{{> local_sitsgradepush/remove_source_confirm_modal }}
+
 {{#js}}
-    require(['jquery'], function($) {
+    require(['jquery', 'core/str'], function($, Str) {
         // Transfer marks button
         $('.js-btn-transfer-marks').on('click', function() {
             let mappingid = $(this).closest('.marks-col-field').attr('data-assessmentmappingid');
@@ -288,6 +306,25 @@
 
             // Reset the non-submission checkbox every time the modal is opened.
             $('#recordnonsubmission').prop('checked', false);
+        });
+
+        // Remove source button
+        $('.js-btn-remove-source').on('click', function() {
+            Str.get_string('dashboard:remove_btn_content', 'local_sitsgradepush', {
+                sourcename: $(this).attr('data-sourcename'),
+                mabseq: $(this).attr('data-seq'),
+                mabname: $(this).attr('data-mabname')
+            }).then(function(content) {
+                $('#remove-source-button-content').html(content);
+                return content;
+            }).catch(function(error) {
+                $('#remove-source-button-content').html('Error loading content');
+                return error;
+            });
+            $('#js-remove-source-modal-button').attr('data-assessmentmappingid', $(this).attr('data-assessmentmappingid'));
+            $('#js-remove-source-modal-button').attr('data-sourcename', $(this).attr('data-sourcename'));
+            $('#js-remove-source-modal-button').attr('data-mabseq', $(this).attr('data-seq'));
+            $('#js-remove-source-modal-button').attr('data-mabname', $(this).attr('data-mabname'));
         });
     });
 {{/js}}

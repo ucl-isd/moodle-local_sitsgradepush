@@ -1,4 +1,4 @@
-import {schedulePushTask, getAssessmentsUpdate, updateProgressBar} from "./sitsgradepush_helper";
+import {schedulePushTask, getAssessmentsUpdate, updateProgressBar, removeMapping} from "./sitsgradepush_helper";
 import notification from "core/notification";
 
 let updatePageIntervalId = null; // The interval ID for updating the progress.
@@ -25,6 +25,9 @@ export const init = (courseid) => {
 
     // Initialize confirmation modal.
     initConfirmationModal(window);
+
+    // Initialize the remove source buttons.
+    initRemoveSourceConfirmModal();
 };
 
 /**
@@ -117,6 +120,29 @@ function initAssessmentUpdate(courseid) {
             updatePageIntervalId = setInterval(() => {
                 updateAssessments(courseid);
             }, updatePageDelay);
+        }
+    });
+}
+
+/**
+ * Initialize the remove source confirmation modal.
+ *
+ * @return {void}
+ */
+function initRemoveSourceConfirmModal() {
+    // Find the remove source modal confirm button.
+    let removeSourceModalConfirmBtn = document.getElementById('js-remove-source-modal-button');
+
+    // Add event listener to the remove source modal confirm button.
+    removeSourceModalConfirmBtn.addEventListener('click', async function() {
+        // Get assessment mapping id.
+        let assessmentmappingid = removeSourceModalConfirmBtn.getAttribute('data-assessmentmappingid');
+
+        const result = await removeMapping(globalCourseid, assessmentmappingid);
+        if (result.success) {
+            window.location.reload();
+        } else {
+            showTransferErrorMessage(assessmentmappingid, result.message);
         }
     });
 }

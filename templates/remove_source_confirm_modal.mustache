@@ -1,0 +1,56 @@
+{{!
+    This file is part the Local SITS Grade Push plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/remove_source_confirm_modal
+
+    Template for displaying a confirmation modal when remove source button is clicked.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-assessmentmappingid - String, assessment mapping id.
+    * data-sourcename - String, Moodle source name.
+    * data-mabseq - String, MAB sequence.
+    * data-mabname - String, MAB name.
+
+    Context variables required for this template:
+    * none
+
+    Example context (json):
+    {}
+}}
+
+<div class="modal fade" id="removeSourceConfirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{#str}} dashboard:remove_btn_title, local_sitsgradepush {{/str}}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div id="remove-source-button-content" class="modal-body">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{{#str}} confirmmodal:cancel, local_sitsgradepush {{/str}}</button>
+                <button id="js-remove-source-modal-button" data-assessmentmappingid="" data-sourcename="" data-mabseq="" data-mabname="" type="button" class="btn btn-primary" data-dismiss="modal">
+                    {{#str}} confirmmodal:confirm, local_sitsgradepush {{/str}}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -105,3 +105,27 @@ export const updateProgressBar = (container, progress) => {
         progressBar.style.width = progress + '%';
     }
 };
+
+/**
+ * Remove a mapping from the dashboard page.
+ *
+ * @param {int} courseid The course ID.
+ * @param {int} assessmentmappingid The assessment mapping ID.
+ * @return {Promise}
+ */
+export function removeMapping(courseid, assessmentmappingid) {
+    return new Promise((resolve, reject) => {
+        Ajax.call([{
+            methodname: 'local_sitsgradepush_remove_mapping',
+            args: {
+                'courseid': courseid,
+                'assessmentmappingid': assessmentmappingid,
+            },
+        }])[0].done(function(response) {
+            resolve(response);
+        }).fail(function(err) {
+            window.console.error(err);
+            reject(err);
+        });
+    });
+}

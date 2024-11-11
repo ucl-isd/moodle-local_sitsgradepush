@@ -220,8 +220,9 @@ class renderer extends plugin_renderer_base {
                     $assessmentmapping->taskrunning = !empty($taskrunning);
                     $assessmentmapping->taskprogress = $taskrunning && $taskrunning->progress ? $taskrunning->progress : 0;
 
-                    // Disable the change source button if there is a task running.
-                    $assessmentmapping->disablechangesource =
+                    // Disable the change source button / hide the remove source button
+                    // if grades have been pushed or there is a task running.
+                    $assessmentmapping->disablechangesource = $assessmentmapping->hideremovesourcebutton =
                         !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
 
                     $componentgrade->assessmentmapping = $assessmentmapping;

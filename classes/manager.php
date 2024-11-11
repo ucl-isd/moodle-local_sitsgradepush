@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush;
 
+use context_course;
 use core_component;
 use core_course\customfield\course_handler;
 use DirectoryIterator;
@@ -1436,6 +1437,37 @@ class manager {
         }
 
         return $results;
+    }
+
+    /**
+     * Delete assessment mapping.
+     *
+     * @param int $courseid
+     * @param int $mappingid
+     * @return void
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function remove_mapping(int $courseid, int $mappingid): void {
+        global $DB;
+
+        // Check permission. Assume the user who has permission to map assessment is allowed to remove mapping too.
+        if (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($courseid))) {
+            throw new \moodle_exception('error:remove_mapping', 'local_sitsgradepush');
+        }
+
+        // Check the mapping exists.
+        if (!$DB->record_exists(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid])) {
+            throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $mappingid);
+        }
+
+        // Remove mapping is not allowed if grades have been pushed.
+        if ($this->has_grades_pushed($mappingid)) {
+            throw new \moodle_exception('error:mab_has_push_records', 'local_sitsgradepush', '', 'Mapping ID: ' . $mappingid);
+        }
+
+        // Everything is fine, remove the mapping.
+        $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid]);
     }
 
     /**

@@ -26,6 +26,7 @@ use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
+use moodle_exception;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -1284,6 +1285,73 @@ final class manager_test extends \advanced_testcase {
         // Test the mab is returned.
         $mab = $this->manager->get_mab_by_mapping_id($this->mappingid1);
         $this->assertEquals($this->mab1->id, $mab->id);
+    }
+
+    /**
+     * Test the remove mapping method.
+     *
+     * @covers \local_sitsgradepush\manager::remove_mapping
+     * @return void
+     * @throws \ReflectionException
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function test_remove_mapping(): void {
+        global $DB;
+        // Set up the test environment.
+        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
+        $this->setUser($this->teacher1);
+
+        try {
+            // Test removing mapping without capability.
+            $this->manager->remove_mapping($this->course1->id, $this->mappingid1);
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(get_string('error:remove_mapping', 'local_sitsgradepush'), $e->getMessage());
+        }
+
+        // Test mapping not exists.
+        try {
+            // Create role.
+            $roleid = $this->dg->create_role(['shortname' => 'canmapassessment']);
+            assign_capability(
+                'local/sitsgradepush:mapassessment',
+                CAP_ALLOW,
+                $roleid,
+                context_course::instance($this->course1->id)->id
+            );
+            $this->dg->enrol_user($this->teacher1->id, $this->course1->id, 'canmapassessment');
+            $this->manager->remove_mapping($this->course1->id, 0);
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(get_string('error:assessmentmapping', 'local_sitsgradepush', 0), $e->getMessage());
+        }
+
+        // Test push records exist.
+        try {
+            // Add some push logs.
+            $transferlog = new \stdClass();
+            $transferlog->type = 'pushgrade';
+            $transferlog->userid = $this->student1->id;
+            $transferlog->assessmentmappingid = $this->mappingid1;
+            $transferlog->usermodified = $this->teacher1->id;
+            $transferlog->timecreated = time();
+            $transferlogid = $DB->insert_record('local_sitsgradepush_tfr_log', $transferlog);
+
+            // Test push logs exist.
+            $this->manager->remove_mapping($this->course1->id, $this->mappingid1);
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(
+                get_string('error:mab_has_push_records', 'local_sitsgradepush', 'Mapping ID: ' . $this->mappingid1),
+                $e->getMessage()
+            );
+        }
+
+        // Remove the push logs to allow mapping removal.
+        $DB->delete_records('local_sitsgradepush_tfr_log', ['id' => $transferlogid]);
+
+        // Test successful removal of the mapping.
+        $this->manager->remove_mapping($this->course1->id, $this->mappingid1);
+        $this->assertFalse($DB->record_exists('local_sitsgradepush_mapping', ['id' => $this->mappingid1]));
     }
 
     /**

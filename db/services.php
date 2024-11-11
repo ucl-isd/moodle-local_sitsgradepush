@@ -59,4 +59,12 @@ $functions = [
         'readonlysession' => true,
         'loginrequired' => true,
     ],
+    'local_sitsgradepush_remove_mapping' => [
+        'classname' => 'local_sitsgradepush\external\remove_mapping',
+        'description' => 'Remove assessment mapping',
+        'ajax' => true,
+        'type' => 'write',
+        'readonlysession' => true,
+        'loginrequired' => true,
+    ],
 ];
