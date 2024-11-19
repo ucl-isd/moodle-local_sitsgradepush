@@ -26,6 +26,7 @@
 namespace local_sitsgradepush;
 
 use context_course;
+use core\output\notification;
 use moodle_exception;
 use moodle_url;
 
@@ -50,6 +51,27 @@ require_login($course);
 
 // Check user's capability.
 require_capability('local/sitsgradepush:mapassessment', $context);
+
+// Process remove source action.
+if ($action = optional_param('action', '', PARAM_ALPHA)) {
+    if ($action === 'removesource') {
+        $mapid = required_param('mapid', PARAM_INT);
+        try {
+            manager::get_manager()->remove_mapping($courseid, $mapid);
+            // Reload the page.
+            redirect(new moodle_url('/local/sitsgradepush/dashboard.php', ['id' => $courseid]));
+        } catch (moodle_exception $e) {
+            // Add notification.
+            redirect(new moodle_url(
+                '/local/sitsgradepush/dashboard.php',
+                ['id' => $courseid]),
+                $e->getMessage(),
+                null,
+                notification::NOTIFY_ERROR
+            );
+        }
+    }
+}
 
 $header = get_string('dashboard:header', 'local_sitsgradepush');
 $param = ['id' => $courseid];
