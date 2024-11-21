@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_sitsgradepush';
 $plugin->release = '0.1.0';
-$plugin->version = 2024110100;
+$plugin->version = 2024110102;
 $plugin->requires = 2024042200;
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->dependencies = [

@@ -17,10 +17,8 @@
 namespace local_sitsgradepush;
 
 use context_course;
-use core_component;
 use core_course\customfield\course_handler;
 use DirectoryIterator;
-use grade_tree;
 use local_sitsgradepush\api\client_factory;
 use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
@@ -181,7 +179,7 @@ class manager {
                     $this->check_response($response, $request);
 
                     // Set cache expiry to 1 hour.
-                    cachemanager::set_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key, $response, 3600);
+                    cachemanager::set_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key, $response, HOURSECS);
 
                     // Save component grades to DB.
                     $this->save_component_grades($response);
@@ -215,7 +213,7 @@ class manager {
             $this->check_response($response, $request);
 
             // Set cache expiry to 1 hour.
-            cachemanager::set_cache(cachemanager::CACHE_AREA_MARKINGSCHEMES, $key, $response, 3600);
+            cachemanager::set_cache(cachemanager::CACHE_AREA_MARKINGSCHEMES, $key, $response, HOURSECS);
 
             return $response;
         } catch (\moodle_exception $e) {
@@ -489,7 +487,7 @@ class manager {
         }
         $record->componentgradeid = $data->componentgradeid;
         $record->reassessment = $data->reassessment;
-        $record->enableextension = (get_config('local_sitsgradepush', 'extension_enabled') &&
+        $record->enableextension = (extensionmanager::is_extension_enabled() &&
             (isset($record->moduletype) && extension::is_module_supported($record->moduletype))) ? 1 : 0;
         $record->timecreated = time();
         $record->timemodified = time();
@@ -609,12 +607,13 @@ class manager {
      * Get students for a grade component from SITS.
      *
      * @param \stdClass $componentgrade
+     * @param bool $refresh Refresh data from SITS.
      * @return \cache_application|\cache_session|\cache_store|mixed
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_students_from_sits(\stdClass $componentgrade): mixed {
+    public function get_students_from_sits(\stdClass $componentgrade, bool $refresh = false): mixed {
         // Stutalk Direct is not supported currently.
         if ($this->apiclient->get_client_name() == 'Stutalk Direct') {
             throw new \moodle_exception(
@@ -630,13 +629,16 @@ class manager {
             return tests_data_provider::get_behat_test_students_response($componentgrade->mapcode, $componentgrade->mabseq);
         }
 
-        // Try to get cache first.
         $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $componentgrade->mapcode, $componentgrade->mabseq]);
-        $students = cachemanager::get_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
-
-        // Cache found, return students.
-        if (!empty($students)) {
-            return $students;
+        if ($refresh) {
+            // Clear cache.
+            cachemanager::purge_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
+        } else {
+            // Try to get cache first.
+            $students = cachemanager::get_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
+            if (!empty($students)) {
+                return $students;
+            }
         }
 
         // Build required data.
@@ -654,7 +656,7 @@ class manager {
                 cachemanager::CACHE_AREA_STUDENTSPR,
                 $key,
                 $result,
-                strtotime('+30 days'),
+                DAYSECS * 30
             );
         }
 
@@ -885,16 +887,47 @@ class manager {
      * @param int $id Assessment mapping ID.
      *
      * @return false|mixed
-     * @throws \dml_exception
+     * @throws \dml_exception|\coding_exception
      */
-    public function get_mab_by_mapping_id(int $id): mixed {
+    public function get_mab_and_map_info_by_mapping_id(int $id): mixed {
         global $DB;
-        $sql = "SELECT cg.*
+
+        // Try to get the cache first.
+        $key = 'map_mab_info_' . $id;
+        $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $key);
+        if (!empty($cache)) {
+            return $cache;
+        }
+
+        // Define the SQL query for retrieving the information.
+        $sql = "SELECT
+                    am.id,
+                    am.courseid,
+                    am.sourceid,
+                    am.sourcetype,
+                    am.moduletype,
+                    am.reassessment,
+                    am.enableextension,
+                    cg.id as mabid,
+                    cg.mapcode,
+                    cg.mabseq
                 FROM {" . self::TABLE_COMPONENT_GRADE . "} cg
-                JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am ON cg.id = am.componentgradeid
+                INNER JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
+                    ON cg.id = am.componentgradeid
                 WHERE am.id = :id";
 
-        return $DB->get_record_sql($sql, ['id' => $id]);
+        // Fetch the record from the database.
+        $mapmabinfo = $DB->get_record_sql($sql, ['id' => $id]);
+        if (!empty($mapmabinfo)) {
+            // Set the cache.
+            cachemanager::set_cache(
+                cachemanager::CACHE_AREA_MAPPING_MAB_INFO,
+                $key,
+                $mapmabinfo,
+                DAYSECS * 30
+            );
+        }
+        return $mapmabinfo;
     }
 
     /**
@@ -1442,6 +1475,31 @@ class manager {
         }
 
         return $results;
+    }
+
+    /**
+     * Get assessment mappings by course id.
+     *
+     * @param int $courseid
+     * @param bool $extensionenabledonly
+     * @return array
+     * @throws \dml_exception
+     */
+    public function get_assessment_mappings_by_courseid(int $courseid, bool $extensionenabledonly = false): array {
+        global $DB;
+
+        if ($extensionenabledonly) {
+            // Get mappings that are enabled for extension only.
+            $extensionenabledonlysql = 'AND am.enableextension = 1';
+        } else {
+            $extensionenabledonlysql = '';
+        }
+        $sql = "SELECT am.*, cg.mapcode, cg.mabseq
+                FROM {".self::TABLE_ASSESSMENT_MAPPING."} am
+                JOIN {".self::TABLE_COMPONENT_GRADE."} cg ON am.componentgradeid = cg.id
+                WHERE courseid = :courseid $extensionenabledonlysql";
+
+        return $DB->get_records_sql($sql, ['courseid' => $courseid]);
     }
 
     /**

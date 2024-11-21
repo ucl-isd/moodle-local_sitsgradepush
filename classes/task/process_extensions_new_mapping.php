@@ -19,6 +19,7 @@ namespace local_sitsgradepush\task;
 use core\task\adhoc_task;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
+use local_sitsgradepush\manager;
 
 /**
  * Ad-hoc task to process extensions, i.e. SORA and EC.
@@ -28,7 +29,7 @@ use local_sitsgradepush\logger;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class process_extensions extends adhoc_task {
+class process_extensions_new_mapping extends adhoc_task {
 
     /**
      * Return name of the task.
@@ -37,7 +38,7 @@ class process_extensions extends adhoc_task {
      * @throws \coding_exception
      */
     public function get_name() {
-        return get_string('task:processextensions', 'local_sitsgradepush');
+        return get_string('task:process_extensions_new_mapping', 'local_sitsgradepush');
     }
 
     /**
@@ -53,8 +54,15 @@ class process_extensions extends adhoc_task {
                 throw new \moodle_exception('error:customdatamapidnotset', 'local_sitsgradepush');
             }
 
+            // Check assessment mapping exists.
+            if (!$mapping = manager::get_manager()->get_mab_and_map_info_by_mapping_id($data->mapid)) {
+                throw new \moodle_exception('error:mab_or_mapping_not_found', 'local_sitsgradepush', '', $data->mapid);
+            }
+
+            $students = manager::get_manager()->get_students_from_sits($mapping, true);
+
             // Process SORA extension.
-            extensionmanager::update_sora_for_mapping($data->mapid);
+            extensionmanager::update_sora_for_mapping($mapping, $students);
 
             // Process EC extension (To be implemented).
         } catch (\Exception $e) {

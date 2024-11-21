@@ -15,6 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 use local_sitsgradepush\cachemanager;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\taskmanager;
 
@@ -96,8 +97,8 @@ class local_sitsgradepush_observer {
         cachemanager::purge_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
 
         // Add the process extensions adhoc task if process extensions is enabled.
-        if (get_config('local_sitsgradepush', 'extension_enabled')) {
-            taskmanager::add_process_extensions_adhoc_task($data['other']['mappingid']);
+        if (extensionmanager::is_extension_enabled()) {
+            taskmanager::add_process_extensions_for_new_mapping_adhoc_task($data['other']['mappingid']);
         }
     }
 }
