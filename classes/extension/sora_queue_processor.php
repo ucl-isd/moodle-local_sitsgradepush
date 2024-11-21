@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\extension;
 
+use local_sitsgradepush\manager;
+
 /**
  * SORA queue processor.
  *
@@ -47,6 +49,8 @@ class sora_queue_processor extends aws_queue_processor {
     protected function process_message(array $messagebody): void {
         $sora = new sora();
         $sora->set_properties_from_aws_message($messagebody['Message']);
-        $sora->process_extension();
+        // Get all mappings for the student.
+        $mappings = $sora->get_mappings_by_userid($sora->get_userid());
+        $sora->process_extension($mappings);
     }
 }

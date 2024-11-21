@@ -1270,20 +1270,20 @@ final class manager_test extends base_test_class {
     /**
      * Test the get mab by mapping id method.
      *
-     * @covers \local_sitsgradepush\manager::get_mab_by_mapping_id
+     * @covers \local_sitsgradepush\manager::get_mab_and_map_info_by_mapping_id
      * @return void
      * @throws \ReflectionException
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function test_get_mab_by_mapping_id(): void {
+    public function test_get_mab_and_map_info_by_mapping_id(): void {
         // Set up the test environment.
         $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
 
         // Test the mab is returned.
-        $mab = $this->manager->get_mab_by_mapping_id($this->mappingid1);
-        $this->assertEquals($this->mab1->id, $mab->id);
+        $mab = $this->manager->get_mab_and_map_info_by_mapping_id($this->mappingid1);
+        $this->assertEquals($this->mab1->id, $mab->mabid);
     }
 
     /**

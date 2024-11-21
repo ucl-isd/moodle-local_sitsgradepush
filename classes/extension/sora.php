@@ -182,20 +182,24 @@ class sora extends extension {
     /**
      * Process the extension.
      *
+     * @param array $mappings
+     *
      * @return void
      * @throws \coding_exception
-     * @throws \dml_exception
+     * @throws \dml_exception|\moodle_exception
      */
-    public function process_extension(): void {
+    public function process_extension(array $mappings): void {
+        // Empty mappings, exit early.
+        if (empty($mappings)) {
+            return;
+        }
+
         if (!$this->dataisset) {
             throw new \coding_exception('error:extensiondataisnotset', 'local_sitsgradepush');
         }
 
-        // Get all mappings for the student.
-        $mappings = $this->get_mappings_by_userid($this->get_userid());
-
-        // No mappings found.
-        if (empty($mappings)) {
+        // Exit if SORA extra assessment duration and rest duration are both 0.
+        if ($this->extraduration == 0 && $this->restduration == 0) {
             return;
         }
 

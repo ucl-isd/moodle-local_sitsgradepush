@@ -27,6 +27,8 @@ namespace local_sitsgradepush\extension;
 interface iextension {
     /**
      * Process the extension.
+     *
+     * @param array $mappings SITS component mappings.
      */
-    public function process_extension(): void;
+    public function process_extension(array $mappings): void;
 }
