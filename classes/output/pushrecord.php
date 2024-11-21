@@ -262,7 +262,7 @@ class pushrecord {
         // The Easikit Get Student API will remove the students whose marks had been transferred successfully.
         // Find the assessment component <MAP CODE>-<MAB SEQ> for that transfer log,
         // so that we can display the transfer status of mark transfer in the corresponding assessment component mapping.
-        $mab = $this->manager->get_mab_by_mapping_id($assessmentmappingid);
+        $mab = $this->manager->get_mab_and_map_info_by_mapping_id($assessmentmappingid);
         if (!empty($mab)) {
             $this->componentgrade = $mab->mapcode . '-' . $mab->mabseq;
         }

@@ -20,7 +20,7 @@ use context_user;
 use core\task\manager as coretaskmanager;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extension\extension;
-use local_sitsgradepush\task\process_extensions;
+use local_sitsgradepush\task\process_extensions_new_mapping;
 
 /**
  * Manager class which handles push task.
@@ -410,17 +410,17 @@ class taskmanager {
     }
 
     /**
-     * Add an adhoc task to process extensions for a mapping.
+     * Add an adhoc task to process extensions for a new mapping.
      *
      * @param int $mappingid
      * @return void
      * @throws \dml_exception
      */
-    public static function add_process_extensions_adhoc_task(int $mappingid): void {
+    public static function add_process_extensions_for_new_mapping_adhoc_task(int $mappingid): void {
         global $DB;
 
         try {
-            $mapping = $DB->get_record(manager::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid]);
+            $mapping = $DB->get_record(manager::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid, 'enableextension' => 1]);
 
             // Check if the assessment mapping exists.
             if (!$mapping) {
@@ -429,10 +429,28 @@ class taskmanager {
 
             // Add an adhoc task to process extensions if the mapped assessment is supported.
             if (in_array($mapping->moduletype, extension::SUPPORTED_MODULE_TYPES) ) {
-                $task = new process_extensions();
+                $task = new process_extensions_new_mapping();
                 $task->set_custom_data((object)['mapid' => $mappingid]);
                 coretaskmanager::queue_adhoc_task($task);
             }
+        } catch (\moodle_exception $e) {
+            logger::log($e->getMessage());
+        }
+    }
+
+    /**
+     * Add an adhoc task to process extensions for a new student enrolment in course.
+     *
+     * @param int $courseid
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function add_process_extensions_for_enrolment_adhoc_task(int $courseid): void {
+        try {
+            // Add an adhoc task to process extensions if the mapped assessment is supported.
+                $task = new process_extensions_new_mapping();
+                $task->set_custom_data((object)['courseid' => $courseid]);
+                coretaskmanager::queue_adhoc_task($task);
         } catch (\moodle_exception $e) {
             logger::log($e->getMessage());
         }
