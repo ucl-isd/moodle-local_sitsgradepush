@@ -17,6 +17,7 @@
 namespace local_sitsgradepush;
 
 use local_sitsgradepush\extension\sora;
+use local_sitsgradepush\task\process_extensions_new_enrolment;
 
 /**
  * Manager class for extension related operations.
@@ -31,37 +32,77 @@ class extensionmanager {
     /**
      * Update SORA extension for students in a mapping.
      *
-     * @param int $mapid
+     * @param \stdClass $mapping Assessment component mapping ID.
+     * @param array $students Students data from the SITS get students API.
      * @return void
      * @throws \dml_exception
      */
-    public static function update_sora_for_mapping(int $mapid): void {
+    public static function update_sora_for_mapping(\stdClass $mapping, array $students): void {
         try {
-            // Find the SITS assessment component.
-            $manager = manager::get_manager();
-            $mab = $manager->get_mab_by_mapping_id($mapid);
-
-            // Throw exception if the SITS assessment component is not found.
-            if (!$mab) {
-                throw new \moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mapid);
+            if ($mapping->enableextension !== '1') {
+                throw new \moodle_exception('error:extension_not_enabled_for_mapping', 'local_sitsgradepush', '', $mapping->id);
             }
 
-            // Get students information for that assessment component.
-            $students = $manager->get_students_from_sits($mab);
-
-            // If no students found, nothing to do.
+            // If no students returned from SITS, nothing to do.
             if (empty($students)) {
                 return;
             }
 
-            // Process SORA extension for each student.
+            // Process SORA extension for each student or the specified student if user id is provided.
             foreach ($students as $student) {
                 $sora = new sora();
                 $sora->set_properties_from_get_students_api($student);
-                $sora->process_extension();
+                $sora->process_extension([$mapping]);
             }
         } catch (\Exception $e) {
-            logger::log($e->getMessage(), null, "Mapping ID: $mapid");
+            logger::log($e->getMessage(), null, "Mapping ID: $mapping->id");
         }
+    }
+
+    /**
+     * Check if the extension is enabled.
+     *
+     * @return bool
+     * @throws \dml_exception
+     */
+    public static function is_extension_enabled(): bool {
+        return get_config('local_sitsgradepush', 'extension_enabled') == '1';
+    }
+
+    /**
+     * Check if the user is enrolling a gradable role.
+     *
+     * @param int $roleid Role ID.
+     * @return bool
+     */
+    public static function user_is_enrolling_a_gradable_role(int $roleid): bool {
+        global $CFG;
+
+        $gradebookroles = !empty($CFG->gradebookroles) ? explode(',', $CFG->gradebookroles) : [];
+
+        return in_array($roleid, $gradebookroles);
+    }
+
+    /**
+     * Get the user enrolment events stored for a course.
+     *
+     * @param int $courseid Course ID.
+     * @return array
+     * @throws \dml_exception
+     */
+    public static function get_user_enrolment_events(int $courseid): array {
+        global $DB;
+        $sql = "SELECT ue.*
+                FROM {local_sitsgradepush_enrol} ue
+                WHERE ue.courseid = :courseid AND ue.attempts < :maxattempts";
+
+        return $DB->get_records_sql(
+            $sql,
+            [
+                'courseid' => $courseid,
+                'maxattempts' => process_extensions_new_enrolment::MAX_ATTEMPTS,
+            ],
+            limitnum: process_extensions_new_enrolment::BATCH_LIMIT
+        );
     }
 }

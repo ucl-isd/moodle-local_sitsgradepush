@@ -93,7 +93,7 @@ abstract class extension implements iextension {
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    protected function get_mappings_by_mab(string $mabidentifier): array {
+    public function get_mappings_by_mab(string $mabidentifier): array {
         global $DB;
 
         // Extract the map code and MAB sequence number from the MAB identifier.
@@ -125,7 +125,7 @@ abstract class extension implements iextension {
      * @return array
      * @throws \dml_exception|\coding_exception
      */
-    protected function get_mappings_by_userid(int $userid): array {
+    public function get_mappings_by_userid(int $userid): array {
         global $DB;
 
         // Find all enrolled courses for the student.

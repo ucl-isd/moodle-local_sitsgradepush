@@ -131,7 +131,7 @@ final class extension_test extends base_test_class {
         // Process the extension.
         $ec = new ec();
         $ec->set_properties_from_aws_message($message);
-        $ec->process_extension();
+        $ec->process_extension($ec->get_mappings_by_mab($ec->get_mab_identifier()));
 
         $override = $DB->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => $this->student1->id]);
         $this->assertEmpty($override);
@@ -157,7 +157,7 @@ final class extension_test extends base_test_class {
         // Process the extension by passing the JSON event data.
         $ec = new ec();
         $ec->set_properties_from_aws_message($message);
-        $ec->process_extension();
+        $ec->process_extension($ec->get_mappings_by_mab($ec->get_mab_identifier()));
 
         // Calculate the new deadline.
         // Assume EC is using a new deadline without time. Extract the time part.
@@ -191,7 +191,7 @@ final class extension_test extends base_test_class {
         // Process the extension by passing the JSON event data.
         $ec = new ec();
         $ec->set_properties_from_aws_message($message);
-        $ec->process_extension();
+        $ec->process_extension($ec->get_mappings_by_mab($ec->get_mab_identifier()));
 
         // Calculate the new deadline.
         // Assume EC is using a new deadline without time. Extract the time part.
@@ -228,7 +228,7 @@ final class extension_test extends base_test_class {
         // Process the extension by passing the JSON event data.
         $sora = new sora();
         $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
-        $sora->process_extension();
+        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Test SORA override group exists.
         $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name()]);
@@ -249,25 +249,44 @@ final class extension_test extends base_test_class {
     }
 
     /**
+     * Test the update SORA extension for students in a mapping with extension off.
+     *
+     * @covers \local_sitsgradepush\extensionmanager::update_sora_for_mapping
+     * @return void
+     * @throws \dml_exception|\coding_exception
+     */
+    public function test_update_sora_for_mapping_with_extension_off(): void {
+        global $DB;
+
+        // Set extension disabled.
+        set_config('extension_enabled', '0', 'local_sitsgradepush');
+
+        // The mapping inserted should be extension disabled.
+        $this->setup_for_sora_testing();
+
+        // Get mappings.
+        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
+        $mapping = reset($mappings);
+        // Process SORA extension for each mapping.
+        extensionmanager::update_sora_for_mapping($mapping, []);
+
+        // Check error log.
+        $errormessage = get_string('error:extension_not_enabled_for_mapping', 'local_sitsgradepush', $mapping->id);
+        $sql = "SELECT * FROM {local_sitsgradepush_err_log} WHERE message = :message AND data = :data";
+        $params = ['message' => $errormessage, 'data' => "Mapping ID: $mapping->id"];
+        $log = $DB->get_record_sql($sql, $params);
+        $this->assertNotEmpty($log);
+    }
+
+    /**
      * Test the update SORA extension for students in a mapping.
      *
      * @covers \local_sitsgradepush\extensionmanager::update_sora_for_mapping
      * @return void
-     * @throws \dml_exception|\coding_exception|\ReflectionException
+     * @throws \dml_exception|\coding_exception|\ReflectionException|\moodle_exception
      */
     public function test_update_sora_for_mapping(): void {
         global $DB;
-
-        // Test error is logged when the MAB is not found.
-        $mapid = 0;
-        extensionmanager::update_sora_for_mapping($mapid);
-
-        // Check error log.
-        $errormessage = get_string('error:mab_not_found', 'local_sitsgradepush', $mapid);
-        $sql = "SELECT * FROM {local_sitsgradepush_err_log} WHERE message = :message AND data = :data";
-        $params = ['message' => $errormessage, 'data' => "Mapping ID: $mapid"];
-        $log = $DB->get_record_sql($sql, $params);
-        $this->assertNotEmpty($log);
 
         // Set up the SORA extension.
         $this->setup_for_sora_testing();
@@ -279,9 +298,10 @@ final class extension_test extends base_test_class {
         tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
 
         // Process all mappings for SORA.
-        $mappings = $DB->get_records('local_sitsgradepush_mapping');
+        $mappings = $manager->get_assessment_mappings_by_courseid($this->course1->id);
         foreach ($mappings as $mapping) {
-            extensionmanager::update_sora_for_mapping($mapping->id);
+            $students = $manager->get_students_from_sits($mapping);
+            extensionmanager::update_sora_for_mapping($mapping, $students);
         }
 
         // Test SORA override group exists.
@@ -300,6 +320,80 @@ final class extension_test extends base_test_class {
         // Test group override set in the quiz.
         $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id, 'userid' => null, 'groupid' => $groupid]);
         $this->assertEquals($override->groupid, $groupid);
+    }
+
+    /**
+     * Test the user is enrolling a gradable role.
+     *
+     * @covers \local_sitsgradepush\extensionmanager::user_is_enrolling_a_gradable_role
+     * @return void
+     */
+    public function test_user_is_enrolling_a_gradable_role(): void {
+        global $CFG;
+
+        // Test when role is gradable.
+        $CFG->gradebookroles = '1,2,3';
+        $roleid = 2;
+        $result = extensionmanager::user_is_enrolling_a_gradable_role($roleid);
+        $this->assertTrue($result);
+
+        // Test when role is not gradable.
+        $roleid = 4;
+        $result = extensionmanager::user_is_enrolling_a_gradable_role($roleid);
+        $this->assertFalse($result);
+
+        // Test when gradebookroles is null.
+        $CFG->gradebookroles = null;
+        $roleid = 1;
+        $result = extensionmanager::user_is_enrolling_a_gradable_role($roleid);
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test get user enrolment events.
+     *
+     * @covers \local_sitsgradepush\extensionmanager::get_user_enrolment_events
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function test_get_user_enrolment_events(): void {
+        global $DB;
+
+        // Create user enrolment events.
+        $events = [];
+        for ($i = 0; $i < 3; $i++) {
+            $event = new \stdClass();
+            $event->courseid = 1;
+            $event->userid = $i + 1;
+            $event->attempts = $i;
+            $event->timecreated = time();
+            $events[] = $event;
+        }
+        $DB->insert_records('local_sitsgradepush_enrol', $events);
+
+        // Get user enrolment events.
+        $result = extensionmanager::get_user_enrolment_events(1);
+        $this->assertCount(2, $result);
+    }
+
+    /**
+     * Test is_extension_enabled method.
+     *
+     * @covers \local_sitsgradepush\extensionmanager::is_extension_enabled
+     * @return void
+     * @throws \dml_exception
+     */
+    public function test_is_extension_enabled(): void {
+        // Test when extension is enabled in config.
+        set_config('extension_enabled', '1', 'local_sitsgradepush');
+        $result = extensionmanager::is_extension_enabled();
+        $this->assertTrue($result);
+
+        // Test when extension is disabled in config.
+        set_config('extension_enabled', '0', 'local_sitsgradepush');
+        $result = extensionmanager::is_extension_enabled();
+        $this->assertFalse($result);
     }
 
     /**
@@ -375,7 +469,7 @@ final class extension_test extends base_test_class {
             'moduletype' => $modtype,
             'componentgradeid' => $mabid,
             'reassessment' => 0,
-            'enableextension' => get_config('local_sitsgradepush', 'extension_enabled') ? 1 : 0,
+            'enableextension' => extensionmanager::is_extension_enabled() ? 1 : 0,
             'timecreated' => time(),
             'timemodified' => time(),
         ]);
