@@ -46,12 +46,12 @@ class ec extends extension {
 
     /**
      * Process the extension.
+     *
+     * @param array $mappings
+     * @throws \dml_exception
      */
-    public function process_extension(): void {
-        // Get all mappings for the SITS assessment.
-        // We only allow one mapping per SITS assessment for now.
-        $mappings = $this->get_mappings_by_mab($this->get_mab_identifier());
-
+    public function process_extension(array $mappings): void {
+        // Exit if empty mappings.
         if (empty($mappings)) {
             return;
         }

@@ -41,4 +41,9 @@ $definitions = [
         'simplekeys' => true,
         'simpledata' => false,
     ],
+    'mappingmabinfo' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => false,
+    ],
 ];
