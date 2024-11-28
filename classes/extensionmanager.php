@@ -16,6 +16,9 @@
 
 namespace local_sitsgradepush;
 
+use local_sitsgradepush\assessment\assessment;
+use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\task\process_extensions_new_enrolment;
 
@@ -104,5 +107,47 @@ class extensionmanager {
             ],
             limitnum: process_extensions_new_enrolment::BATCH_LIMIT
         );
+    }
+
+    /**
+     * Delete SORA overrides for a Moodle assessment.
+     *
+     * @param \stdClass $deletedmapping
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function delete_sora_overrides(\stdClass $deletedmapping): void {
+        try {
+            // Get Moodle assessment.
+            $assessment = assessmentfactory::get_assessment($deletedmapping->sourcetype, $deletedmapping->sourceid);
+
+            // Nothing to do if the module type is not supported.
+            if (!extension::is_module_supported($assessment->get_module_name())) {
+                return;
+            }
+
+            $assessment->delete_sora_overrides(self::get_default_sora_groups_ids_in_course($deletedmapping->courseid));
+        } catch (\Exception $e) {
+            logger::log($e->getMessage(), null, "Deleted Mapping: " . json_encode($deletedmapping));
+        }
+    }
+
+    /**
+     * Get the default SORA groups IDs in a course.
+     *
+     * @param int $courseid
+     * @return array
+     * @throws \dml_exception
+     */
+    public static function get_default_sora_groups_ids_in_course(int $courseid): array {
+        global $DB;
+        $like = $DB->sql_like('name', ':name', false);
+        $defaultsoragroups = $DB->get_records_select(
+            'groups',
+            "courseid = :courseid AND $like",
+            ['courseid' => $courseid, 'name' => sora::SORA_GROUP_PREFIX . '%'],
+            fields: 'id',
+        );
+        return !empty($defaultsoragroups) ? array_keys($defaultsoragroups) : [];
     }
 }

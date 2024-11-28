@@ -474,6 +474,9 @@ class manager {
             // Checked in the above validation, the current mapping to this component grade
             // can be deleted as it does not have push records nor mapped to the current activity.
             $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $existingmapping->id]);
+
+            // Delete any SORA overrides for the deleted mapping.
+            extensionmanager::delete_sora_overrides($existingmapping);
             assesstype::update_assess_type($existingmapping, assesstype::ACTION_UNLOCK);
         }
 
@@ -1534,6 +1537,9 @@ class manager {
 
         // Unlock the Moodle assessment in the local_assess_type plugin.
         assesstype::update_assess_type($mapping, assesstype::ACTION_UNLOCK);
+
+        // Delete any SORA overrides for the deleted mapping.
+        extensionmanager::delete_sora_overrides($mapping);
     }
 
     /**

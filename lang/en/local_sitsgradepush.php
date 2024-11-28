@@ -144,6 +144,7 @@ $string['error:tasknotfound'] = 'Transfer task not found.';
 $string['error:turnitin_numparts'] = 'Turnitin assignment with multiple parts is not supported by Marks Transfer.';
 $string['error:user_data_not_set.'] = 'User data is not set.';
 $string['event:assessment_mapped'] = 'Assessment mapped';
+$string['event:assessment_mapped_desc'] = 'An assessment is mapped to a SITS assessment component.';
 $string['form:alert_no_mab_found'] = 'No assessment components found';
 $string['form:info_turnitin_numparts'] = 'Please note Turnitin assignment with multiple parts is not supported by Marks Transfer.';
 $string['gradepushassessmentselect'] = 'Select SITS assessment';
