@@ -68,6 +68,48 @@ class quiz extends activity {
     }
 
     /**
+     * Check if this quiz is an exam.
+     *
+     * @return bool
+     */
+    public function is_exam(): bool {
+        $originaltimelimit = $this->get_source_instance()->timelimit;
+        return $originaltimelimit > 0 && $originaltimelimit <= HOURMINS * 5;
+    }
+
+    /**
+     * Delete SORA override for the quiz.
+     *
+     * @param array $groupids Default SORA overrides group ids in the course.
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function delete_sora_overrides(array $groupids): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/assign/locallib.php');
+
+        // Skip if group ids are empty.
+        if (empty($groupids)) {
+            return;
+        }
+
+        // Find all group overrides for the quiz having the default SORA overrides group ids.
+        [$insql, $params] = $DB->get_in_or_equal($groupids, SQL_PARAMS_NAMED);
+        $params['quizid'] = $this->sourceinstance->id;
+        $sql = "SELECT * FROM {quiz_overrides} WHERE quiz = :quizid AND groupid $insql AND userid IS NULL";
+
+        $overrides = $DB->get_records_sql($sql, $params);
+
+        if (empty($overrides)) {
+            return;
+        }
+
+        // Delete the overrides.
+        $this->get_override_manager()->delete_overrides($overrides);
+    }
+
+    /**
      * Apply EC extension to the quiz.
      *
      * @param ec $ec EC extension object.

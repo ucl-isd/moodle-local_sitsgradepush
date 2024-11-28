@@ -43,7 +43,7 @@ class assessment_mapped extends \core\event\base {
      * @throws \coding_exception
      */
     public static function get_name(): string {
-        return get_string('eventname', 'local_sitsgradepush');
+        return get_string('event:assessment_mapped', 'local_sitsgradepush');
     }
 
     /**
@@ -52,6 +52,6 @@ class assessment_mapped extends \core\event\base {
      * @return string
      */
     public function get_description(): string {
-        return "An assessment is mapped to a SITS assessment component.";
+        return get_string('event:assessment_mapped_desc', 'local_sitsgradepush');
     }
 }
