@@ -474,6 +474,9 @@ class manager {
             // Checked in the above validation, the current mapping to this component grade
             // can be deleted as it does not have push records nor mapped to the current activity.
             $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $existingmapping->id]);
+
+            // Delete any SORA overrides for the deleted mapping.
+            extensionmanager::delete_sora_overrides($existingmapping);
             assesstype::update_assess_type($existingmapping, assesstype::ACTION_UNLOCK);
         }
 
@@ -1520,7 +1523,7 @@ class manager {
         }
 
         // Check the mapping exists.
-        if (!$DB->record_exists(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid])) {
+        if (!$mapping = $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid])) {
             throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $mappingid);
         }
 
@@ -1531,6 +1534,9 @@ class manager {
 
         // Everything is fine, remove the mapping.
         $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid]);
+
+        // Delete any SORA overrides for the deleted mapping.
+        extensionmanager::delete_sora_overrides($mapping);
     }
 
     /**

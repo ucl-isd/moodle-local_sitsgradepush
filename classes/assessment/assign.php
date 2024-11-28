@@ -68,6 +68,57 @@ class assign extends activity {
     }
 
     /**
+     * Check if this assignment is an exam.
+     *
+     * @return bool
+     */
+    public function is_exam(): bool {
+        $start = $this->get_start_date();
+        $end = $this->get_end_date();
+
+        if ($start && $end) {
+            $duration = $end - $start;
+            return $duration > 0 && $duration <= HOURSECS * 5;
+        }
+
+        return false;
+    }
+
+    /**
+     * Delete SORA override for the assignment.
+     *
+     * @param array $groupids Default SORA overrides group ids in the course.
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function delete_sora_overrides(array $groupids): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/assign/locallib.php');
+
+        // Skip if group ids are empty.
+        if (empty($groupids)) {
+            return;
+        }
+
+        // Find all group overrides for the assignment having the default SORA overrides group ids.
+        [$insql, $params] = $DB->get_in_or_equal($groupids, SQL_PARAMS_NAMED);
+        $params['assignid'] = $this->sourceinstance->id;
+        $sql = "SELECT id FROM {assign_overrides} WHERE assignid = :assignid AND groupid $insql AND userid IS NULL";
+
+        $overrides = $DB->get_records_sql($sql, $params);
+
+        if (empty($overrides)) {
+            return;
+        }
+
+        $assign = new \assign($this->context, $this->get_course_module(), null);
+        foreach ($overrides as $override) {
+            $assign->delete_override($override->id);
+        }
+    }
+
+    /**
      * Apply EC extension to the assessment.
      *
      * @param ec $ec The EC extension.
