@@ -14,44 +14,43 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace local_sitsgradepush\event;
+namespace local_sitsgradepush\extension;
+
+use local_sitsgradepush\manager;
 
 /**
- * Event class for assessment_mapped event.
+ * SORA queue processor.
  *
  * @package    local_sitsgradepush
  * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class assessment_mapped extends \core\event\base {
-
+class sora_queue_processor extends aws_queue_processor {
     /**
-     * Init method.
+     * Get the queue URL.
      *
-     * @return void
+     * @return string
+     * @throws \dml_exception
      */
-    protected function init(): void {
-        $this->data['crud'] = 'c';
-        $this->data['edulevel'] = self::LEVEL_OTHER;
+    protected function get_queue_url(): string {
+        return get_config('local_sitsgradepush', 'aws_sora_sqs_queue_url');
     }
 
     /**
-     * Returns localised name of the event.
+     * Process the aws SORA message.
      *
-     * @return string
+     * @param array $messagebody SORA message data body
+     *
      * @throws \coding_exception
+     * @throws \moodle_exception
+     * @throws \dml_exception
      */
-    public static function get_name(): string {
-        return get_string('event:assessment_mapped', 'local_sitsgradepush');
-    }
-
-    /**
-     * Returns description of what happened.
-     *
-     * @return string
-     */
-    public function get_description(): string {
-        return get_string('event:assessment_mapped_desc', 'local_sitsgradepush');
+    protected function process_message(array $messagebody): void {
+        $sora = new sora();
+        $sora->set_properties_from_aws_message($messagebody['Message']);
+        // Get all mappings for the student.
+        $mappings = $sora->get_mappings_by_userid($sora->get_userid());
+        $sora->process_extension($mappings);
     }
 }

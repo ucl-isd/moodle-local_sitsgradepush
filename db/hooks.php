@@ -15,42 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * List of scheduled tasks in this plugin.
+ * Hook callbacks for enrol_manual
  *
  * @package    local_sitsgradepush
- * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
-$tasks = [
+$callbacks = [
     [
-        'classname' => 'local_sitsgradepush\task\pushtask',
-        'blocking' => 0,
-        'minute' => '*',
-        'hour' => '*',
-        'day' => '*',
-        'month' => '*',
-        'dayofweek' => '*',
-    ],
-    [
-      'classname' => 'local_sitsgradepush\task\assesstypetask',
-      'blocking' => 0,
-      'minute' => 0,
-      'hour' => '*',
-      'day' => '*',
-      'month' => '*',
-      'dayofweek' => '*',
-    ],
-    [
-      'classname' => 'local_sitsgradepush\task\process_aws_sora_updates',
-      'blocking' => 0,
-      'minute' => '0',
-      'hour' => '0',
-      'day' => '*',
-      'month' => '*',
-      'dayofweek' => '*',
+        'hook' => core_enrol\hook\after_user_enrolled::class,
+        'callback' => 'local_sitsgradepush\user_enrolment_callbacks::process_extensions',
     ],
 ];

@@ -14,43 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace local_sitsgradepush\extension;
+
 /**
- * List of scheduled tasks in this plugin.
+ * Interface for extension.
  *
  * @package    local_sitsgradepush
- * @copyright  2023 onwards University College London {@link https://www.ucl.ac.uk/}
+ * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-
-defined('MOODLE_INTERNAL') || die;
-
-$tasks = [
-    [
-        'classname' => 'local_sitsgradepush\task\pushtask',
-        'blocking' => 0,
-        'minute' => '*',
-        'hour' => '*',
-        'day' => '*',
-        'month' => '*',
-        'dayofweek' => '*',
-    ],
-    [
-      'classname' => 'local_sitsgradepush\task\assesstypetask',
-      'blocking' => 0,
-      'minute' => 0,
-      'hour' => '*',
-      'day' => '*',
-      'month' => '*',
-      'dayofweek' => '*',
-    ],
-    [
-      'classname' => 'local_sitsgradepush\task\process_aws_sora_updates',
-      'blocking' => 0,
-      'minute' => '0',
-      'hour' => '0',
-      'day' => '*',
-      'month' => '*',
-      'dayofweek' => '*',
-    ],
-];
+interface iextension {
+    /**
+     * Process the extension.
+     *
+     * @param array $mappings SITS component mappings.
+     */
+    public function process_extension(array $mappings): void;
+}

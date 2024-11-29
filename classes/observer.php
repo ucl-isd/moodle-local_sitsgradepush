@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 use local_sitsgradepush\cachemanager;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
+use local_sitsgradepush\taskmanager;
 
 /**
  * Class for local_sitsgradepush observer.
@@ -83,13 +85,20 @@ class local_sitsgradepush_observer {
         $manager = manager::get_manager();
         $mab = $manager->get_local_component_grade_by_id($data['other']['mabid']);
 
+        if (empty($mab)) {
+            return;
+        }
+
         // Purge students cache for the mapped assessment component.
         // This is to get the latest student data for the same SITS assessment component.
         // For example, the re-assessment with the same SITS assessment component will have the latest student data
         // instead of using the cached data, such as the resit_number.
-        if (!empty($mab)) {
-            $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $mab->mapcode, $mab->mabseq]);
-            cachemanager::purge_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
+        $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $mab->mapcode, $mab->mabseq]);
+        cachemanager::purge_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
+
+        // Add the process extensions adhoc task if process extensions is enabled.
+        if (extensionmanager::is_extension_enabled()) {
+            taskmanager::add_process_extensions_for_new_mapping_adhoc_task($data['other']['mappingid']);
         }
     }
 }
