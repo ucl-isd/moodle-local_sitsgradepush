@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\assesstype;
 use local_sitsgradepush\cachemanager;
 use local_sitsgradepush\manager;
 
@@ -91,5 +93,15 @@ class local_sitsgradepush_observer {
             $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $mab->mapcode, $mab->mabseq]);
             cachemanager::purge_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
         }
+    }
+
+    /**
+     * Handle the grade item updated event.
+     *
+     * @param \core\event\grade_item_updated $event
+     * @return void
+     */
+    public static function grade_item_updated(\core\event\grade_item_updated $event): void {
+        assesstype::grade_item_updated($event);
     }
 }
