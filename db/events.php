@@ -50,4 +50,8 @@ $observers = [
       'callback' => 'local_sitsgradepush_observer::assessment_mapped',
       'priority' => 200,
     ],
+    [
+        'eventname' => '\core\event\grade_item_updated',
+        'callback'  => 'local_sitsgradepush_observer::grade_item_updated',
+    ],
 ];
