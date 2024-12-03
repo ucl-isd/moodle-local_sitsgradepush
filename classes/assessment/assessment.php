@@ -84,6 +84,11 @@ abstract class assessment implements iassessment {
                 return;
             }
 
+            // Remove user from all SORA groups in this assessment.
+            if ($extension->get_time_extension() == 0) {
+                $this->remove_user_from_previous_sora_groups($extension->get_userid());
+            }
+
             $this->apply_sora_extension($extension);
         }
     }
@@ -264,13 +269,13 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Delete SORA override for a Moodle assessment.
+     * Delete all SORA override for a Moodle assessment.
+     * It is used to delete all SORA overrides for an assessment when the mapping is removed.
      *
-     * @param array $groupids Default SORA overrides group ids in the course.
      * @return void
      * @throws \moodle_exception
      */
-    public function delete_sora_overrides(array $groupids): void {
+    public function delete_all_sora_overrides(): void {
         // Default not supported. Override in child class if needed.
         throw new \moodle_exception('error:soraextensionnotsupported', 'local_sitsgradepush');
     }

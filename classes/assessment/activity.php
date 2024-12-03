@@ -174,6 +174,28 @@ abstract class activity extends assessment {
     }
 
     /**
+     * Delete all SORA overrides for the assessment.
+     *
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function delete_all_sora_overrides(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/group/lib.php');
+
+        // Find all the sora group overrides for the assessment.
+        $overrides = $this->get_assessment_sora_overrides();
+
+        // Delete all sora groups of that assessment from the course.
+        if (!empty($overrides)) {
+            foreach ($overrides as $override) {
+                groups_delete_group($override->groupid);
+            }
+        }
+    }
+
+    /**
      * Set the module instance.
      * @return void
      * @throws \dml_exception
@@ -220,5 +242,38 @@ abstract class activity extends assessment {
         return array_filter($enrolledusers, function($u) use ($gradeableids) {
             return in_array($u->id, $gradeableids);
         });
+    }
+
+    /**
+     * Remove user from previous SORA groups of the assessment.
+     * When a user is added to a new group, they should be removed from all other SORA groups of the assessment.
+     *
+     * @param int $userid User ID.
+     * @param int|null $excludedgroupid Group ID to exclude. This is the group that the user is being added to.
+     * @return void
+     */
+    protected function remove_user_from_previous_sora_groups(int $userid, ?int $excludedgroupid = null): void {
+        // Get all the sora group overrides.
+        $overrides = $this->get_assessment_sora_overrides();
+
+        // No overrides to remove.
+        if (empty($overrides)) {
+            return;
+        }
+
+        foreach ($overrides as $override) {
+            // Skip the excluded group.
+            if ($excludedgroupid && $override->groupid == $excludedgroupid) {
+                continue;
+            }
+
+            // Remove the user from the previous SORA group.
+            groups_remove_member($override->groupid, $userid);
+
+            // Delete the group if it is empty.
+            if (empty(groups_get_members($override->groupid))) {
+                groups_delete_group($override->groupid);
+            }
+        }
     }
 }
