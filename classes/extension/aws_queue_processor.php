@@ -53,6 +53,9 @@ abstract class aws_queue_processor {
     /** @var int Maximum execution time in seconds */
     const MAX_EXECUTION_TIME = 1800; // 30 minutes
 
+    /** @var int Maximum number of attempts */
+    const MAX_ATTEMPTS = 2;
+
     /**
      * Get the queue URL.
      *
@@ -67,6 +70,13 @@ abstract class aws_queue_processor {
      * @return void
      */
     abstract protected function process_message(array $messagebody): void;
+
+    /**
+     * Get the queue name.
+     *
+     * @return string
+     */
+    abstract protected function get_queue_name(): string;
 
     /**
      * Fetch messages from the queue.
@@ -93,20 +103,28 @@ abstract class aws_queue_processor {
     }
 
     /**
-     * Check if message is already processed.
+     * Check should we process the message.
      *
      * @param string $messageid AWS SQS Message ID
      * @return bool True if message is processed already, false otherwise
      * @throws \dml_exception
      */
-    protected function is_processed_message(string $messageid): bool {
+    protected function should_not_process_message(string $messageid): bool {
         global $DB;
 
         try {
-            // Allow processing if message has not been processed successfully.
-            return $DB->record_exists(
-                'local_sitsgradepush_aws_log',
-                ['messageid' => $messageid, 'status' => self::STATUS_PROCESSED]
+            $sql = 'SELECT id
+                    FROM {local_sitsgradepush_aws_log}
+                    WHERE messageid = :messageid
+                    AND (status = :status OR attempts >= :attempts)';
+            // Allow processing if message has not been processed successfully or exceeded maximum attempts.
+            return $DB->record_exists_sql(
+                $sql,
+                [
+                    'messageid' => $messageid,
+                    'status' => self::STATUS_PROCESSED,
+                    'attempts' => self::MAX_ATTEMPTS,
+                ]
             );
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, 'Failed to check message status');
@@ -158,8 +176,8 @@ abstract class aws_queue_processor {
 
                 foreach ($messages as $message) {
                     try {
-                        if ($this->is_processed_message($message['MessageId'])) {
-                            mtrace("Skipping processed message: {$message['MessageId']}");
+                        if ($this->should_not_process_message($message['MessageId'])) {
+                            mtrace("Skipping processed message or exceeded maximum attempts: {$message['MessageId']}");
                             continue;
                         }
                         $data = json_decode($message['Body'], true);
@@ -167,12 +185,12 @@ abstract class aws_queue_processor {
                             throw new \Exception('Invalid JSON data: ' . json_last_error_msg());
                         }
                         $this->process_message($data);
-                        $this->save_message_record($message);
+                        $this->save_message_record($message, $this->get_queue_name());
                         $this->delete_message($message['ReceiptHandle']);
                         $processedcount++;
                     } catch (\Exception $e) {
                         logger::log($e->getMessage(), null, static::class . ' Processing Error');
-                        $this->save_message_record($message, self::STATUS_FAILED, $e->getMessage());
+                        $this->save_message_record($message, $this->get_queue_name(), self::STATUS_FAILED, $e->getMessage());
                     }
                 }
 
@@ -207,6 +225,7 @@ abstract class aws_queue_processor {
      * Save message processing details to database
      *
      * @param array $message SQS message data
+     * @param string $type Queue type
      * @param string $status Processing status
      * @param string|null $error Error message if any
      * @return bool|int Returns record ID on success, false on failure
@@ -214,23 +233,36 @@ abstract class aws_queue_processor {
      */
     protected function save_message_record(
         array $message,
+        string $type,
         string $status = self::STATUS_PROCESSED,
         ?string $error = null
     ): bool|int {
-        global $DB, $USER;
+        global $DB;
 
         try {
-            $record = new \stdClass();
-            $record->messageid = $message['MessageId'];
-            $record->receipthandle = $message['ReceiptHandle'];
-            $record->queueurl = $this->get_queue_url();
-            $record->status = $status;
-            $record->payload = $message['Body'];
-            $record->error_message = $error;
-            $record->timecreated = time();
-            $record->usermodified = $USER->id;
+            // Check if message record already exists.
+            $record = $DB->get_record('local_sitsgradepush_aws_log', ['messageid' => $message['MessageId']]);
 
-            return $DB->insert_record('local_sitsgradepush_aws_log', $record);
+            // Prepare data to save.
+            $data = [
+                'messageid' => $message['MessageId'],
+                'status' => $status,
+                'error_message' => $error,
+                'timemodified' => time(),
+                'type' => $type,
+                'payload' => $message['Body'],
+                'attempts' => $record ? $record->attempts + 1 : 1,
+            ];
+
+            // Update record if exists.
+            if ($record) {
+                $data['id'] = $record->id;
+                $DB->update_record('local_sitsgradepush_aws_log', $data);
+                return $record->id;
+            }
+
+            // Insert new record.
+            return $DB->insert_record('local_sitsgradepush_aws_log', $data);
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, 'Failed to save message record');
             return false;

@@ -18,6 +18,7 @@ namespace local_sitsgradepush\extension;
 
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\logger;
+use local_sitsgradepush\manager;
 
 /**
  * Class for Summary of Reasonable Adjustments (SORA).
@@ -30,7 +31,16 @@ use local_sitsgradepush\logger;
 class sora extends extension {
 
     /** @var string Prefix used to create SORA groups */
-    const SORA_GROUP_PREFIX = 'DEFAULT-SORA-';
+    const SORA_GROUP_PREFIX = 'SORA-CM-';
+
+    /** @var string AWS datasource */
+    const DATASOURCE_AWS = 'aws';
+
+    /** @var string API datasource */
+    const DATASOURCE_API = 'api';
+
+    /** @var string SORA message type - EXAM */
+    const SORA_MESSAGE_TYPE_EXAM = 'EXAM';
 
     /** @var int Extra duration in minutes per hour */
     protected int $extraduration;
@@ -40,6 +50,12 @@ class sora extends extension {
 
     /** @var int Time extension in seconds, including extra and rest duration */
     protected int $timeextension;
+
+    /** @var string Datasource */
+    protected string $datasource;
+
+    /** @var string|null SORA message type */
+    protected ?string $soramessagetype;
 
     /**
      * Return the whole time extension in seconds, including extra and rest duration.
@@ -72,26 +88,29 @@ class sora extends extension {
      * Get the SORA group ID. Create the group if it does not exist.
      * Add the user to the group. Remove the user from other SORA groups.
      *
-     * @param int $courseid
-     * @param int $userid
+     * @param int $courseid The course ID.
+     * @param int $cmid The course module ID.
+     * @param int $userid The user ID.
+     * @param int $totalextension The total extension in minutes, including extra and rest duration.
      *
      * @return int
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_sora_group_id(int $courseid, int $userid): int {
+    public function get_sora_group_id(int $courseid, int $cmid, int $userid, int $totalextension): int {
         global $CFG;
         require_once($CFG->dirroot . '/group/lib.php');
 
         // Check group exists.
-        $groupid = groups_get_group_by_name($courseid, $this->get_extension_group_name());
+        $groupname = self::get_extension_group_name($cmid, $totalextension);
+        $groupid = groups_get_group_by_name($courseid, $groupname);
 
         if (!$groupid) {
             // Create group.
             $newgroup = new \stdClass();
             $newgroup->courseid = $courseid;
-            $newgroup->name = $this->get_extension_group_name();
+            $newgroup->name = $groupname;
             $newgroup->description = '';
             $newgroup->enrolmentkey = '';
             $newgroup->picture = 0;
@@ -107,23 +126,23 @@ class sora extends extension {
             throw new \moodle_exception('error:cannotaddusertogroup', 'local_sitsgradepush');
         }
 
-        // Remove user from previous SORA groups.
-        $this->remove_user_from_previous_sora_groups($groupid, $courseid, $userid);
-
         return $groupid;
     }
 
     /**
      * Get the SORA group name.
      *
+     * @param int $cmid The course module ID.
+     * @param int $totalextension The total extension in minutes, including extra and rest duration.
      * @return string
      */
-    public function get_extension_group_name(): string {
-        return sprintf(self::SORA_GROUP_PREFIX . '%d', $this->get_extra_duration() + $this->get_rest_duration());
+    public static function get_extension_group_name(int $cmid, int $totalextension): string {
+        return sprintf(self::SORA_GROUP_PREFIX . '%d-EX-%d', $cmid, $totalextension);
     }
 
     /**
      * Set properties from AWS SORA update message.
+     * This set the student code and user id for this SORA, the SORA extension information will be obtained from the API.
      *
      * @param string $messagebody
      * @return void
@@ -131,31 +150,23 @@ class sora extends extension {
      * @throws \moodle_exception
      */
     public function set_properties_from_aws_message(string $messagebody): void {
-
         // Decode the JSON message body.
         $messagedata = $this->parse_event_json($messagebody);
 
-        // Check the message is valid.
-        if (empty($messagedata->entity->person_sora->sora[0])) {
+        // Set datasource.
+        $this->datasource = self::DATASOURCE_AWS;
+
+        // Set SORA message type.
+        $this->soramessagetype = $messagedata->entity->person_sora->type->code ?? null;
+
+        // Check the message is valid and set student code.
+        $studentcode = $messagedata->entity->person_sora->person->student_code ?? null;
+        if (!empty($studentcode)) {
+            $this->studentcode = $studentcode;
+            $this->set_userid($studentcode);
+        } else {
             throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
         }
-
-        $soradata = $messagedata->entity->person_sora->sora[0];
-
-        // Set properties.
-        $this->extraduration = (int) $soradata->extra_duration ?? 0;
-        $this->restduration = (int) $soradata->rest_duration ?? 0;
-
-        // A SORA update message must have at least one of the durations.
-        if ($this->extraduration == 0 && $this->restduration == 0) {
-            throw new \moodle_exception('error:invalid_duration', 'local_sitsgradepush');
-        }
-
-        // Calculate and set the time extension in seconds.
-        $this->timeextension = $this->calculate_time_extension($this->extraduration, $this->restduration);
-
-        // Set the user ID of the student.
-        $this->set_userid($soradata->person->student_code);
 
         $this->dataisset = true;
     }
@@ -167,8 +178,16 @@ class sora extends extension {
      * @return void
      */
     public function set_properties_from_get_students_api(array $student): void {
+        // Set student code.
+        $this->studentcode = $student['code'];
+
         // Set the user ID.
-        $this->set_userid($student['code']);
+        if (!isset($this->userid)) {
+            $this->set_userid($student['code']);
+        }
+
+        // Set datasource.
+        $this->datasource = self::DATASOURCE_API;
 
         // Set properties.
         $this->extraduration = (int) $student['assessment']['sora_assessment_duration'];
@@ -198,16 +217,16 @@ class sora extends extension {
             throw new \coding_exception('error:extensiondataisnotset', 'local_sitsgradepush');
         }
 
-        // Exit if SORA extra assessment duration and rest duration are both 0.
-        if ($this->extraduration == 0 && $this->restduration == 0) {
-            return;
-        }
-
         // Apply the extension to the assessments.
         foreach ($mappings as $mapping) {
             try {
+                // Update the SORA information from the API if the datasource is AWS.
+                if ($this->get_data_source() === self::DATASOURCE_AWS) {
+                    $this->update_sora_info_from_api($mapping);
+                }
+                // Apply sora extension to the mapped moodle assessment.
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
-                if ($assessment->is_user_a_participant($this->userid)) {
+                if ($assessment->is_user_a_participant($this->get_userid())) {
                     $assessment->apply_extension($this);
                 }
             } catch (\Exception $e) {
@@ -217,33 +236,22 @@ class sora extends extension {
     }
 
     /**
-     * Remove the user from previous SORA groups.
+     * Get the data source.
+     * To distinguish where the SORA data come from AWS or API.
      *
-     * @param int $newgroupid The new group ID or the group to keep the user in.
-     * @param int $courseid The course ID.
-     * @param int $userid The user ID.
-     * @return void
-     * @throws \dml_exception
+     * @return string
      */
-    protected function remove_user_from_previous_sora_groups(int $newgroupid, int $courseid, int $userid): void {
-        global $DB;
+    public function get_data_source(): string {
+        return $this->datasource;
+    }
 
-        // Find all default SORA groups created by marks transfer.
-        $sql = 'SELECT g.id
-                FROM {groups} g
-                WHERE g.courseid = :courseid
-                AND g.name LIKE :name';
-        $params = [
-            'courseid' => $courseid,
-            'name' => self::SORA_GROUP_PREFIX . '%',
-        ];
-        $soragroups = $DB->get_records_sql($sql, $params);
-
-        foreach ($soragroups as $soragroup) {
-            if ($soragroup->id != $newgroupid) {
-                groups_remove_member($soragroup->id, $userid);
-            }
-        }
+    /**
+     * Get the SORA message type.
+     *
+     * @return string
+     */
+    public function get_sora_message_type(): string {
+        return $this->soramessagetype;
     }
 
     /**
@@ -255,5 +263,22 @@ class sora extends extension {
      */
     private function calculate_time_extension(int $extraduration, int $restduration): int {
         return ($extraduration + $restduration) * MINSECS;
+    }
+
+    /**
+     * Update SORA information from the assessment API.
+     * Used when there is a SORA update message from AWS.
+     *
+     * @param \stdClass $mapping SITS assessment mapping
+     */
+    private function update_sora_info_from_api(\stdClass $mapping): void {
+        // Call the assessment API to get the SORA data.
+        $students = manager::get_manager()->get_students_from_sits($mapping, true);
+        foreach ($students as $student) {
+            if ($student['code'] == $this->studentcode) {
+                $this->set_properties_from_get_students_api($student);
+                break;
+            }
+        }
     }
 }

@@ -557,13 +557,11 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         // Adding fields to table local_sitsgradepush_aws_log.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('messageid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('receipthandle', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
-        $table->add_field('queueurl', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
         $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('attempts', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, null);
         $table->add_field('payload', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
         $table->add_field('error_message', XMLDB_TYPE_TEXT, null, null, null, null, null);
-        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
 
         // Adding keys to table local_sitsgradepush_aws_log.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
@@ -571,7 +569,7 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         // Adding indexes to table local_sitsgradepush_aws_log.
         $table->add_index('messageid', XMLDB_INDEX_NOTUNIQUE, ['messageid']);
         $table->add_index('status', XMLDB_INDEX_NOTUNIQUE, ['status']);
-        $table->add_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated']);
+        $table->add_index('timemodified', XMLDB_INDEX_NOTUNIQUE, ['timemodified']);
 
         // Conditionally launch create table for local_sitsgradepush_aws_log.
         if (!$dbman->table_exists($table)) {
