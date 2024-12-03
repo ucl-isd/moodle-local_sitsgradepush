@@ -16,7 +16,6 @@
 
 namespace local_sitsgradepush;
 
-use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\sora;
@@ -33,32 +32,34 @@ use local_sitsgradepush\task\process_extensions_new_enrolment;
 class extensionmanager {
 
     /**
-     * Update SORA extension for students in a mapping.
+     * Update SORA extension for students in a mapping using the SITS get students API as the data source.
      *
      * @param \stdClass $mapping Assessment component mapping ID.
      * @param array $students Students data from the SITS get students API.
      * @return void
-     * @throws \dml_exception
+     * @throws \dml_exception|\moodle_exception
      */
     public static function update_sora_for_mapping(\stdClass $mapping, array $students): void {
-        try {
-            if ($mapping->enableextension !== '1') {
-                throw new \moodle_exception('error:extension_not_enabled_for_mapping', 'local_sitsgradepush', '', $mapping->id);
-            }
+        // Nothing to do if the extension is not enabled for the mapping.
+        if ($mapping->enableextension !== '1') {
+            return;
+        }
 
-            // If no students returned from SITS, nothing to do.
-            if (empty($students)) {
-                return;
-            }
+        // If no students returned from SITS, nothing to do.
+        if (empty($students)) {
+            return;
+        }
 
-            // Process SORA extension for each student or the specified student if user id is provided.
-            foreach ($students as $student) {
+        // Process SORA extension for each student or the specified student if user id is provided.
+        foreach ($students as $student) {
+            try {
                 $sora = new sora();
                 $sora->set_properties_from_get_students_api($student);
                 $sora->process_extension([$mapping]);
+            } catch (\Exception $e) {
+                $studentcode = $student["code"] ?? '';
+                logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, Student Idnumber: $studentcode");
             }
-        } catch (\Exception $e) {
-            logger::log($e->getMessage(), null, "Mapping ID: $mapping->id");
         }
     }
 
@@ -126,28 +127,10 @@ class extensionmanager {
                 return;
             }
 
-            $assessment->delete_sora_overrides(self::get_default_sora_groups_ids_in_course($deletedmapping->courseid));
+            // Delete all SORA overrides for the assessment.
+            $assessment->delete_all_sora_overrides();
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, "Deleted Mapping: " . json_encode($deletedmapping));
         }
-    }
-
-    /**
-     * Get the default SORA groups IDs in a course.
-     *
-     * @param int $courseid
-     * @return array
-     * @throws \dml_exception
-     */
-    public static function get_default_sora_groups_ids_in_course(int $courseid): array {
-        global $DB;
-        $like = $DB->sql_like('name', ':name', false);
-        $defaultsoragroups = $DB->get_records_select(
-            'groups',
-            "courseid = :courseid AND $like",
-            ['courseid' => $courseid, 'name' => sora::SORA_GROUP_PREFIX . '%'],
-            fields: 'id',
-        );
-        return !empty($defaultsoragroups) ? array_keys($defaultsoragroups) : [];
     }
 }

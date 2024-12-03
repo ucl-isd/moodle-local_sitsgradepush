@@ -34,6 +34,9 @@ abstract class extension implements iextension {
     /** @var int User ID */
     protected int $userid;
 
+    /** @var int Student code / ID number */
+    protected int $studentcode;
+
     /** @var bool Used to check if the extension data is set. */
     protected bool $dataisset = false;
 
@@ -153,7 +156,7 @@ abstract class extension implements iextension {
         $params = array_merge($courseinparam, $modinparams);
 
         // Find all mapped moodle assessments for the student.
-        $sql = "SELECT am.*
+        $sql = "SELECT am.*, mab.mapcode, mab.mabseq
                 FROM {". manager::TABLE_ASSESSMENT_MAPPING ."} am
                 JOIN {". manager::TABLE_COMPONENT_GRADE ."} mab ON am.componentgradeid = mab.id
                 WHERE am.courseid $courseinsql AND am.moduletype $modinsql AND am.enableextension = 1";

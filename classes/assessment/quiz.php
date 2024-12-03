@@ -68,48 +68,6 @@ class quiz extends activity {
     }
 
     /**
-     * Check if this quiz is an exam.
-     *
-     * @return bool
-     */
-    public function is_exam(): bool {
-        $originaltimelimit = $this->get_source_instance()->timelimit;
-        return $originaltimelimit > 0 && $originaltimelimit <= HOURMINS * 5;
-    }
-
-    /**
-     * Delete SORA override for the quiz.
-     *
-     * @param array $groupids Default SORA overrides group ids in the course.
-     * @return void
-     * @throws \coding_exception
-     * @throws \dml_exception
-     */
-    public function delete_sora_overrides(array $groupids): void {
-        global $CFG, $DB;
-        require_once($CFG->dirroot . '/mod/assign/locallib.php');
-
-        // Skip if group ids are empty.
-        if (empty($groupids)) {
-            return;
-        }
-
-        // Find all group overrides for the quiz having the default SORA overrides group ids.
-        [$insql, $params] = $DB->get_in_or_equal($groupids, SQL_PARAMS_NAMED);
-        $params['quizid'] = $this->sourceinstance->id;
-        $sql = "SELECT * FROM {quiz_overrides} WHERE quiz = :quizid AND groupid $insql AND userid IS NULL";
-
-        $overrides = $DB->get_records_sql($sql, $params);
-
-        if (empty($overrides)) {
-            return;
-        }
-
-        // Delete the overrides.
-        $this->get_override_manager()->delete_overrides($overrides);
-    }
-
-    /**
      * Apply EC extension to the quiz.
      *
      * @param ec $ec EC extension object.
@@ -136,15 +94,19 @@ class quiz extends activity {
     protected function apply_sora_extension(sora $sora): void {
         global $DB;
 
-        // Get extra time from SORA.
-        $timeextension = $sora->get_time_extension();
+        // Calculate the time close for this sora override.
+        $newtimeclose = $this->get_end_date() + $sora->get_time_extension();
 
-        // Calculate the new time limit.
-        $originaltimelimit = $this->get_source_instance()->timelimit;
-        $newtimelimit = $originaltimelimit + (($originaltimelimit / HOURSECS) * $timeextension);
+        // Total extension in minutes.
+        $totalminutes = round($sora->get_time_extension() / MINSECS);
 
         // Get the group id.
-        $groupid = $sora->get_sora_group_id($this->get_course_id(), $sora->get_userid());
+        $groupid = $sora->get_sora_group_id(
+            $this->get_course_id(),
+            $this->get_coursemodule_id(),
+            $sora->get_userid(),
+            $totalminutes
+        );
 
         if (!$groupid) {
             throw new \moodle_exception('error:cannotgetsoragroupid', 'local_sitsgradepush');
@@ -153,7 +115,7 @@ class quiz extends activity {
         $overridedata = [
             'quiz' => $this->get_source_instance()->id,
             'groupid' => $groupid,
-            'timelimit' => round($newtimelimit),
+            'timeclose' => $newtimeclose,
         ];
 
         // Get the override record if it exists.
@@ -172,6 +134,28 @@ class quiz extends activity {
 
         // Save the override.
         $this->get_override_manager()->save_override($overridedata);
+    }
+
+    /**
+     * Get all SORA group overrides for the quiz.
+     *
+     * @return array
+     * @throws \dml_exception
+     */
+    protected function get_assessment_sora_overrides() {
+        global $DB;
+        // Find all the group overrides for the quiz.
+        $sql = 'SELECT qo.* FROM {quiz_overrides} qo
+                JOIN {groups} g ON qo.groupid = g.id
+                WHERE qo.quiz = :quizid AND qo.userid IS NULL AND g.name LIKE :name';
+
+        $params = [
+            'quizid' => $this->sourceinstance->id,
+            'name' => sora::SORA_GROUP_PREFIX . '%',
+        ];
+
+        // Get all the group overrides except the excluded group.
+        return $DB->get_records_sql($sql, $params);
     }
 
     /**
