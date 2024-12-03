@@ -24,6 +24,7 @@
  */
 
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\manager;
 
 /**

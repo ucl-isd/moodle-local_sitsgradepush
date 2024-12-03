@@ -10,7 +10,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:13
+        image: postgres:14
         env:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'
@@ -47,6 +47,9 @@ jobs:
             database: 'pgsql'
           - php: '8.1'
             moodle-branch: 'MOODLE_404_STABLE'
+            database: 'mariadb'
+          - php: '8.1'
+            moodle-branch: 'MOODLE_405_STABLE'
             database: 'mariadb'
 
     steps:

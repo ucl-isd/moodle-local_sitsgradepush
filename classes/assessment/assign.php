@@ -68,57 +68,6 @@ class assign extends activity {
     }
 
     /**
-     * Check if this assignment is an exam.
-     *
-     * @return bool
-     */
-    public function is_exam(): bool {
-        $start = $this->get_start_date();
-        $end = $this->get_end_date();
-
-        if ($start && $end) {
-            $duration = $end - $start;
-            return $duration > 0 && $duration <= HOURSECS * 5;
-        }
-
-        return false;
-    }
-
-    /**
-     * Delete SORA override for the assignment.
-     *
-     * @param array $groupids Default SORA overrides group ids in the course.
-     * @return void
-     * @throws \coding_exception
-     * @throws \dml_exception
-     */
-    public function delete_sora_overrides(array $groupids): void {
-        global $CFG, $DB;
-        require_once($CFG->dirroot . '/mod/assign/locallib.php');
-
-        // Skip if group ids are empty.
-        if (empty($groupids)) {
-            return;
-        }
-
-        // Find all group overrides for the assignment having the default SORA overrides group ids.
-        [$insql, $params] = $DB->get_in_or_equal($groupids, SQL_PARAMS_NAMED);
-        $params['assignid'] = $this->sourceinstance->id;
-        $sql = "SELECT id FROM {assign_overrides} WHERE assignid = :assignid AND groupid $insql AND userid IS NULL";
-
-        $overrides = $DB->get_records_sql($sql, $params);
-
-        if (empty($overrides)) {
-            return;
-        }
-
-        $assign = new \assign($this->context, $this->get_course_module(), null);
-        foreach ($overrides as $override) {
-            $assign->delete_override($override->id);
-        }
-    }
-
-    /**
      * Apply EC extension to the assessment.
      *
      * @param ec $ec The EC extension.
@@ -150,22 +99,49 @@ class assign extends activity {
         global $CFG;
         require_once($CFG->dirroot . '/group/lib.php');
 
-        // Get time extension in seconds.
-        $timeextensionperhour = $sora->get_time_extension();
-
         // Calculate the new due date.
-        // Find the difference between the start and end date in hours. Multiply by the time extension per hour.
-        $actualextension = (($this->get_end_date() - $this->get_start_date()) / HOURSECS) * $timeextensionperhour;
-        $newduedate = $this->get_end_date() + round($actualextension);
+        $newduedate = $this->get_end_date() + $sora->get_time_extension();
+
+        // Total extension in minutes.
+        $totalminutes = round($sora->get_time_extension() / MINSECS);
 
         // Get the group id, create if it doesn't exist and add the user to the group.
-        $groupid = $sora->get_sora_group_id($this->get_course_id(), $sora->get_userid());
+        $groupid = $sora->get_sora_group_id(
+            $this->get_course_id(),
+            $this->get_coursemodule_id(),
+            $sora->get_userid(),
+            $totalminutes
+        );
 
         if (!$groupid) {
             throw new \moodle_exception('error:cannotgetsoragroupid', 'local_sitsgradepush');
         }
 
+        // Remove the user from the previous SORA groups.
+        $this->remove_user_from_previous_sora_groups($sora->get_userid(), $groupid);
         $this->overrides_due_date($newduedate, $sora->get_userid(), $groupid);
+    }
+
+    /**
+     * Get all SORA group overrides for the assignment.
+     *
+     * @return array
+     * @throws \dml_exception
+     */
+    protected function get_assessment_sora_overrides(): array {
+        global $DB;
+        // Find all the group overrides for the assignment.
+        $sql = 'SELECT ao.* FROM {assign_overrides} ao
+                JOIN {groups} g ON ao.groupid = g.id
+                WHERE ao.assignid = :assignid AND ao.userid IS NULL AND g.name LIKE :name';
+
+        $params = [
+            'assignid' => $this->sourceinstance->id,
+            'name' => sora::SORA_GROUP_PREFIX . '%',
+        ];
+
+        // Get all sora group overrides.
+        return $DB->get_records_sql($sql, $params);
     }
 
     /**
