@@ -75,12 +75,14 @@ abstract class assessment implements iassessment {
         if ($extension instanceof ec) {
             $this->apply_ec_extension($extension);
         } else if ($extension instanceof sora) {
-            // Skip SORA overrides if the assessment is not an exam.
-            if (!$this->is_exam()) {
-                return;
-            }
             // Skip SORA overrides if the end date of the assessment is in the past.
             if ($this->get_end_date() < time()) {
+                return;
+            }
+
+            // Remove user from all SORA groups in this assessment.
+            if ($extension->get_time_extension() == 0) {
+                $this->remove_user_from_previous_sora_groups($extension->get_userid());
                 return;
             }
 
@@ -209,15 +211,6 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Check if the assessment is an exam. Override in child class if needed.
-     *
-     * @return bool
-     */
-    public function is_exam(): bool {
-        return false;
-    }
-
-    /**
      * Check if the assessment is valid for marks transfer.
      *
      * @return \stdClass
@@ -264,13 +257,13 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Delete SORA override for a Moodle assessment.
+     * Delete all SORA override for a Moodle assessment.
+     * It is used to delete all SORA overrides for an assessment when the mapping is removed.
      *
-     * @param array $groupids Default SORA overrides group ids in the course.
      * @return void
      * @throws \moodle_exception
      */
-    public function delete_sora_overrides(array $groupids): void {
+    public function delete_all_sora_overrides(): void {
         // Default not supported. Override in child class if needed.
         throw new \moodle_exception('error:soraextensionnotsupported', 'local_sitsgradepush');
     }
