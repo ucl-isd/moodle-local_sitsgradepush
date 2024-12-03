@@ -111,6 +111,7 @@ $string['error:gradetype_not_supported'] = 'The grade type of this assessment is
 $string['error:inserttask'] = 'Failed to insert task.';
 $string['error:invalid_json_data'] = 'Invalid JSON data: {$a}';
 $string['error:invalid_message'] = 'Invalid message received.';
+$string['error:invalid_sora_datasource'] = 'Invalid SORA data source.';
 $string['error:invalid_source_type'] = 'Invalid source type. {$a}';
 $string['error:lesson_practice'] = 'Practice lessons have no grades';
 $string['error:lti_no_grades'] = 'LTI activity is set to not send grades to gradebook';
