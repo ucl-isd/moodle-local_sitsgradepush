@@ -33,7 +33,7 @@ use local_sitsgradepush\task\process_extensions_new_enrolment;
 class extensionmanager {
 
     /**
-     * Update SORA extension for students in a mapping.
+     * Update SORA extension for students in a mapping using the SITS get students API as the data source.
      *
      * @param \stdClass $mapping Assessment component mapping ID.
      * @param array $students Students data from the SITS get students API.
@@ -126,28 +126,10 @@ class extensionmanager {
                 return;
             }
 
-            $assessment->delete_sora_overrides(self::get_default_sora_groups_ids_in_course($deletedmapping->courseid));
+            // Delete all SORA overrides for the assessment.
+            $assessment->delete_all_sora_overrides();
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, "Deleted Mapping: " . json_encode($deletedmapping));
         }
-    }
-
-    /**
-     * Get the default SORA groups IDs in a course.
-     *
-     * @param int $courseid
-     * @return array
-     * @throws \dml_exception
-     */
-    public static function get_default_sora_groups_ids_in_course(int $courseid): array {
-        global $DB;
-        $like = $DB->sql_like('name', ':name', false);
-        $defaultsoragroups = $DB->get_records_select(
-            'groups',
-            "courseid = :courseid AND $like",
-            ['courseid' => $courseid, 'name' => sora::SORA_GROUP_PREFIX . '%'],
-            fields: 'id',
-        );
-        return !empty($defaultsoragroups) ? array_keys($defaultsoragroups) : [];
     }
 }

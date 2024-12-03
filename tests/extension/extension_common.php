@@ -99,7 +99,6 @@ class extension_common extends base_test_class {
                 'course' => $this->course1->id,
                 'name' => 'Test Quiz 1',
                 'timeopen' => $assessmentstartdate,
-                'timelimit' => 60,
                 'timeclose' => $assessmentenddate,
             ]
         );

@@ -62,7 +62,7 @@ final class sora_test extends extension_common {
         // Modify quiz so that time limit more than 5 hours, i.e. not exam.
         $DB->update_record('quiz', (object) [
             'id' => $this->quiz1->id,
-            'timelimit' => 2880, // 48 hours.
+            'timeclose' => strtotime('+7 days'),
         ]);
 
         // Get mappings.
@@ -146,8 +146,8 @@ final class sora_test extends extension_common {
         $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
-        // Test SORA override group exists.
-        $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name()]);
+        // Test SORA override group exists for assignment.
+        $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name($this->assign1->cmid, 25)]);
         $this->assertNotEmpty($groupid);
 
         // Test user is added to the SORA group.
@@ -158,6 +158,14 @@ final class sora_test extends extension_common {
         $override = $DB
             ->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => null, 'groupid' => $groupid]);
         $this->assertEquals($override->groupid, $groupid);
+
+        // Test SORA override group exists for quiz.
+        $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name($this->quiz1->cmid, 25)]);
+        $this->assertNotEmpty($groupid);
+
+        // Test user is added to the SORA group.
+        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
+        $this->assertNotEmpty($groupmember);
 
         // Test group override set in the quiz.
         $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id, 'userid' => null, 'groupid' => $groupid]);
@@ -201,7 +209,6 @@ final class sora_test extends extension_common {
      *
      * @covers \local_sitsgradepush\extensionmanager::update_sora_for_mapping
      * @covers \local_sitsgradepush\extensionmanager::delete_sora_overrides
-     * @covers \local_sitsgradepush\extensionmanager::get_default_sora_groups_ids_in_course
      * @covers \local_sitsgradepush\manager::get_assessment_mappings_by_courseid
      * @return void
      * @throws \dml_exception|\coding_exception|\ReflectionException|\moodle_exception
@@ -220,7 +227,7 @@ final class sora_test extends extension_common {
         }
 
         // Test SORA override group exists.
-        $groupid = $DB->get_field('groups', 'id', ['name' => sora::SORA_GROUP_PREFIX . '25']);
+        $groupid = $DB->get_field('groups', 'id', ['name' => sora::get_extension_group_name($this->assign1->cmid, 25)]);
         $this->assertNotEmpty($groupid);
 
         // Test user is added to the SORA group.
@@ -231,6 +238,14 @@ final class sora_test extends extension_common {
         $override = $DB
             ->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => null, 'groupid' => $groupid]);
         $this->assertEquals($override->groupid, $groupid);
+
+        // Test SORA override group exists.
+        $groupid = $DB->get_field('groups', 'id', ['name' => sora::get_extension_group_name($this->quiz1->cmid, 25)]);
+        $this->assertNotEmpty($groupid);
+
+        // Test user is added to the SORA group.
+        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
+        $this->assertNotEmpty($groupmember);
 
         // Test group override set in the quiz.
         $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id, 'userid' => null, 'groupid' => $groupid]);
@@ -257,10 +272,16 @@ final class sora_test extends extension_common {
      */
     protected function setup_for_sora_testing(): void {
         global $DB;
-        $mabid = $DB->get_field('local_sitsgradepush_mab', 'id', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
-        $this->insert_mapping($mabid, $this->course1->id, $this->assign1, 'assign');
+        $mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
+        $this->insert_mapping($mab1->id, $this->course1->id, $this->assign1, 'assign');
 
-        $mabid = $DB->get_field('local_sitsgradepush_mab', 'id', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
-        $this->insert_mapping($mabid, $this->course1->id, $this->quiz1, 'quiz');
+        $mab2 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
+        $this->insert_mapping($mab2->id, $this->course1->id, $this->quiz1, 'quiz');
+
+        $manager = manager::get_manager();
+        $apiclient = $this->get_apiclient_for_testing(false, [tests_data_provider::get_sora_testing_student_data()]);
+        tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
+        $manager->get_students_from_sits($mab1);
+        $manager->get_students_from_sits($mab2);
     }
 }
