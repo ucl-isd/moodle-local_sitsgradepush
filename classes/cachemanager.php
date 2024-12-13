@@ -39,6 +39,9 @@ class cachemanager {
     /** @var string Cache area for storing marking schemes.*/
     const CACHE_AREA_MARKINGSCHEMES = 'markingschemes';
 
+    /** @var string Cache area for storing mapping and mab information.*/
+    const CACHE_AREA_MAPPING_MAB_INFO = 'mappingmabinfo';
+
     /**
      * Get cache.
      *
@@ -49,13 +52,18 @@ class cachemanager {
      */
     public static function get_cache(string $area, string $key) {
         // Check if cache exists or expired.
-        $cache = cache::make('local_sitsgradepush', $area)->get($key);
-        // Expire key.
-        $expires = 'expires_' . $key;
-        if (empty($cache) || empty($expires) || time() >= $expires) {
+        $cache = cache::make('local_sitsgradepush', $area);
+        $cachevalue = $cache->get($key);
+        $expires = $cache->get('expires_' . $key);
+
+        if (empty($cachevalue) || empty($expires) || time() >= $expires) {
+            if ($expires && time() >= $expires) {
+                // Cache expired, delete it.
+                self::purge_cache($area, $key);
+            }
             return null;
         } else {
-            return $cache;
+            return $cachevalue;
         }
     }
 
@@ -71,7 +79,7 @@ class cachemanager {
     public static function set_cache(string $area, string $key, mixed $value, int $expiresafter): void {
         $cache = cache::make('local_sitsgradepush', $area);
         $cache->set($key, $value);
-        $cache->set('expires_' . $key, $expiresafter);
+        $cache->set('expires_' . $key, time() + $expiresafter);
     }
 
     /**

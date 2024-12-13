@@ -534,5 +534,78 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2024101000, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2024101100) {
+
+        // Define field enableextension to be added to local_sitsgradepush_mapping.
+        $table = new xmldb_table('local_sitsgradepush_mapping');
+        $field = new xmldb_field('enableextension', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'reassessmentseq');
+
+        // Conditionally launch add field enableextension.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024101100, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2024110100) {
+
+        // Define table local_sitsgradepush_aws_log to be created.
+        $table = new xmldb_table('local_sitsgradepush_aws_log');
+
+        // Adding fields to table local_sitsgradepush_aws_log.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('messageid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('attempts', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('payload', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('error_message', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table local_sitsgradepush_aws_log.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_sitsgradepush_aws_log.
+        $table->add_index('messageid', XMLDB_INDEX_NOTUNIQUE, ['messageid']);
+        $table->add_index('status', XMLDB_INDEX_NOTUNIQUE, ['status']);
+        $table->add_index('timemodified', XMLDB_INDEX_NOTUNIQUE, ['timemodified']);
+
+        // Conditionally launch create table for local_sitsgradepush_aws_log.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024110100, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2024110102) {
+
+        // Define table local_sitsgradepush_enrol to be created.
+        $table = new xmldb_table('local_sitsgradepush_enrol');
+
+        // Adding fields to table local_sitsgradepush_enrol.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('attempts', XMLDB_TYPE_INTEGER, '3', null, null, null, '0');
+
+        // Adding keys to table local_sitsgradepush_enrol.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_sitsgradepush_enrol.
+        $table->add_index('idx_course_attempts', XMLDB_INDEX_NOTUNIQUE, ['courseid', 'attempts']);
+
+        // Conditionally launch create table for local_sitsgradepush_enrol.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2024110102, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

@@ -1,0 +1,9 @@
+{
+  "code": "12345678",
+  "spr_code": "12345678/1",
+  "assessment": {
+    "resit_number": 0,
+    "sora_assessment_duration": 20,
+    "sora_rest_duration": 5
+  }
+}

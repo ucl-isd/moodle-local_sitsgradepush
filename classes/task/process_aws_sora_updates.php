@@ -14,44 +14,42 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace local_sitsgradepush\event;
+namespace local_sitsgradepush\task;
+
+use local_sitsgradepush\extension\sora_queue_processor;
+use local_sitsgradepush\extensionmanager;
 
 /**
- * Event class for assessment_mapped event.
+ * Scheduled task to process AWS SORA updates.
  *
  * @package    local_sitsgradepush
  * @copyright  2024 onwards University College London {@link https://www.ucl.ac.uk/}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
-class assessment_mapped extends \core\event\base {
-
+class process_aws_sora_updates extends \core\task\scheduled_task {
     /**
-     * Init method.
-     *
-     * @return void
-     */
-    protected function init(): void {
-        $this->data['crud'] = 'c';
-        $this->data['edulevel'] = self::LEVEL_OTHER;
-    }
-
-    /**
-     * Returns localised name of the event.
+     * Return name of the task.
      *
      * @return string
      * @throws \coding_exception
      */
-    public static function get_name(): string {
-        return get_string('event:assessment_mapped', 'local_sitsgradepush');
+    public function get_name() {
+        return get_string('task:process_aws_sora_updates', 'local_sitsgradepush');
     }
 
     /**
-     * Returns description of what happened.
-     *
-     * @return string
+     * Execute the task.
+     * @throws \Exception
      */
-    public function get_description(): string {
-        return get_string('event:assessment_mapped_desc', 'local_sitsgradepush');
+    public function execute(): void {
+        // Skip if extension is not enabled.
+        if (!extensionmanager::is_extension_enabled()) {
+            mtrace('Extension processing is not enabled. Exiting...');
+            return;
+        }
+
+        $processor = new sora_queue_processor();
+        $processor->execute();
     }
 }
