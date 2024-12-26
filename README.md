@@ -6,6 +6,9 @@ It is designed for re-usability by other Moodle-SITS institutions and is intende
 
 This does require some development to adopt but the barrier is greatly reduced.
 
+## User Documentation
+https://ucldata.atlassian.net/wiki/spaces/MoodleResourceCentre/pages/31852705/SITS+Marks+Transfer 
+
 ## Getting Started
 1) The plugin needs to know which SITS module deliveries relate to a specific course, we get this via our enrolment integration plugin [this interface](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/classes/manager.php#L247)  is logically seperated so it can be swapped out easily & provided by a different plugin, just needs to be wrapped into a site setting (merge requests welcome). 
 2) SITS APIs - SITS has an API framework called [Stutalk](https://www.mysits.com/mysits/sits107/107manuals/index.htm?https://www.mysits.com/mysits/sits107/107manuals/mensys/02super/22stutalk/03st2/00toc.htm) which we called directly during the initial development phase, however at UCL we have an Enterprise API Management layer which allows for internal reusability & standardisation, we implemented these API clients as sub-plugins so that if you also need to use your own institutional bespoke API framework, you can just develop the API client without reinventing the rest of the wheel. The stutalk apiclient needs to implement the [getstudents](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/apiclients/easikit/classes/requests/getstudents.php) request.
