@@ -7,7 +7,10 @@ It is designed for re-usability by other Moodle-SITS institutions and is intende
 This does require some development to adopt but the barrier is greatly reduced.
 
 ## User Documentation
-https://ucldata.atlassian.net/wiki/spaces/MoodleResourceCentre/pages/31852705/SITS+Marks+Transfer 
+- [User Documentation wiki](https://ucldata.atlassian.net/wiki/spaces/MoodleResourceCentre/pages/31852705/SITS+Marks+Transfer)  
+- [Initial Launch Blog post](https://blogs.ucl.ac.uk/digital-education/2024/03/18/initial-release-of-marks-transfer-available-on-ucl-moodle/)  
+- [Gradebook functionality Blog post](https://blogs.ucl.ac.uk/digital-education/2024/06/06/update-on-the-moodle-sits-marks-transfer-wizard/)  
+- [Re-Assessment functionality launch Blog post](https://blogs.ucl.ac.uk/digital-education/2024/09/19/new-moodle-assessment-features/#Mark:~:text=tracker%20documentation.-,Mark%20transfer%20update%C2%A0,-Finally%2C%20if%20you)  
 
 ## Getting Started
 1) The plugin needs to know which SITS module deliveries relate to a specific course, we get this via our enrolment integration plugin [this interface](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/classes/manager.php#L247)  is logically seperated so it can be swapped out easily & provided by a different plugin, just needs to be wrapped into a site setting (merge requests welcome). 
