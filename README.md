@@ -13,10 +13,10 @@ This does require some development to adopt but the barrier is greatly reduced.
 - [Re-Assessment functionality launch Blog post](https://blogs.ucl.ac.uk/digital-education/2024/09/19/new-moodle-assessment-features/#Mark:~:text=tracker%20documentation.-,Mark%20transfer%20update%C2%A0,-Finally%2C%20if%20you)  
 
 ## Getting Started
-1) The plugin needs to know which SITS module deliveries relate to a specific course, we get this via our enrolment integration plugin [this interface](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/classes/manager.php#L247)  is logically seperated so it can be swapped out easily & provided by a different plugin, just needs to be wrapped into a site setting (merge requests welcome). 
+1) The plugin needs to know which SITS module deliveries relate to a specific course, we get this via our enrolment integration plugin [this interface](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/classes/manager.php#L252)  is logically seperated so it can be swapped out easily & provided by a different plugin, just needs to be wrapped into a site setting (merge requests welcome). 
 2) SITS APIs - SITS has an API framework called [Stutalk](https://www.mysits.com/mysits/sits107/107manuals/index.htm?https://www.mysits.com/mysits/sits107/107manuals/mensys/02super/22stutalk/03st2/00toc.htm) which we called directly during the initial development phase, however at UCL we have an Enterprise API Management layer which allows for internal reusability & standardisation, we implemented these API clients as sub-plugins so that if you also need to use your own institutional bespoke API framework, you can just develop the API client without reinventing the rest of the wheel. The stutalk apiclient needs to implement the [getstudents](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/apiclients/easikit/classes/requests/getstudents.php) request.
 3) Stutalk APIs. We can probably share some of the stutalk endpoints that were built, they just don't lend themselves to being in git.
-4) As an additional safety, we prevent the configuration of marks transfer for previous academic years. This ends up calling our [Lifecycle](https://github.com/ucl-isd/moodle-block_lifecycle) plugin to find out the [end of the late assessment](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/classes/manager.php#L1057-L1059) period. This could easily be made optional.
+4) As an additional safety, we prevent the configuration of marks transfer for previous academic years. This ends up calling our [Lifecycle](https://github.com/ucl-isd/moodle-block_lifecycle) plugin to find out the [end of the late assessment](https://github.com/ucl-isd/moodle-local_sitsgradepush/blob/main/classes/manager.php#L1070-L1072) period. This could easily be made optional.
 
 ## Features
 
@@ -27,7 +27,7 @@ This does require some development to adopt but the barrier is greatly reduced.
 - manual trigger for push
 - push the submission date & time
 - Activities supported: Moodle Assignment, Quiz, LTI, Lesson, H5P (plugin), Coursework and Turnitin Assignment V2 (only with 1 part - most common).
-- Select a Gradebook [grade item](https://docs.moodle.org/403/en/Grade_items) (covering LTIs, etc) and [grade category](https://docs.moodle.org/403/en/Grade_categories)
+- Select a Gradebook [grade item](https://docs.moodle.org/405/en/Grade_items) (covering LTIs, etc) and [grade category](https://docs.moodle.org/405/en/Grade_categories)
 - Limit Assessment Component availability to ensure only compatible SITS Marking Schemes and SITS Assessment Types can be mapped. And for Exam Assessment types, only allow those components where the exam room code = EXAMMDLE
 - Support for resits, retakes, repeats, re-assessments, Late Summer Assessments
 - Late / non-submission reporting
