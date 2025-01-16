@@ -28,7 +28,7 @@ Feature: Remove Moodle source for SITS assessment component
       | assign          | Assign 1   | A1 desc | C1     | assign1     | 1       |
       | quiz            | Quiz 1     | Q1 desc | C1     | quiz1       | 1       |
     And the course "C1" is regraded
-    And the "mod" "assign1" is mapped to "72hr take-home examination (3000 words)"
+    And the "mod_assign" "assign1" is mapped to "72hr take-home examination (3000 words)"
 
   @javascript
   Scenario: Remove source for a SITS assessment component

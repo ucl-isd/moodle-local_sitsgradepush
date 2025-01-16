@@ -253,12 +253,11 @@ class behat_sitsgradepush extends behat_base {
         global $DB;
         $manager = manager::get_manager();
 
+        $sourceexplode = explode('_', $sourcetype);
+
         // Get the source.
-        $source = match ($sourcetype) {
-            'mod' => $DB->get_record(
-              'course_modules',
-              ['idnumber' => $sourcename]
-            ),
+        $source = match ($sourceexplode[0]) {
+            'mod' => $this->get_coursemodule($sourceexplode[1], $sourcename),
             'gradeitem' => $DB->get_record(
               'grade_items',
               ['idnumber' => $sourcename]
@@ -276,7 +275,7 @@ class behat_sitsgradepush extends behat_base {
         $mab = $DB->get_record('local_sitsgradepush_mab', ['mabname' => $mabname]);
 
         // Get the assessment.
-        $assessment = assessmentfactory::get_assessment($sourcetype, $source->id);
+        $assessment = assessmentfactory::get_assessment($sourceexplode[0], $source->id);
 
         // Insert new mapping.
         $record = new \stdClass();
@@ -292,6 +291,31 @@ class behat_sitsgradepush extends behat_base {
         $record->timemodified = time();
 
         $DB->insert_record($manager::TABLE_ASSESSMENT_MAPPING, $record);
+    }
+
+    /**
+     * Get the course module.
+     *
+     * @param string $modulename
+     * @param string $sourcename
+     * @return object
+     * @throws \Exception
+     */
+    public function get_coursemodule(string $modulename, string $sourcename ): mixed {
+        global $DB;
+
+        if ($modulename == 'lti') {
+            $sql = "SELECT cm.id FROM {course_modules} cm JOIN {lti} lti ON cm.instance = lti.id WHERE lti.name = :sourcename";
+            $coursemodule = $DB->get_record_sql($sql, ['sourcename' => $sourcename]);
+        } else {
+            $coursemodule = $DB->get_record('course_modules', ['idnumber' => $sourcename]);
+        }
+
+        if (!$coursemodule) {
+            throw new Exception("Course module with module name '$modulename', source name '$sourcename' not found.");
+        }
+
+        return $coursemodule;
     }
 
     /**

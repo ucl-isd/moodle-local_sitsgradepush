@@ -40,7 +40,7 @@ Feature: Transfer all mapped sources from Moodle to SITS
     And the following "grade grades" exist:
       | gradeitem | user     | grade |
       | Assign 1   | student1 | 50    |
-    And the "mod" "assign1" is mapped to "72hr take-home examination (3000 words)"
+    And the "mod_assign" "assign1" is mapped to "72hr take-home examination (3000 words)"
     And the following "activities" exist:
       | activity        | name       | intro   | course | idnumber    | section |
       | quiz            | Quiz 1     | Q1 desc | C1     | quiz1       | 1       |
@@ -65,7 +65,7 @@ Feature: Transfer all mapped sources from Moodle to SITS
       | slot | response |
       |   2  | True     |
       |   3  | True     |
-    And the "mod" "quiz1" is mapped to "2000 word essay"
+    And the "mod_quiz" "quiz1" is mapped to "2000 word essay"
 
   @javascript
   Scenario: Transfer all marks to SITS
