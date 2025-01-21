@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\extension;
 
+use core\clock;
+use core\di;
 use local_sitsgradepush\aws\sqs;
 use local_sitsgradepush\logger;
 
@@ -44,6 +46,9 @@ abstract class aws_queue_processor {
     /** @var string Message status - failed */
     const STATUS_FAILED = 'failed';
 
+    /** @var string Message status - ignored */
+    const STATUS_IGNORED = 'ignored';
+
     /** @var int Maximum number of batches */
     const MAX_BATCHES = 30;
 
@@ -67,9 +72,9 @@ abstract class aws_queue_processor {
      * Process the message.
      *
      * @param array $messagebody AWS SQS message body
-     * @return void
+     * @return string Message processing status
      */
-    abstract protected function process_message(array $messagebody): void;
+    abstract protected function process_message(array $messagebody): string;
 
     /**
      * Get the queue name.
@@ -106,29 +111,47 @@ abstract class aws_queue_processor {
      * Check should we process the message.
      *
      * @param string $messageid AWS SQS Message ID
+     * @param array $messagebody AWS SQS Message body
      * @return bool True if message is processed already, false otherwise
      * @throws \dml_exception
      */
-    protected function should_not_process_message(string $messageid): bool {
+    protected function should_not_process_message(string $messageid, array $messagebody): bool {
         global $DB;
 
         try {
+            // Skip if message received time + delay time is greater than current time.
+            $delaytime = get_config('local_sitsgradepush', 'aws_delay_process_time') ?? 0;
+            if (isset($messagebody['Timestamp']) &&
+                strtotime($messagebody['Timestamp']) + $delaytime > di::get(clock::class)->time()) {
+                mtrace("Skipping message due to delay time: {$messageid}");
+                return true;
+            }
+
+            // Skip if message is already processed, ignored or exceeded maximum attempts.
             $sql = 'SELECT id
                     FROM {local_sitsgradepush_aws_log}
                     WHERE messageid = :messageid
-                    AND (status = :status OR attempts >= :attempts)';
-            // Allow processing if message has not been processed successfully or exceeded maximum attempts.
-            return $DB->record_exists_sql(
+                    AND (status = :processed OR status = :ignored OR attempts >= :attempts)';
+
+            $handledmessages = $DB->record_exists_sql(
                 $sql,
                 [
                     'messageid' => $messageid,
-                    'status' => self::STATUS_PROCESSED,
+                    'processed' => self::STATUS_PROCESSED,
+                    'ignored' => self::STATUS_IGNORED,
                     'attempts' => self::MAX_ATTEMPTS,
                 ]
             );
+            if ($handledmessages) {
+                mtrace("Skipping message due to already processed, ignored or exceeded maximum attempts: {$messageid}");
+                return true;
+            }
+
+            return false;
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, 'Failed to check message status');
-            return false;
+            mtrace("Skipping message due to exception: {$messageid}");
+            return true;
         }
     }
 
@@ -176,16 +199,18 @@ abstract class aws_queue_processor {
 
                 foreach ($messages as $message) {
                     try {
-                        if ($this->should_not_process_message($message['MessageId'])) {
-                            mtrace("Skipping processed message or exceeded maximum attempts: {$message['MessageId']}");
-                            continue;
-                        }
-                        $data = json_decode($message['Body'], true);
+                        // Decode message body.
+                        $messagebody = json_decode($message['Body'], true);
                         if (json_last_error() !== JSON_ERROR_NONE) {
                             throw new \Exception('Invalid JSON data: ' . json_last_error_msg());
                         }
-                        $this->process_message($data);
-                        $this->save_message_record($message, $this->get_queue_name());
+
+                        if ($this->should_not_process_message($message['MessageId'], $messagebody)) {
+                            continue;
+                        }
+
+                        $status = $this->process_message($messagebody);
+                        $this->save_message_record($message, $this->get_queue_name(), $status);
                         $this->delete_message($message['ReceiptHandle']);
                         $processedcount++;
                     } catch (\Exception $e) {

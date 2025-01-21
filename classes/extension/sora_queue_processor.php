@@ -44,18 +44,40 @@ class sora_queue_processor extends aws_queue_processor {
      * @throws \moodle_exception
      * @throws \dml_exception
      */
-    protected function process_message(array $messagebody): void {
+    protected function process_message(array $messagebody): string {
         $sora = new sora();
         $sora->set_properties_from_aws_message($messagebody['Message']);
 
-        // As the assessment api only returns exam type SORA, we only process exam type SORA update from AWS.
-        if ($sora->get_sora_message_type() !== sora::SORA_MESSAGE_TYPE_EXAM) {
-            return;
+        // Check if we should ignore the message.
+        if ($this->should_ignore_message($sora)) {
+            return self::STATUS_IGNORED;
         }
 
         // Get all mappings for the student.
         $mappings = $sora->get_mappings_by_userid($sora->get_userid());
         $sora->process_extension($mappings);
+
+        return self::STATUS_PROCESSED;
+    }
+
+    /**
+     * Check if we should ignore the message.
+     *
+     * @param sora $sora
+     * @return bool
+     */
+    protected function should_ignore_message(sora $sora): bool {
+        // As the assessment api only returns exam type SORA, we only process exam type SORA update from AWS.
+        if ($sora->get_sora_message_type() !== sora::SORA_MESSAGE_TYPE_EXAM) {
+            return true;
+        }
+
+        // If there are no changes, we should ignore the message.
+        if (empty($sora->get_sora_changes())) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

@@ -191,6 +191,15 @@ if ($hassiteconfig) {
             get_string('settings:awssoraqueueurl:desc', 'local_sitsgradepush'),
             'https://sqs.eu-west-2.amazonaws.com/540370667459/person-sora-dev'
         ));
+
+        // AWS delay process time.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_delay_process_time',
+            get_string('settings:awsdelayprocesstime', 'local_sitsgradepush'),
+            get_string('settings:awsdelayprocesstime:desc', 'local_sitsgradepush'),
+            3900, // 1 hour and 5 minutes.
+            PARAM_INT,
+            10
+        ));
     }
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
