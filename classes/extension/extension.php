@@ -132,7 +132,7 @@ abstract class extension implements iextension {
         global $DB;
 
         // Find all enrolled courses for the student.
-        $courses = enrol_get_users_courses($userid, true);
+        $courses = enrol_get_users_courses($userid);
 
         // Get courses that are in the current academic year.
         $courses = array_filter($courses, function($course) {
