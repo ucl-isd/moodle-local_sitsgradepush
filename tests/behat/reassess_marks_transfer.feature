@@ -45,7 +45,7 @@ Feature: Marks transfer from Moodle to SITS for re-assessment
     And the following "grade grades" exist:
       | gradeitem | user     | grade |
       | Assign 1   | student1 | 50    |
-    And the "mod" "assign1" is a re-assessment and mapped to "Coursework 4000 word written case studies"
+    And the "mod_assign" "assign1" is a re-assessment and mapped to "Coursework 4000 word written case studies"
     And I am on the "Course 1" course page logged in as teacher1
     And I click on "More" "link" in the ".secondary-navigation" "css_element"
     And I select "SITS Marks Transfer" from secondary navigation
@@ -85,7 +85,7 @@ Feature: Marks transfer from Moodle to SITS for re-assessment
       | slot | response |
       |   2  | True     |
       |   3  | True     |
-    And the "mod" "quiz1" is a re-assessment and mapped to "Coursework 4000 word written case studies"
+    And the "mod_quiz" "quiz1" is a re-assessment and mapped to "Coursework 4000 word written case studies"
     And I am on the "Course 1" course page logged in as teacher1
     And I click on "More" "link" in the ".secondary-navigation" "css_element"
     And I select "SITS Marks Transfer" from secondary navigation
@@ -143,6 +143,111 @@ Feature: Marks transfer from Moodle to SITS for re-assessment
     And I click on the marks transfer types dropdown menu and select "Re-assessment"
     And I should see "Re-assessment" in the "tertiary-navigation" "region"
     And I should see "2" marks to transfer for "Coursework 4000 word written case studies"
+    And I click on the "Transfer marks" button for "Coursework 4000 word written case studies"
+    And I press "Confirm"
+    And I run the scheduled task "\local_sitsgradepush\task\pushtask"
+    And I run all adhoc tasks
+    And I reload the page
+    Then I should see "0" marks to transfer for "Coursework 4000 word written case studies"
+
+  @javascript @_file_upload
+  Scenario: Transfer marks for a re-assessment coursework to SITS
+    Given the "mod_coursework" plugin is installed
+    And the following "activities" exist:
+      | activity   | name           | intro          | course | idnumber    | section | allowearlyfinalisation | numberofmarkers |
+      | coursework | Coursework 1   | CW1 desc       | C1     | coursework1 | 1       | 1                      | 1               |
+    And the following "permission overrides" exist:
+      | capability                        | permission | role           | contextlevel | reference |
+      | mod/coursework:publish            | Allow      | editingteacher | Course       | C1        |
+    And I am on the "Course 1" course page logged in as student1
+    And I follow "Coursework 1"
+    And I press "Upload your submission"
+    And I upload "lib/tests/fixtures/empty.txt" file to "Upload a file" filemanager
+    And I press "Submit"
+    And I press "Finalise your submission"
+    And I press "Yes"
+    And I log out
+    And I am on the "Course 1" course page logged in as teacher1
+    And I follow "Coursework 1"
+    And I click on "Add final feedback" "link"
+    And I press "Save and finalise"
+    And I reload the page
+    And I press "Release all grades"
+    And I press "Continue"
+    And the "mod_coursework" "coursework1" is a re-assessment and mapped to "Coursework 4000 word written case studies"
+    And I am on the "Course 1" course page logged in as teacher1
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And I click on the marks transfer types dropdown menu and select "Re-assessment"
+    And I should see "Re-assessment" in the "tertiary-navigation" "region"
+    And I should see "1" marks to transfer for "Coursework 4000 word written case studies"
+    And I click on the "Transfer marks" button for "Coursework 4000 word written case studies"
+    And I press "Confirm"
+    And I run the scheduled task "\local_sitsgradepush\task\pushtask"
+    And I run all adhoc tasks
+    And I reload the page
+    Then I should see "0" marks to transfer for "Coursework 4000 word written case studies"
+
+  @javascript
+  Scenario: Transfer marks for a re-assessment lesson to SITS
+    Given the following "activities" exist:
+      | activity | name             | course | idnumber |
+      | lesson   | Test lesson name | C1     | lesson1  |
+    And the following "mod_lesson > pages" exist:
+      | lesson           | qtype     | title                 | content                   |
+      | Test lesson name | truefalse | True/false question 1 | Paper is made from trees. |
+      | Test lesson name | truefalse | True/false question 2 | The sky is Pink.          |
+    And the following "mod_lesson > answers" exist:
+      | page                  | answer        | response | jumpto        | score |
+      | True/false question 1 | True          | Correct  | Next page     | 1     |
+      | True/false question 1 | False         | Wrong    | This page     | 0     |
+      | True/false question 2 | False         | Correct  | Next page     | 1     |
+      | True/false question 2 | True          | Wrong    | This page     | 0     |
+    When I am on the "Test lesson name" "lesson activity" page logged in as student1
+    And I should see "Paper is made from trees."
+    And I set the following fields to these values:
+      | True | 1 |
+    And I press "Submit"
+    And I press "Continue"
+    And I should see "The sky is Pink."
+    And I set the following fields to these values:
+      | True | 1 |
+    And I press "Submit"
+    And I press "Continue"
+    And the "mod_lesson" "lesson1" is a re-assessment and mapped to "Coursework 4000 word written case studies"
+    And I am on the "Course 1" course page logged in as teacher1
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And I click on the marks transfer types dropdown menu and select "Re-assessment"
+    And I should see "Re-assessment" in the "tertiary-navigation" "region"
+    And I should see "1" marks to transfer for "Coursework 4000 word written case studies"
+    And I click on the "Transfer marks" button for "Coursework 4000 word written case studies"
+    And I press "Confirm"
+    And I run the scheduled task "\local_sitsgradepush\task\pushtask"
+    And I run all adhoc tasks
+    And I reload the page
+    Then I should see "0" marks to transfer for "Coursework 4000 word written case studies"
+
+  @javascript
+  Scenario: Transfer marks for a re-assessment lti activity to SITS
+    Given the following "mod_lti > tool types" exist:
+      | name            | baseurl                                   | coursevisible | state |
+      | Teaching Tool 1 | /mod/lti/tests/fixtures/tool_provider.php | 2             | 1     |
+    And I am on the "Course 1" course page logged in as teacher1
+    And I turn editing mode on
+    And I add a "Teaching Tool 1" to section "1" using the activity chooser
+    And I set the field "Activity name" to "lti 1"
+    And I press "Save and return to course"
+    And I am on the "Course 1" "grades > Grader report > View" page
+    And I give the grade "90.00" to the user "Student1 Test" for the grade item "lti 1"
+    And I press "Save changes"
+    And the "mod_lti" "lti 1" is a re-assessment and mapped to "Coursework 4000 word written case studies"
+    And I am on the "Course 1" course page
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And I click on the marks transfer types dropdown menu and select "Re-assessment"
+    And I should see "Re-assessment" in the "tertiary-navigation" "region"
+    And I should see "1" marks to transfer for "Coursework 4000 word written case studies"
     And I click on the "Transfer marks" button for "Coursework 4000 word written case studies"
     And I press "Confirm"
     And I run the scheduled task "\local_sitsgradepush\task\pushtask"

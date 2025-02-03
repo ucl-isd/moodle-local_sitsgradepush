@@ -30,9 +30,11 @@ Feature: Map Moodle source to SITS assessment component
       | local/sitsgradepush:mapassessment | Allow      | editingteacher | Course       | C1        |
     And the course "C1" is set up for marks transfer
     And the following "activities" exist:
-      | activity        | name       | intro   | course | idnumber    | section |
-      | assign          | Assign 1   | A1 desc | C1     | assign1     | 1       |
-      | quiz            | Quiz 1     | Q1 desc | C1     | quiz1       | 1       |
+      | activity        | name         | intro    | course | idnumber    | section |
+      | assign          | Assign 1     | A1 desc  | C1     | assign1     | 1       |
+      | quiz            | Quiz 1       | Q1 desc  | C1     | quiz1       | 1       |
+      | coursework      | Coursework 1 | CW1 desc | C1     | coursework1 | 1       |
+      | lesson          | Lesson 1     | L1 desc  | C1     | lesson1     | 1       |
     And the following "grade items" exist:
       | itemname          | course | idnumber   |
       | Grade Item 1      | C1     | gradeitem1 |
@@ -83,3 +85,42 @@ Feature: Map Moodle source to SITS assessment component
     And I click on the "Select" button for "Grade category 1"
     And I press "Confirm"
     Then I should see "Grade category 1" is mapped to "72hr take-home examination (3000 words)"
+
+  @javascript
+  Scenario: Map a coursework to a SITS assessment component
+    Given the "mod_coursework" plugin is installed
+    And I am on the "Course 1" course page logged in as teacher1
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And I click on the "Select source" button for "72hr take-home examination (3000 words)"
+    And I click on the "Select" button for "Coursework 1"
+    And I press "Confirm"
+    Then I should see "Coursework 1" is mapped to "72hr take-home examination (3000 words)"
+
+  @javascript
+  Scenario: Map a lesson to a SITS assessment component
+    Given I am on the "Course 1" course page logged in as teacher1
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And I click on the "Select source" button for "72hr take-home examination (3000 words)"
+    And I click on the "Select" button for "Lesson 1"
+    And I press "Confirm"
+    Then I should see "Lesson 1" is mapped to "72hr take-home examination (3000 words)"
+
+  @javascript
+  Scenario: Map a lti activity to a SITS assessment component
+    Given the following "mod_lti > tool types" exist:
+      | name            | baseurl                                   | coursevisible | state |
+      | Teaching Tool 1 | /mod/lti/tests/fixtures/tool_provider.php | 2             | 1     |
+    And I am on the "Course 1" course page logged in as teacher1
+    And I turn editing mode on
+    And I add a "Teaching Tool 1" to section "1" using the activity chooser
+    And I set the field "Activity name" to "LTI 1"
+    And I press "Save and return to course"
+    And I am on the "Course 1" course page
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And I click on the "Select source" button for "72hr take-home examination (3000 words)"
+    And I click on the "Select" button for "LTI 1"
+    And I press "Confirm"
+    Then I should see "LTI 1" is mapped to "72hr take-home examination (3000 words)"
