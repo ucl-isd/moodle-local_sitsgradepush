@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush;
 
+use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\sora;
@@ -132,5 +133,34 @@ class extensionmanager {
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, "Deleted Mapping: " . json_encode($deletedmapping));
         }
+    }
+
+    /**
+     * Check if the assessment types are supported.
+     * The V1 API only returns SORA information for certain assessment types.
+     *
+     * @param string $astcode
+     * @return bool
+     */
+    public static function is_assessment_types_sora_supported(string $astcode): bool {
+        $supportedtypes = get_config('local_sitsgradepush', 'ast_codes_sora_api_v1');
+        return in_array($astcode, array_map('trim', explode(',', $supportedtypes)));
+    }
+
+    /**
+     * Check if the extension is eligible for the mapping.
+     *
+     * @param \stdClass $componentgrade
+     * @param assessment $source
+     * @param \stdClass $mapping
+     * @return bool
+     * @throws \dml_exception
+     */
+    public static function is_extension_eligible(\stdClass $componentgrade, assessment $source, \stdClass $mapping): bool {
+        return self::is_extension_enabled() && // Extension is enabled.
+            $mapping->enableextension === '1' && // Extension is enabled for the mapping.
+            self::is_assessment_types_sora_supported($componentgrade->astcode) && // Assessment type is supported for API V1.
+            $source->is_extension_supported() && // Extension is supported for the source.
+            $source->is_valid_for_extension()->valid; // Source has start date and end date set.
     }
 }

@@ -18,6 +18,7 @@ namespace local_sitsgradepush\output;
 
 use local_sitsgradepush\assessment\gradebook;
 use local_sitsgradepush\errormanager;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\taskmanager;
 use moodle_page;
@@ -227,6 +228,15 @@ class renderer extends plugin_renderer_base {
                         !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
 
                     $componentgrade->assessmentmapping = $assessmentmapping;
+
+                    // Extension eligibility.
+                    if (extensionmanager::is_extension_eligible($componentgrade, $assessmentdata->source, $mapping)) {
+                        $componentgrade->extensioneligible = new \stdClass();
+                        $componentgrade->extensioneligible->overrideurl =
+                            $assessmentdata->source->get_overrides_page_url('group', false);
+                        $componentgrade->extensioneligible->extensioninfourl =
+                            get_config('local_sitsgradepush', 'extension_support_page_url');
+                    }
                 }
             }
 

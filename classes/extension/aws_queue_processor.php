@@ -120,7 +120,7 @@ abstract class aws_queue_processor {
 
         try {
             // Skip if message received time + delay time is greater than current time.
-            $delaytime = get_config('local_sitsgradepush', 'aws_delay_process_time') ?? 0;
+            $delaytime = (int) (get_config('local_sitsgradepush', 'aws_delay_process_time') ?: 0);
             if (isset($messagebody['Timestamp']) &&
                 strtotime($messagebody['Timestamp']) + $delaytime > di::get(clock::class)->time()) {
                 mtrace("Skipping message due to delay time: {$messageid}");

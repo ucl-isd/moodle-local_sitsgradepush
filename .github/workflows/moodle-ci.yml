@@ -51,9 +51,6 @@ jobs:
           - php: '8.1'
             moodle-branch: 'MOODLE_405_STABLE'
             database: 'mariadb'
-          - php: '8.1'
-            moodle-branch: 'MOODLE_405_STABLE'
-            database: 'mariadb'
 
     steps:
       - name: Check out repository code

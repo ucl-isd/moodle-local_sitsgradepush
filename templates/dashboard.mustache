@@ -157,7 +157,20 @@
         {{#componentgrades}}
             <tr>
                 <td>{{mabseq}}</td>
-                <th scope="row">{{mabname}}</th>
+                <th scope="row">
+                    {{mabname}}
+                    {{#extensioneligible}}
+                        <div class="alert alert-warning">
+                            <div class="badge badge-warning">{{#str}} dashboard:extensions, local_sitsgradepush {{/str}}</div>
+                            <a href="{{extensioninfourl}}" target="_blank" class="small">
+                                {{#str}} dashboard:details, local_sitsgradepush {{/str}}
+                            </a>
+                            <div class="small">{{#str}} dashboard:extensions:desc, local_sitsgradepush {{/str}}
+                                <a href="{{overrideurl}}" target="_blank">{{#str}} dashboard:extensions:view, local_sitsgradepush {{/str}}</a>
+                            </div>
+                        </div>
+                    {{/extensioneligible}}
+                </th>
                 <td>{{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}</td>
                 <td>
                     {{#assessmentmapping}}

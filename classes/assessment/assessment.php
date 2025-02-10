@@ -269,6 +269,27 @@ abstract class assessment implements iassessment {
     }
 
     /**
+     * Check if extension is supported for this assessment type.
+     *
+     * @return bool
+     */
+    public function is_extension_supported(): bool {
+        return in_array($this->get_module_name(), extension::SUPPORTED_MODULE_TYPES);
+    }
+
+    /**
+     * Get the URL to the overrides page.
+     * Override in child class if needed.
+     *
+     * @param string $mode
+     * @param bool $escape
+     * @return string
+     */
+    public function get_overrides_page_url(string $mode, bool $escape = true): string {
+        return '#';
+    }
+
+    /**
      * Set validity result.
      *
      * @param bool $valid
