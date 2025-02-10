@@ -1457,7 +1457,7 @@ class manager {
         }
 
         // Check the mapping exists.
-        if (!$DB->record_exists(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid])) {
+        if (!$mapping = $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid])) {
             throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $mappingid);
         }
 
@@ -1468,6 +1468,9 @@ class manager {
 
         // Everything is fine, remove the mapping.
         $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid]);
+
+        // Unlock the Moodle assessment in the local_assess_type plugin.
+        assesstype::update_assess_type($mapping, assesstype::ACTION_UNLOCK);
     }
 
     /**
