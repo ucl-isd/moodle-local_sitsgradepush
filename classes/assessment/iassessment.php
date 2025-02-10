@@ -126,4 +126,20 @@ interface iassessment {
      * @return int|null
      */
     public function get_end_date(): ?int;
+
+    /**
+     * Check if the assessment type is valid for extensions.
+     *
+     * @return bool
+     */
+    public function is_extension_supported(): bool;
+
+    /**
+     * Get the URL to the overrides page.
+     *
+     * @param string $mode
+     * @param bool $escape
+     * @return string
+     */
+    public function get_overrides_page_url(string $mode, bool $escape = true): string;
 }

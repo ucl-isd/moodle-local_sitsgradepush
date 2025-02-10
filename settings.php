@@ -142,7 +142,7 @@ if ($hassiteconfig) {
             '1'
         ));
 
-        // Setting to enable/disable the gradebook transfer feature.
+        // Setting to enable/disable the re-assessment transfer feature.
         $settings->add(new admin_setting_configcheckbox(
           'local_sitsgradepush/reassessment_enabled',
           get_string('settings:reassessment_enabled', 'local_sitsgradepush'),
@@ -150,12 +150,29 @@ if ($hassiteconfig) {
           '0'
         ));
 
-        // Setting to enable/disable submission log push.
+        // Setting to enable/disable extension feature.
         $settings->add(new admin_setting_configcheckbox(
             'local_sitsgradepush/extension_enabled',
             get_string('settings:enableextension', 'local_sitsgradepush'),
             get_string('settings:enableextension:desc', 'local_sitsgradepush'),
             '0'
+        ));
+
+        // Set SITS moodle AST codes that have SORA data returned by the assessment component API V1.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/ast_codes_sora_api_v1',
+            get_string('settings:astcodessoraapiv1', 'local_sitsgradepush'),
+            get_string('settings:astcodessoraapiv1:desc', 'local_sitsgradepush'),
+            'BC02, HC01, EC03, EC04, ED03, ED04'
+        ));
+
+        // Set the extension support page URL.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/extension_support_page_url',
+            get_string('settings:extension_support_page_url', 'local_sitsgradepush'),
+            get_string('settings:extension_support_page_url:desc', 'local_sitsgradepush'),
+            'https://ucldata.atlassian.net/wiki/spaces/MoodleResourceCentre/pages/96567347/FAQs+errors+support' .
+            '#Error-labels-for-Mark-Transfer',
+            PARAM_URL,
+            50
         ));
 
         // Setting for AWS.

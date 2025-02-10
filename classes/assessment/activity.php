@@ -19,6 +19,7 @@ namespace local_sitsgradepush\assessment;
 use core\context\module;
 use grade_item;
 use local_sitsgradepush\manager;
+use moodle_url;
 
 /**
  * Abstract class for activity assessment.
@@ -196,6 +197,19 @@ abstract class activity extends assessment {
     }
 
     /**
+     * Get the URL to the overrides page.
+     *
+     * @param string $mode
+     * @param bool $escape
+     * @return string
+     */
+    public function get_overrides_page_url(string $mode, bool $escape = true): string {
+        $modname = $this->get_module_name();
+        $url = new moodle_url("/mod/$modname/overrides.php", ['cmid' => $this->get_coursemodule_id(), 'mode' => $mode]);
+        return $url->out($escape);
+    }
+
+    /**
      * Set the module instance.
      * @return void
      * @throws \dml_exception
@@ -253,6 +267,9 @@ abstract class activity extends assessment {
      * @return void
      */
     protected function remove_user_from_previous_sora_groups(int $userid, ?int $excludedgroupid = null): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/group/lib.php');
+
         // Get all the sora group overrides.
         $overrides = $this->get_assessment_sora_overrides();
 

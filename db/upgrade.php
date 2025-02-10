@@ -534,7 +534,7 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2024101000, 'local', 'sitsgradepush');
     }
 
-    if ($oldversion < 2024101100) {
+    if ($oldversion < 2025021000) {
 
         // Define field enableextension to be added to local_sitsgradepush_mapping.
         $table = new xmldb_table('local_sitsgradepush_mapping');
@@ -546,10 +546,10 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         }
 
         // Sitsgradepush savepoint reached.
-        upgrade_plugin_savepoint(true, 2024101100, 'local', 'sitsgradepush');
+        upgrade_plugin_savepoint(true, 2025021000, 'local', 'sitsgradepush');
     }
 
-    if ($oldversion < 2024110100) {
+    if ($oldversion < 2025021002) {
 
         // Define table local_sitsgradepush_aws_log to be created.
         $table = new xmldb_table('local_sitsgradepush_aws_log');
@@ -577,10 +577,10 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         }
 
         // Sitsgradepush savepoint reached.
-        upgrade_plugin_savepoint(true, 2024110100, 'local', 'sitsgradepush');
+        upgrade_plugin_savepoint(true, 2025021002, 'local', 'sitsgradepush');
     }
 
-    if ($oldversion < 2024110102) {
+    if ($oldversion < 2025021003) {
 
         // Define table local_sitsgradepush_enrol to be created.
         $table = new xmldb_table('local_sitsgradepush_enrol');
@@ -604,7 +604,7 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         }
 
         // Sitsgradepush savepoint reached.
-        upgrade_plugin_savepoint(true, 2024110102, 'local', 'sitsgradepush');
+        upgrade_plugin_savepoint(true, 2025021003, 'local', 'sitsgradepush');
     }
 
     return true;

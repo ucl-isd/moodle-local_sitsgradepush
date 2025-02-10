@@ -25,7 +25,10 @@
 
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extension\extension;
+use local_sitsgradepush\extensionmanager;
+use local_sitsgradepush\logger;
 use local_sitsgradepush\manager;
+use local_sitsgradepush\taskmanager;
 
 /**
  * Attach a grade push link in the activity's settings menu.
@@ -123,4 +126,40 @@ function local_sitsgradepush_extend_navigation_course(navigation_node $parentnod
     }
 
     $parentnode->add_node($node);
+}
+
+/**
+ * Add an adhoc task to process extensions if a mapped course module is updated.
+ *
+ * @param stdClass $data
+ * @param stdClass $course
+ *
+ * @return stdClass
+ * @throws dml_exception
+ */
+function local_sitsgradepush_coursemodule_edit_post_actions(stdClass $data, stdClass $course): stdClass {
+    // Check if grade push is enabled and the extension is enabled.
+    if (get_config('local_sitsgradepush', 'enabled') && extensionmanager::is_extension_enabled()) {
+        try {
+            // Check if the course module is one of the supported activities for extensions.
+            if (!in_array($data->modulename, extension::SUPPORTED_MODULE_TYPES)) {
+                return $data;
+            }
+
+            // Get the assessment mappings for the course module.
+            $mappings = manager::get_manager()->get_assessment_mappings(
+                assessmentfactory::get_assessment(assessmentfactory::SOURCETYPE_MOD, $data->coursemodule)
+            );
+
+            // Add the process extensions adhoc task for each mapping.
+            foreach ($mappings as $mapping) {
+                taskmanager::add_process_extensions_for_new_mapping_adhoc_task($mapping->id);
+            }
+        } catch (Exception $e) {
+            // Log the exception.
+            logger::log($e->getMessage());
+        }
+    }
+
+    return $data;
 }
