@@ -31,11 +31,12 @@ This does require some development to adopt but the barrier is greatly reduced.
 - Limit Assessment Component availability to ensure only compatible SITS Marking Schemes and SITS Assessment Types can be mapped. And for Exam Assessment types, only allow those components where the exam room code = EXAMMDLE
 - Support for resits, retakes, repeats, re-assessments, Late Summer Assessments
 - Late / non-submission reporting
+- Automatically populate extra time / deadline extensions for [SORAs](https://www.ucl.ac.uk/students/support-and-wellbeing/disability-support/reasonable-adjustments-your-assessments)
 
 ## Roadmap
-We had our initial launch stage in March 2024, we are planning to keep improving the tool, by implementing the following features in 2024:
+We had our initial launch stage in March 2024, we are planning to keep improving the tool, by implementing the following features in 2025:
 
-- Automatically populate extra time / deadline extensions for [SORAs](https://www.ucl.ac.uk/students/support-and-wellbeing/disability-support/reasonable-adjustments-your-assessments) and [ECs](https://www.ucl.ac.uk/academic-manual/chapters/chapter-2-student-support-framework/2-short-term-illness-and-other-extenuating)
+- Automatically populate extra time / deadline extensions for [ECs](https://www.ucl.ac.uk/academic-manual/chapters/chapter-2-student-support-framework/2-short-term-illness-and-other-extenuating)
 - Ability to transfer marks before they have been released to the Gradebook
 
 ### Turnitin V2 specific feature requests 
