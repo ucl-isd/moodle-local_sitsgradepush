@@ -91,9 +91,6 @@ class manager {
         'mkscode' => 'MKS_CODE',
     ];
 
-    /** @var string Existing activity */
-    const SOURCE_EXISTING_ACTIVITY = 'existing';
-
     /** @var null Manager instance */
     private static $instance = null;
 
@@ -491,7 +488,8 @@ class manager {
         $record->componentgradeid = $data->componentgradeid;
         $record->reassessment = $data->reassessment;
         $record->enableextension = (extensionmanager::is_extension_enabled() &&
-            (isset($record->moduletype) && extension::is_module_supported($record->moduletype))) ? 1 : 0;
+            (isset($record->moduletype) && extension::is_module_supported($record->moduletype))) &&
+            $assessment->get_end_date() > time() ? 1 : 0; // Assessment must not have ended.
         $record->timecreated = time();
         $record->timemodified = time();
 
@@ -888,18 +886,24 @@ class manager {
      * Get component grade details for a given assessment mapping ID.
      *
      * @param int $id Assessment mapping ID.
+     * @param bool $refresh Refresh the current cache.
      *
      * @return false|mixed
      * @throws \dml_exception|\coding_exception
      */
-    public function get_mab_and_map_info_by_mapping_id(int $id): mixed {
+    public function get_mab_and_map_info_by_mapping_id(int $id, bool $refresh = false): mixed {
         global $DB;
 
-        // Try to get the cache first.
         $key = 'map_mab_info_' . $id;
-        $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $key);
-        if (!empty($cache)) {
-            return $cache;
+        if ($refresh) {
+            // Clear cache.
+            cachemanager::purge_cache(cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $key);
+        } else {
+            // Try to get the cache first.
+            $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $key);
+            if (!empty($cache)) {
+                return $cache;
+            }
         }
 
         // Define the SQL query for retrieving the information.
@@ -1359,8 +1363,10 @@ class manager {
      */
     public function can_change_source(int $componentgradeid, int $reassess): bool {
         if ($assessementmapping = $this->is_component_grade_mapped($componentgradeid, $reassess)) {
+            // Get assessment.
+            $assessment = assessmentfactory::get_assessment($assessementmapping->sourcetype, $assessementmapping->sourceid);
             return !taskmanager::get_pending_task_in_queue($assessementmapping->id) &&
-                !$this->has_grades_pushed($assessementmapping->id);
+                !$this->has_grades_pushed($assessementmapping->id) && !$assessment->should_lock_mapping($assessementmapping);
         } else {
             return true;
         }
@@ -1530,6 +1536,17 @@ class manager {
         // Remove mapping is not allowed if grades have been pushed.
         if ($this->has_grades_pushed($mappingid)) {
             throw new \moodle_exception('error:mab_has_push_records', 'local_sitsgradepush', '', 'Mapping ID: ' . $mappingid);
+        }
+
+        // Check if there is a pending / running task for this mapping.
+        if ($task = taskmanager::get_pending_task_in_queue($mappingid)) {
+            throw new \moodle_exception('error:task_in_queue', 'local_sitsgradepush', '', $task->id);
+        }
+
+        // Check if the mapping is locked.
+        $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
+        if ($assessment->should_lock_mapping($mapping)) {
+            throw new \moodle_exception('error:mapping_locked', 'local_sitsgradepush');
         }
 
         // Everything is fine, remove the mapping.

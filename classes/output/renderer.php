@@ -225,7 +225,8 @@ class renderer extends plugin_renderer_base {
                     // Disable the change source button / hide the remove source button
                     // if grades have been pushed or there is a task running.
                     $assessmentmapping->disablechangesource = $assessmentmapping->hideremovesourcebutton =
-                        !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
+                        !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id) ||
+                        $assessmentdata->source->should_lock_mapping($mapping);
 
                     $componentgrade->assessmentmapping = $assessmentmapping;
 

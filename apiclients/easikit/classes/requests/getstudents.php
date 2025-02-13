@@ -17,6 +17,7 @@
 namespace sitsapiclient_easikit\requests;
 
 use local_sitsgradepush\cachemanager;
+use local_sitsgradepush\logger;
 
 /**
  * Class for getstudents request.
@@ -67,11 +68,31 @@ class getstudents extends request {
      * @return array
      */
     public function process_response($response): array {
+        global $DB;
+
         $result = [];
         if (!empty($response)) {
             // Convert response to suitable format.
             $response = json_decode($response, true);
             $result = $response['response']['student_collection']['student'] ?? [];
+
+            // Early return if no students.
+            if (empty($result)) {
+                return $result;
+            }
+
+            // Find the moodle user id for each student.
+            try {
+                [$insql, $params] = $DB->get_in_or_equal(array_column($result, 'code'));
+                $sql = "SELECT idnumber, id FROM {user} WHERE idnumber $insql";
+                $users = $DB->get_records_sql($sql, $params);
+                foreach ($result as &$student) {
+                    $student['moodleuserid'] = $users[$student['code']]->id ?? null;
+                }
+            } catch (\Exception $e) {
+                // Log the error.
+                logger::log('Error getting students user IDs', null, $e->getMessage());
+            }
         }
 
         return $result;
