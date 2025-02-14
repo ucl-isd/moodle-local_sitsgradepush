@@ -27,6 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['cachedef_componentgrades'] = 'SITS assessment components';
+$string['cachedef_mappingmabinfo'] = 'SITS Mapping and MAB information';
 $string['cachedef_markingschemes'] = 'SITS marking schemes';
 $string['cachedef_studentspr'] = 'Student\'s SPR code per SITS assessment pattern';
 $string['confirmmodal:body:partone'] = '
