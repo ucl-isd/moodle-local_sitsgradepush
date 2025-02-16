@@ -37,14 +37,14 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/mstokenendpoint',
         new lang_string('settings:mstokenendpoint', 'sitsapiclient_easikit'),
         new lang_string('settings:mstokenendpoint:desc', 'sitsapiclient_easikit'),
-        'https://login.microsoftonline.com/1faf88fe-a998-4c5b-93c9-210a11d9a5c2/oauth2/v2.0/token'
+        'https://login.microsoftonline.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/oauth2/v2.0/token'
     ));
 
     // Client ID.
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/clientid',
         new lang_string('settings:clientid', 'sitsapiclient_easikit'),
         new lang_string('settings:clientid:desc', 'sitsapiclient_easikit'),
-        'f2dfca44-322a-4e0e-9ab9-6014fa27c8af'
+        'ChangeMe!'
     ));
 
     // Client secret.
@@ -58,41 +58,41 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/assessmenttargetclientid',
         get_string('settings:assessmenttargetclientid', 'sitsapiclient_easikit'),
         get_string('settings:assessmenttargetclientid:desc', 'sitsapiclient_easikit'),
-        'bcb132ed-50e3-491c-8c80-a5208fcb5088'
+        'ChangeMe!'
     ));
 
     // Grade push endpoint.
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_grade_push',
         get_string('settings:endpoint_push_grade', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_push_grade:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle'
+        'https://change-this-url.example.com'
     ));
 
     // Submission log endpoint.
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_submission_log',
         get_string('settings:endpoint_submission_log', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_submission_log:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle'
+        'https://change-this-url.example.com'
     ));
 
     // Get component grade endpoint.
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_component_grade',
         get_string('settings:endpoint_component_grade', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_component_grade:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle/assessment-component'
+        'https://change-this-url.example.com'
     ));
 
     // Get student endpoint.
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_get_student',
         get_string('settings:endpoint_get_student', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_get_student:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component'
+        'https://change-this-url.example.com'
     ));
 
     // Get mark schemes endpoint.
     $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_get_mark_schemes',
         get_string('settings:endpoint_mark_schemes', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_mark_schemes:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component/mark-scheme'
+        'https://change-this-url.example.com'
     ));
 }

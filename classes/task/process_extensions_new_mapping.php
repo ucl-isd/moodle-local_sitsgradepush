@@ -55,7 +55,7 @@ class process_extensions_new_mapping extends adhoc_task {
             }
 
             // Check assessment mapping exists.
-            if (!$mapping = manager::get_manager()->get_mab_and_map_info_by_mapping_id($data->mapid)) {
+            if (!$mapping = manager::get_manager()->get_mab_and_map_info_by_mapping_id($data->mapid, true)) {
                 throw new \moodle_exception('error:mab_or_mapping_not_found', 'local_sitsgradepush', '', $data->mapid);
             }
 

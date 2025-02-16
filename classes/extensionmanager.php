@@ -128,8 +128,8 @@ class extensionmanager {
                 return;
             }
 
-            // Delete all SORA overrides for the assessment.
-            $assessment->delete_all_sora_overrides();
+            // Delete all SORA overrides for the deleted mapping.
+            $assessment->delete_sora_overrides_for_mapping($deletedmapping);
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, "Deleted Mapping: " . json_encode($deletedmapping));
         }

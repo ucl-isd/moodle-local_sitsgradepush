@@ -19,6 +19,7 @@ namespace local_sitsgradepush\assessment;
 use cache;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\sora;
+use local_sitsgradepush\manager;
 
 /**
  * Class for assignment assessment.
@@ -65,6 +66,20 @@ class assign extends activity {
      */
     public function get_end_date(): ?int {
         return $this->sourceinstance->duedate;
+    }
+
+    /**
+     * Check if the mapping of this assessment should be locked.
+     *
+     * @param \stdClass $mapping
+     * @return bool
+     */
+    public function should_lock_mapping(\stdClass $mapping): bool {
+        // Lock mapping if the current time has passed the cut-off time and the mapping is created before the assessment end date.
+        return
+            $mapping->enableextension == '1' &&
+            $this->clock->time() > $this->get_end_date() - $this->changesourcecutofftime &&
+            $mapping->timecreated < $this->get_end_date();
     }
 
     /**

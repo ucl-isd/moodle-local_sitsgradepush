@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush;
 
+use core\clock;
+
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_provider.php');
@@ -37,11 +39,17 @@ class extension_common extends base_test_class {
     /** @var \stdClass Default test student 1 */
     protected \stdClass $student1;
 
+    /** @var \stdClass Default test student 2 */
+    protected \stdClass $student2;
+
     /** @var \stdClass Default test assignment 1 */
     protected \stdClass $assign1;
 
     /** @var \stdClass Default test quiz 1*/
     protected \stdClass $quiz1;
+
+    /** @var clock $clock */
+    protected readonly clock $clock;
 
     /**
      * Set up the test.
@@ -58,11 +66,14 @@ class extension_common extends base_test_class {
         // Get data generator.
         $dg = $this->getDataGenerator();
 
+        // Mock the clock.
+        $this->clock = $this->mock_clock_with_frozen(1739178000); // Current time 2025-02-10 09:00:00.
+
         // Set Easikit API client.
         set_config('apiclient', 'easikit', 'local_sitsgradepush');
 
         // Setup testing environment.
-        set_config('late_summer_assessment_end_' . date('Y'), date('Y-m-d', strtotime('+2 month')), 'block_lifecycle');
+        set_config('late_summer_assessment_end_2025', '2025-11-30', 'block_lifecycle');
 
         // Enable the extension.
         set_config('extension_enabled', '1', 'local_sitsgradepush');
@@ -79,8 +90,11 @@ class extension_common extends base_test_class {
         $this->student1 = $dg->create_user(['idnumber' => '12345678']);
         $dg->enrol_user($this->student1->id, $this->course1->id);
 
-        $assessmentstartdate = strtotime('+1 hour');
-        $assessmentenddate = strtotime('+3 hours');
+        $this->student2 = $dg->create_user(['idnumber' => '12345679']);
+        $dg->enrol_user($this->student2->id, $this->course1->id);
+
+        $assessmentstartdate = 1739782800; // Start date: 2025-02-17 09:00:00.
+        $assessmentenddate = 1739793600; // End date: 2025-02-17 12:00:00.
 
         // Create test assignment 1.
         $this->assign1 = $dg->create_module('assign',
@@ -139,8 +153,8 @@ class extension_common extends base_test_class {
             'componentgradeid' => $mabid,
             'reassessment' => 0,
             'enableextension' => extensionmanager::is_extension_enabled() ? 1 : 0,
-            'timecreated' => time(),
-            'timemodified' => time(),
+            'timecreated' => $this->clock->now()->modify('-3 days')->getTimestamp(),
+            'timemodified' => $this->clock->now()->modify('-3 days')->getTimestamp(),
         ]);
     }
 }

@@ -59,23 +59,23 @@ class behat_sitsgradepush extends behat_base {
 
         // Create a new custom field category if it doesn't exist.
         $category = $DB->get_record(
-          'customfield_category',
-          ['name' => $data['category'],
-           'component' => 'core_course',
-           'area' => 'course']);
+            'customfield_category',
+            ['name' => $data['category'],
+                'component' => 'core_course',
+                'area' => 'course']);
 
         if (!$category) {
             $category     = (object)[
-              'name'         => $data['category'],
-              'component'    => 'core_course',
-              'area'         => 'course',
-              'sortorder'    => 1,
-              'timecreated'  => time(),
-              'timemodified' => time(),
+                'name'         => $data['category'],
+                'component'    => 'core_course',
+                'area'         => 'course',
+                'sortorder'    => 1,
+                'timecreated'  => time(),
+                'timemodified' => time(),
             ];
             $category->id = $DB->insert_record(
-              'customfield_category',
-              $category
+                'customfield_category',
+                $category
             );
         }
 
@@ -85,23 +85,23 @@ class behat_sitsgradepush extends behat_base {
         // Create the custom field if not exists.
         if (!$fieldexists) {
             $field = (object)[
-              'shortname' => $data['shortname'],
-              'name' => $data['name'],
-              'type' => $data['type'],
-              'categoryid' => $category->id,
-              'sortorder' => 0,
-              'configdata'   => json_encode([
-                "required" => 0,
-                "uniquevalues" => 0,
-                "maxlength" => 4,
-                "defaultvalue" => "",
-                "ispassword" => 0,
-                "displaysize" => 4,
-                "locked" => 1,
-                "visibility" => 0,
-              ]),
-              'timecreated' => time(),
-              'timemodified' => time(),
+                'shortname' => $data['shortname'],
+                'name' => $data['name'],
+                'type' => $data['type'],
+                'categoryid' => $category->id,
+                'sortorder' => 0,
+                'configdata'   => json_encode([
+                    "required" => 0,
+                    "uniquevalues" => 0,
+                    "maxlength" => 4,
+                    "defaultvalue" => "",
+                    "ispassword" => 0,
+                    "displaysize" => 4,
+                    "locked" => 1,
+                    "visibility" => 0,
+                ]),
+                'timecreated' => time(),
+                'timemodified' => time(),
             ];
             $DB->insert_record('customfield_field', $field);
         }
@@ -240,16 +240,37 @@ class behat_sitsgradepush extends behat_base {
     }
 
     /**
+     * Map a source to a SITS assessment component with extension.
+     *
+     * @param string $sourcetype
+     * @param string $sourcename
+     * @param string $mabname
+     *
+     * @throws \dml_exception|\moodle_exception
+     *
+     * @Given the :sourcetype :sourcename is mapped to :mabname with extension
+     */
+    public function the_source_is_mapped_to_with_extension(string $sourcetype, string $sourcename, string $mabname): void {
+        $this->map_source($sourcetype, $sourcename, $mabname, false, true);
+    }
+
+    /**
      * Map a source to a SITS assessment component.
      *
      * @param string $sourcetype
      * @param string $sourcename
      * @param string $mabname
      * @param bool $reassessment
+     * @param bool $extension
      *
      * @throws \dml_exception|\moodle_exception
      */
-    public function map_source(string $sourcetype, string $sourcename, string $mabname, bool $reassessment): void {
+    public function map_source(
+        string $sourcetype,
+        string $sourcename,
+        string $mabname,
+        bool $reassessment,
+        bool $extension = false): void {
         global $DB;
         $manager = manager::get_manager();
 
@@ -259,15 +280,15 @@ class behat_sitsgradepush extends behat_base {
         $source = match ($sourceexplode[0]) {
             'mod' => $this->get_coursemodule($sourceexplode[1], $sourcename),
             'gradeitem' => $DB->get_record(
-              'grade_items',
-              ['idnumber' => $sourcename]
+                'grade_items',
+                ['idnumber' => $sourcename]
             ),
             'gradecategory' => $DB->get_record(
-              'grade_categories',
-              ['fullname' => $sourcename]
+                'grade_categories',
+                ['fullname' => $sourcename]
             ),
             default => throw new Exception(
-              "Source type '$sourcetype' not recognized."
+                "Source type '$sourcetype' not recognized."
             ),
         };
 
@@ -287,6 +308,7 @@ class behat_sitsgradepush extends behat_base {
         }
         $record->componentgradeid = $mab->id;
         $record->reassessment = $reassessment;
+        $record->enableextension = $extension ? 1 : 0;
         $record->timecreated = time();
         $record->timemodified = time();
 
@@ -374,5 +396,37 @@ class behat_sitsgradepush extends behat_base {
      */
     public function i_click_on_the_transfer_type_menu_and_select(string $transfertype): void {
         $this->execute('behat_forms::i_set_the_field_to', ['Dashboard Type', $transfertype]);
+    }
+
+    /**
+     * Check if there is a specific source control for a row.
+     *
+     * @param string $controlname
+     * @param string $rowtext
+     * @throws \Exception
+     *
+     * @Then I should see :controlname for :rowtext
+     */
+    public function i_should_see_control_for(string $controlname, string $rowtext): void {
+        $page = $this->getSession()->getPage();
+
+        // Find the row with the specified text.
+        $row = $page->find('xpath', "//tr[th[contains(text(), '$rowtext')]]");
+        if (!$row) {
+            throw new Exception("Row with text '$rowtext' not found.");
+        }
+
+        // Check for the specified control.
+        $element = ($controlname === 'Remove source' || $controlname === 'Select source') ?
+            $row->findButton($controlname) :
+            $row->findLink($controlname);
+
+        if (!$element) {
+            throw new Exception("'$controlname' not found in the row with text '$rowtext'.");
+        }
+
+        if (!$element->isVisible()) {
+            throw new Exception("'$controlname' is not visible in the row with text '$rowtext'.");
+        }
     }
 }

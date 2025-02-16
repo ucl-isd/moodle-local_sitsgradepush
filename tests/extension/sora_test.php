@@ -48,22 +48,24 @@ final class sora_test extends extension_common {
         // Set up the SORA overrides.
         $this->setup_for_sora_testing();
 
-        // Modify assignment so that open duration more than 5 hours, i.e. not exam.
+        // Make the assignment a past assessment.
         $DB->update_record('assign', (object) [
             'id' => $this->assign1->id,
-            'duedate' => strtotime('-1 day'),
+            'allowsubmissionsfromdate' => $this->clock->now()->modify('-3 days')->getTimestamp(),
+            'duedate' => $this->clock->now()->modify('-2 days')->getTimestamp(),
         ]);
 
-        // Modify quiz so that time limit more than 5 hours, i.e. not exam.
+        // Make the quiz a past assessment.
         $DB->update_record('quiz', (object) [
             'id' => $this->quiz1->id,
-            'timeclose' => strtotime('-1 day'),
+            'timeopen' => $this->clock->now()->modify('-3 days')->getTimestamp(),
+            'timeclose' => $this->clock->now()->modify('-2 days')->getTimestamp(),
         ]);
 
         // Get mappings.
         $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
         $sora = new sora();
-        $sora->set_properties_from_get_students_api(tests_data_provider::get_sora_testing_student_data());
+        $sora->set_properties_from_get_students_api(tests_data_provider::get_sora_testing_student_data($this->student1->id));
         $sora->process_extension($mappings);
 
         // Test no SORA override for the assignment.
@@ -146,7 +148,10 @@ final class sora_test extends extension_common {
 
         // Process all mappings for SORA.
         foreach ($mappings as $mapping) {
-            extensionmanager::update_sora_for_mapping($mapping, [tests_data_provider::get_sora_testing_student_data()]);
+            extensionmanager::update_sora_for_mapping(
+                $mapping,
+                [tests_data_provider::get_sora_testing_student_data($this->student1->id)]
+            );
         }
 
         // Test no SORA override for the assignment.
@@ -179,7 +184,10 @@ final class sora_test extends extension_common {
         // Process all mappings for SORA.
         $mappings = $manager->get_assessment_mappings_by_courseid($this->course1->id);
         foreach ($mappings as $mapping) {
-            extensionmanager::update_sora_for_mapping($mapping, [tests_data_provider::get_sora_testing_student_data()]);
+            extensionmanager::update_sora_for_mapping(
+                $mapping,
+                [tests_data_provider::get_sora_testing_student_data($this->student1->id)]
+            );
         }
 
         // Test SORA override group exists.
@@ -235,7 +243,10 @@ final class sora_test extends extension_common {
         $this->insert_mapping($mab2->id, $this->course1->id, $this->quiz1, 'quiz');
 
         $manager = manager::get_manager();
-        $apiclient = $this->get_apiclient_for_testing(false, [tests_data_provider::get_sora_testing_student_data()]);
+        $apiclient = $this->get_apiclient_for_testing(
+            false,
+            [tests_data_provider::get_sora_testing_student_data($this->student1->id)]
+        );
         tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
         $manager->get_students_from_sits($mab1);
         $manager->get_students_from_sits($mab2);
