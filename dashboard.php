@@ -56,15 +56,19 @@ require_capability('local/sitsgradepush:mapassessment', $context);
 if ($action = optional_param('action', '', PARAM_ALPHA)) {
     if ($action === 'removesource') {
         $mapid = required_param('mapid', PARAM_INT);
+        $urlparams = ['id' => $courseid];
+        if ($reassess == 1) {
+            $urlparams['reassess'] = $reassess;
+        }
         try {
             manager::get_manager()->remove_mapping($courseid, $mapid);
             // Reload the page.
-            redirect(new moodle_url('/local/sitsgradepush/dashboard.php', ['id' => $courseid]));
+            redirect(new moodle_url('/local/sitsgradepush/dashboard.php', $urlparams));
         } catch (moodle_exception $e) {
             // Add notification.
             redirect(new moodle_url(
                 '/local/sitsgradepush/dashboard.php',
-                ['id' => $courseid]),
+                $urlparams),
                 $e->getMessage(),
                 null,
                 notification::NOTIFY_ERROR
