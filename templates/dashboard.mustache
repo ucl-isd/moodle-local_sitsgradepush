@@ -174,10 +174,17 @@
                 <td>{{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}</td>
                 <td>
                     {{#assessmentmapping}}
+                        {{#sourcenotfound}}
+                            <div class="alert alert-danger" role="alert">
+                                {{#str}} error:assessmentmappingsourcenotfound, local_sitsgradepush {{/str}}
+                            </div>
+                        {{/sourcenotfound}}
+                        {{^sourcenotfound}}
                         <p>
                             <span class="badge badge-info">{{type}}</span>
                             <a href="{{url}}" target="_blank">{{name}}</a>
                         </p>
+                        {{/sourcenotfound}}
                     {{#currentacademicyear}}
                         <a id="change-source-button-{{id}}" href="{{selectsourceurl}}" class="btn btn-secondary btn-sm change-source {{#disablechangesource}}d-none{{/disablechangesource}}">
                             {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
@@ -212,46 +219,48 @@
                 </td>
                 <td class="marks-col">
                     {{#assessmentmapping}}
-                        {{^gradesneedregrading}}
-                            <div
-                                    id="marks-col-field-{{id}}"
-                                    class="marks-col-field"
-                                    data-assessmentmappingid="{{id}}"
-                                    data-markscount="{{markstotransfer}}"
-                                    data-nonsubmittedcount="{{nonsubmittedcount}}"
-                                    data-task-running="{{taskrunning}}"
-                            >
-                                <div class="marks-container {{#taskrunning}}d-none{{/taskrunning}}">
-                                    <p>
-                                        <a href="{{transferhistoryurl}}" target="_blank"
-                                        >
-                                            <span class="marks-count">{{markstotransfer}}</span>
-                                            <span class="sr-only"> {{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}} </span>
-                                            <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small>
-                                            <span class="sr-only">for {{mabseq}} {{mabname}}</span>
-                                        </a>
-                                    </p>
-                                    {{#currentacademicyear}}
-                                        <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}{{^nonsubmittedcount}}d-none{{/nonsubmittedcount}}{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
-                                            <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
-                                            <span class="sr-only">for {{mabseq}} {{mabname}}</span>
-                                        </button>
-                                    {{/currentacademicyear}}
-                                </div>
-                                <div class="task-status-container {{^taskrunning}}d-none{{/taskrunning}}">
-                                    <a href="{{transferhistoryurl}}" target="_blank" class="badge badge-warning p-2"><i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
-                                    <small>Progress: {{taskprogress}}%</small>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{taskprogress}}" style="width: {{taskprogress}}%" aria-valuemin="0" aria-valuemax="100"></div>
+                        {{^sourcenotfound}}
+                            {{^gradesneedregrading}}
+                                <div
+                                        id="marks-col-field-{{id}}"
+                                        class="marks-col-field"
+                                        data-assessmentmappingid="{{id}}"
+                                        data-markscount="{{markstotransfer}}"
+                                        data-nonsubmittedcount="{{nonsubmittedcount}}"
+                                        data-task-running="{{taskrunning}}"
+                                >
+                                    <div class="marks-container {{#taskrunning}}d-none{{/taskrunning}}">
+                                        <p>
+                                            <a href="{{transferhistoryurl}}" target="_blank"
+                                            >
+                                                <span class="marks-count">{{markstotransfer}}</span>
+                                                <span class="sr-only"> {{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}} </span>
+                                                <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small>
+                                                <span class="sr-only">for {{mabseq}} {{mabname}}</span>
+                                            </a>
+                                        </p>
+                                        {{#currentacademicyear}}
+                                            <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}{{^nonsubmittedcount}}d-none{{/nonsubmittedcount}}{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
+                                                <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
+                                                <span class="sr-only">for {{mabseq}} {{mabname}}</span>
+                                            </button>
+                                        {{/currentacademicyear}}
+                                    </div>
+                                    <div class="task-status-container {{^taskrunning}}d-none{{/taskrunning}}">
+                                        <a href="{{transferhistoryurl}}" target="_blank" class="badge badge-warning p-2"><i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
+                                        <small>Progress: {{taskprogress}}%</small>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{taskprogress}}" style="width: {{taskprogress}}%" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        {{/gradesneedregrading}}
-                        {{#gradesneedregrading}}
-                            <div class="alert alert-warning" role="alert">
-                                {{#str}} error:gradesneedregrading, local_sitsgradepush {{/str}}
-                            </div>
-                        {{/gradesneedregrading}}
+                            {{/gradesneedregrading}}
+                            {{#gradesneedregrading}}
+                                <div class="alert alert-warning" role="alert">
+                                    {{#str}} error:gradesneedregrading, local_sitsgradepush {{/str}}
+                                </div>
+                            {{/gradesneedregrading}}
+                        {{/sourcenotfound}}
                     {{/assessmentmapping}}
                 </td>
             </tr>

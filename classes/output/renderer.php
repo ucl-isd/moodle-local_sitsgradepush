@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\output;
 
+use local_sitsgradepush\assessment\unknownassessment;
 use local_sitsgradepush\assessment\gradebook;
 use local_sitsgradepush\errormanager;
 use local_sitsgradepush\extensionmanager;
@@ -206,8 +207,8 @@ class renderer extends plugin_renderer_base {
                         $mapping->sourceid,
                         $mapping->id
                     );
-
                     $assessmentmapping = new \stdClass();
+                    $assessmentmapping->sourcenotfound = $assessmentdata->source instanceof unknownassessment; // Source not found.
                     $assessmentmapping->markstotransfer = $assessmentdata->markscount ?? 0;
                     $assessmentmapping->nonsubmittedcount = $assessmentdata->nonsubmittedcount ?? 0;
                     $assessmentmapping->id = $mapping->id;
@@ -215,7 +216,8 @@ class renderer extends plugin_renderer_base {
                     $assessmentmapping->name = $assessmentdata->source->get_assessment_name();
                     $assessmentmapping->url = $assessmentdata->source->get_assessment_url(false);
                     $assessmentmapping->transferhistoryurl = $assessmentdata->source->get_assessment_transfer_history_url(false);
-                    $assessmentmapping->removesourceurl = $this->get_remove_source_url($courseid, $mapping->id)->out(false);
+                    $assessmentmapping->removesourceurl =
+                        $this->get_remove_source_url($courseid, $mapping->id, $reassess)->out(false);
 
                     // Check if there is a task running for the assessment mapping.
                     $taskrunning = taskmanager::get_pending_task_in_queue($mapping->id);
@@ -463,13 +465,18 @@ class renderer extends plugin_renderer_base {
      *
      * @param int $courseid Course ID
      * @param int $mapid Assessment mapping ID
+     * @param int $reassess Reassessment flag
      *
      * @return \moodle_url
      */
-    private function get_remove_source_url(int $courseid, int $mapid): \moodle_url {
+    private function get_remove_source_url(int $courseid, int $mapid, int $reassess): \moodle_url {
+        $params = ['id' => $courseid, 'mapid' => $mapid, 'action' => 'removesource'];
+        if ($reassess == 1) {
+            $params['reassess'] = 1;
+        }
         return new \moodle_url(
             '/local/sitsgradepush/dashboard.php',
-            ['id' => $courseid, 'mapid' => $mapid, 'action' => 'removesource']
+            $params
         );
     }
 }
