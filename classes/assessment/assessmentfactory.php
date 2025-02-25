@@ -44,27 +44,29 @@ class assessmentfactory {
      * @throws \moodle_exception
      */
     public static function get_assessment(string $sourcetype, int $id): Assessment {
-        try {
-            if ($sourcetype === self::SOURCETYPE_MOD) {
-                $coursemodule = get_coursemodule_from_id('', $id);
-                if (!$coursemodule) {
-                    throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $id);
-                }
-                $classname = $coursemodule->modname;
-                $data = $coursemodule;
-            } else {
-                $classname = $sourcetype;
-                $data = $id;
+        if ($sourcetype === self::SOURCETYPE_MOD) {
+            $coursemodule = get_coursemodule_from_id('', $id);
+            if (!$coursemodule) {
+                throw new \moodle_exception('error:coursemodulenotfound', 'local_sitsgradepush', '', $id);
             }
-
-            $fullclassname = __NAMESPACE__ . '\\' . $classname;
-            if (!class_exists($fullclassname)) {
-                throw new \moodle_exception('error:assessmentclassnotfound', 'local_sitsgradepush', '', $fullclassname);
-            }
-
-            return new $fullclassname($data);
-        } catch (\Exception $e) {
-            throw new \moodle_exception($e->getMessage());
+            $classname = $coursemodule->modname;
+            $data = $coursemodule;
+        } else {
+            $classname = $sourcetype;
+            $data = $id;
         }
+
+        $fullclassname = __NAMESPACE__ . '\\' . $classname;
+        if (!class_exists($fullclassname)) {
+            throw new \moodle_exception('error:assessmentclassnotfound', 'local_sitsgradepush', '', $fullclassname);
+        }
+
+        $assessment = new $fullclassname($data);
+
+        // Source instance not found.
+        if (empty($assessment->get_source_instance())) {
+            throw new \moodle_exception('error:assessmentnotfound', 'local_sitsgradepush', a:['type' => $sourcetype, 'id' => $id]);
+        }
+        return $assessment;
     }
 }

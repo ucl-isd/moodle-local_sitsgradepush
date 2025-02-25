@@ -24,6 +24,7 @@ use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\assessment\unknownassessment;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\output\pushrecord;
 use local_sitsgradepush\submission\submissionfactory;
@@ -945,8 +946,12 @@ class manager {
      * @throws \moodle_exception
      */
     public function get_assessment_data(string $sourcetype, int $sourceid, ?int $assessmentmappingid = null): array|\stdClass {
-        // Get the assessment.
-        $assessment = assessmentfactory::get_assessment($sourcetype, $sourceid);
+        try {
+            // Get the assessment.
+            $assessment = assessmentfactory::get_assessment($sourcetype, $sourceid);
+        } catch (\Exception) {
+            $assessment = new unknownassessment($sourcetype, $sourceid);
+        }
 
         $assessmentdata = [];
         $assessmentdata['studentsnotrecognized'] = [];
