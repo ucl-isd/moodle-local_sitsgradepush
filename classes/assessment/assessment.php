@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\assessment;
 
+use core\clock;
+use core\di;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\sora;
@@ -46,6 +48,9 @@ abstract class assessment implements iassessment {
     /** @var mixed Source instance. */
     protected mixed $sourceinstance;
 
+    /** @var clock Clock instance. */
+    protected readonly clock $clock;
+
     /**
      * Constructor.
      *
@@ -55,6 +60,7 @@ abstract class assessment implements iassessment {
     public function __construct(string $sourcetype, int $sourceid) {
         $this->id = $sourceid;
         $this->type = $sourcetype;
+        $this->clock = di::get(clock::class);
         $this->set_instance();
     }
 
@@ -76,7 +82,7 @@ abstract class assessment implements iassessment {
             $this->apply_ec_extension($extension);
         } else if ($extension instanceof sora) {
             // Skip SORA overrides if the end date of the assessment is in the past.
-            if ($this->get_end_date() < time()) {
+            if ($this->get_end_date() < $this->clock->time()) {
                 return;
             }
 
