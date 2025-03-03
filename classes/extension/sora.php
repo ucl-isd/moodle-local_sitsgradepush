@@ -226,15 +226,18 @@ class sora extends extension {
         // Apply the extension to the assessments.
         foreach ($mappings as $mapping) {
             try {
+                $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
+                if (!$assessment->is_user_a_participant($this->get_userid())) {
+                    continue;
+                }
+
                 // Update the SORA information from the API if the datasource is AWS.
                 if ($this->get_data_source() === self::DATASOURCE_AWS) {
                     $this->update_sora_info_from_api($mapping);
                 }
-                // Apply sora extension to the mapped moodle assessment.
-                $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
-                if ($assessment->is_user_a_participant($this->get_userid())) {
-                    $assessment->apply_extension($this);
-                }
+
+                // Apply the extension to the assessment.
+                $assessment->apply_extension($this);
             } catch (\Exception $e) {
                 logger::log($e->getMessage());
             }

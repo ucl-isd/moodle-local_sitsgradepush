@@ -42,38 +42,20 @@ final class sora_test extends extension_common {
      * @throws \moodle_exception
      */
     public function test_no_sora_override_for_past_assessment(): void {
-        global $DB;
-
         // Set up the SORA overrides.
         $this->setup_for_sora_testing();
 
-        // Make the assignment a past assessment.
-        $DB->update_record('assign', (object) [
-            'id' => $this->assign1->id,
-            'allowsubmissionsfromdate' => $this->clock->now()->modify('-3 days')->getTimestamp(),
-            'duedate' => $this->clock->now()->modify('-2 days')->getTimestamp(),
-        ]);
+        // Make assessments past due.
+        $this->set_assessment_to_past_due();
 
-        // Make the quiz a past assessment.
-        $DB->update_record('quiz', (object) [
-            'id' => $this->quiz1->id,
-            'timeopen' => $this->clock->now()->modify('-3 days')->getTimestamp(),
-            'timeclose' => $this->clock->now()->modify('-2 days')->getTimestamp(),
-        ]);
-
-        // Get mappings.
+        // Get mappings and process extension.
         $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
         $sora = new sora();
         $sora->set_properties_from_get_students_api(tests_data_provider::get_sora_testing_student_data());
         $sora->process_extension($mappings);
 
-        // Test no SORA override for the assignment.
-        $override = $DB->record_exists('assign_overrides', ['assignid' => $this->assign1->id]);
-        $this->assertFalse($override);
-
-        // Test no SORA override for the quiz.
-        $override = $DB->record_exists('quiz_overrides', ['quiz' => $this->quiz1->id]);
-        $this->assertFalse($override);
+        // Verify no overrides were created.
+        $this->assert_no_overrides_exist();
     }
 
     /**
@@ -90,8 +72,6 @@ final class sora_test extends extension_common {
      * @throws \moodle_exception
      */
     public function test_sora_process_extension_from_aws(): void {
-        global $DB;
-
         // Set up the SORA overrides.
         $this->setup_for_sora_testing();
 
@@ -100,30 +80,8 @@ final class sora_test extends extension_common {
         $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
-        // Test SORA override group exists for assignment.
-        $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name($this->assign1->cmid, 25)]);
-        $this->assertNotEmpty($groupid);
-
-        // Test user is added to the SORA group.
-        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
-        $this->assertNotEmpty($groupmember);
-
-        // Test group override set in the assignment.
-        $override = $DB
-            ->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => null, 'groupid' => $groupid]);
-        $this->assertEquals($override->groupid, $groupid);
-
-        // Test SORA override group exists for quiz.
-        $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name($this->quiz1->cmid, 25)]);
-        $this->assertNotEmpty($groupid);
-
-        // Test user is added to the SORA group.
-        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
-        $this->assertNotEmpty($groupmember);
-
-        // Test group override set in the quiz.
-        $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id, 'userid' => null, 'groupid' => $groupid]);
-        $this->assertEquals($override->groupid, $groupid);
+        // Verify overrides were created correctly.
+        $this->assert_overrides_exist($sora, 25);
     }
 
     /**
@@ -134,29 +92,17 @@ final class sora_test extends extension_common {
      * @throws \dml_exception|\coding_exception
      */
     public function test_update_sora_for_mapping_with_extension_off(): void {
-        global $DB;
-
         // Set extension disabled.
         set_config('extension_enabled', '0', 'local_sitsgradepush');
 
         // The mapping inserted should be extension disabled.
         $this->setup_for_sora_testing();
 
-        // Get mappings.
-        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
-
         // Process all mappings for SORA.
-        foreach ($mappings as $mapping) {
-            extensionmanager::update_sora_for_mapping($mapping, [tests_data_provider::get_sora_testing_student_data()]);
-        }
+        $this->process_all_mappings_for_sora();
 
-        // Test no SORA override for the assignment.
-        $override = $DB->record_exists('assign_overrides', ['assignid' => $this->assign1->id]);
-        $this->assertFalse($override);
-
-        // Test no SORA override for the quiz.
-        $override = $DB->record_exists('quiz_overrides', ['quiz' => $this->quiz1->id]);
-        $this->assertFalse($override);
+        // Verify no overrides were created.
+        $this->assert_no_overrides_exist();
     }
 
     /**
@@ -171,55 +117,21 @@ final class sora_test extends extension_common {
      * @throws \dml_exception|\coding_exception|\ReflectionException|\moodle_exception
      */
     public function test_update_sora_for_mapping(): void {
-        global $DB;
-
         // Set up the SORA extension.
         $this->setup_for_sora_testing();
-        $manager = manager::get_manager();
 
         // Process all mappings for SORA.
-        $mappings = $manager->get_assessment_mappings_by_courseid($this->course1->id);
-        foreach ($mappings as $mapping) {
-            extensionmanager::update_sora_for_mapping($mapping, [tests_data_provider::get_sora_testing_student_data()]);
-        }
+        $this->process_all_mappings_for_sora();
 
-        // Test SORA override group exists.
-        $groupid = $DB->get_field('groups', 'id', ['name' => sora::get_extension_group_name($this->assign1->cmid, 25)]);
-        $this->assertNotEmpty($groupid);
-
-        // Test user is added to the SORA group.
-        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
-        $this->assertNotEmpty($groupmember);
-
-        // Test group override set in the assignment.
-        $override = $DB
-            ->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => null, 'groupid' => $groupid]);
-        $this->assertEquals($override->groupid, $groupid);
-
-        // Test SORA override group exists.
-        $groupid = $DB->get_field('groups', 'id', ['name' => sora::get_extension_group_name($this->quiz1->cmid, 25)]);
-        $this->assertNotEmpty($groupid);
-
-        // Test user is added to the SORA group.
-        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
-        $this->assertNotEmpty($groupmember);
-
-        // Test group override set in the quiz.
-        $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id, 'userid' => null, 'groupid' => $groupid]);
-        $this->assertEquals($override->groupid, $groupid);
+        // Verify overrides were created correctly.
+        $sora = new sora();
+        $this->assert_overrides_exist($sora, 25);
 
         // Delete all mappings.
-        foreach ($mappings as $mapping) {
-            manager::get_manager()->remove_mapping($this->course1->id, $mapping->id);
-        }
+        $this->delete_all_mappings();
 
-        // Test SORA override group is deleted in the assignment.
-        $override = $DB->record_exists('assign_overrides', ['assignid' => $this->assign1->id]);
-        $this->assertFalse($override);
-
-        // Test SORA override group is deleted in the quiz.
-        $override = $DB->record_exists('quiz_overrides', ['quiz' => $this->quiz1->id]);
-        $this->assertFalse($override);
+        // Verify overrides were removed.
+        $this->assert_no_overrides_exist();
     }
 
     /**
@@ -238,7 +150,7 @@ final class sora_test extends extension_common {
         $mapping = $DB->get_record('local_sitsgradepush_mapping', ['sourceid' => $this->quiz1->cmid, 'moduletype' => 'quiz']);
 
         foreach ([60, 180] as $timelimit) {
-            // The quiz's duration is 3 hours. Update quiz time limit.
+            // The quiz's duration is 3 hours. Update quiz time limit to different values.
             $DB->update_record('quiz', [
                 'id' => $this->quiz1->id,
                 'timelimit' => $timelimit * MINSECS,
@@ -262,6 +174,31 @@ final class sora_test extends extension_common {
     }
 
     /**
+     * Test SORA extension for reassessment.
+     *
+     * @covers \local_sitsgradepush\extension\extension::get_mappings_by_userid
+     * @return void
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function test_sora_extension_for_reassessment(): void {
+        // Create a past year course with assignment.
+        $course = $this->create_past_year_course();
+        $assign = $this->create_future_assignment($course->id);
+
+        // Add a reassessment mapping.
+        $this->setup_reassessment_mapping($course->id, $assign);
+
+        // Test update SORA from aws can handle reassessment.
+        $sora = new sora();
+        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
+        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
+
+        // Verify override was created for the assignment.
+        $this->assert_assignment_override_exists($sora, $assign, 25);
+    }
+
+    /**
      * Set up the environment for SORA testing.
      * @return void
      * @throws \dml_exception
@@ -279,5 +216,173 @@ final class sora_test extends extension_common {
         tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
         $manager->get_students_from_sits($mab1);
         $manager->get_students_from_sits($mab2);
+    }
+
+    /**
+     * Set assignment and quiz to past due dates
+     */
+    protected function set_assessment_to_past_due(): void {
+        global $DB;
+
+        // Make the assignment a past assessment.
+        $DB->update_record('assign', (object) [
+            'id' => $this->assign1->id,
+            'allowsubmissionsfromdate' => $this->clock->now()->modify('-3 days')->getTimestamp(),
+            'duedate' => $this->clock->now()->modify('-2 days')->getTimestamp(),
+        ]);
+
+        // Make the quiz a past assessment.
+        $DB->update_record('quiz', (object) [
+            'id' => $this->quiz1->id,
+            'timeopen' => $this->clock->now()->modify('-3 days')->getTimestamp(),
+            'timeclose' => $this->clock->now()->modify('-2 days')->getTimestamp(),
+        ]);
+    }
+
+    /**
+     * Process all mappings for SORA
+     */
+    protected function process_all_mappings_for_sora(): void {
+        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
+        foreach ($mappings as $mapping) {
+            extensionmanager::update_sora_for_mapping($mapping, [tests_data_provider::get_sora_testing_student_data()]);
+        }
+    }
+
+    /**
+     * Delete all mappings for the course
+     */
+    protected function delete_all_mappings(): void {
+        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
+        foreach ($mappings as $mapping) {
+            manager::get_manager()->remove_mapping($this->course1->id, $mapping->id);
+        }
+    }
+
+    /**
+     * Assert that no overrides exist for assignment and quiz
+     */
+    protected function assert_no_overrides_exist(): void {
+        global $DB;
+
+        // Test no SORA override for the assignment.
+        $override = $DB->record_exists('assign_overrides', ['assignid' => $this->assign1->id]);
+        $this->assertFalse($override);
+
+        // Test no SORA override for the quiz.
+        $override = $DB->record_exists('quiz_overrides', ['quiz' => $this->quiz1->id]);
+        $this->assertFalse($override);
+    }
+
+    /**
+     * Assert that overrides exist for both assignment and quiz
+     *
+     * @param sora $sora The SORA extension object
+     * @param int $minutes The number of minutes for the extension
+     */
+    protected function assert_overrides_exist(sora $sora, int $minutes): void {
+        $this->assert_assignment_override_exists($sora, $this->assign1, $minutes);
+        $this->assert_quiz_override_exists($sora, $this->quiz1, $minutes);
+    }
+
+    /**
+     * Assert that an assignment override exists
+     *
+     * @param sora $sora The SORA extension object
+     * @param object $assign The assignment object
+     * @param int $minutes The number of minutes for the extension
+     */
+    protected function assert_assignment_override_exists(sora $sora, object $assign, int $minutes): void {
+        global $DB;
+
+        // Test SORA override group exists.
+        $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name($assign->cmid, $minutes)]);
+        $this->assertNotEmpty($groupid);
+
+        // Test user is added to the SORA group.
+        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
+        $this->assertNotEmpty($groupmember);
+
+        // Test group override set in the assignment.
+        $override = $DB->get_record('assign_overrides', ['assignid' => $assign->id, 'userid' => null, 'groupid' => $groupid]);
+        $this->assertEquals($override->groupid, $groupid);
+    }
+
+    /**
+     * Assert that a quiz override exists
+     *
+     * @param sora $sora The SORA extension object
+     * @param object $quiz The quiz object
+     * @param int $minutes The number of minutes for the extension
+     */
+    protected function assert_quiz_override_exists(sora $sora, object $quiz, int $minutes): void {
+        global $DB;
+
+        // Test SORA override group exists.
+        $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name($quiz->cmid, $minutes)]);
+        $this->assertNotEmpty($groupid);
+
+        // Test user is added to the SORA group.
+        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
+        $this->assertNotEmpty($groupmember);
+
+        // Test group override set in the quiz.
+        $override = $DB->get_record('quiz_overrides', ['quiz' => $quiz->id, 'userid' => null, 'groupid' => $groupid]);
+        $this->assertEquals($override->groupid, $groupid);
+    }
+
+    /**
+     * Create a past year course
+     *
+     * @return object The course object
+     */
+    protected function create_past_year_course(): object {
+        return $this->getDataGenerator()->create_course(
+            ['shortname' => 'C2', 'customfields' => [
+                ['shortname' => 'course_year', 'value' => $this->clock->now()->modify('-1 year')->format('Y')],
+            ]]);
+    }
+
+    /**
+     * Create a future assignment
+     *
+     * @param int $courseid The course ID
+     * @return object The assignment object
+     */
+    protected function create_future_assignment(int $courseid): object {
+        $assign = $this->getDataGenerator()->create_module('assign', [
+            'course' => $courseid,
+            'name' => 'Reassessment Assignment',
+            'allowsubmissionsfromdate' => $this->clock->now()->modify('+1 days')->getTimestamp(),
+            'duedate' => $this->clock->now()->modify('+2 days')->getTimestamp(),
+        ]);
+
+        // Enrol the student to the course.
+        $this->getDataGenerator()->enrol_user($this->student1->id, $courseid, 'student');
+
+        return $assign;
+    }
+
+    /**
+     * Setup a reassessment mapping
+     *
+     * @param int $courseid The course ID
+     * @param object $assign The assignment object
+     * @return object The mapping object
+     */
+    protected function setup_reassessment_mapping(int $courseid, object $assign): object {
+        global $DB;
+
+        // Add a reassessment mapping.
+        $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
+        $mappingid = $this->insert_mapping($mab->id, $courseid, $assign, 'assign', 1);
+        $mapping = $DB->get_record('local_sitsgradepush_mapping', ['id' => $mappingid]);
+
+        $manager = manager::get_manager();
+        $apiclient = $this->get_apiclient_for_testing(false, [tests_data_provider::get_sora_testing_student_data()]);
+        tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
+        $manager->get_students_from_sits($mab);
+
+        return $mapping;
     }
 }
