@@ -296,6 +296,16 @@ abstract class assessment implements iassessment {
     }
 
     /**
+     * Check if the assessment has automated SORA override groups created.
+     * Override in child class if needed.
+     *
+     * @return bool
+     */
+    public function has_sora_override_groups(): bool {
+        return false;
+    }
+
+    /**
      * Set validity result.
      *
      * @param bool $valid

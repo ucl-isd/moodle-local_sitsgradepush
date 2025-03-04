@@ -142,4 +142,11 @@ interface iassessment {
      * @return string
      */
     public function get_overrides_page_url(string $mode, bool $escape = true): string;
+
+    /**
+     * Check if the assessment has automated SORA override groups created.
+     *
+     * @return bool
+     */
+    public function has_sora_override_groups(): bool;
 }
