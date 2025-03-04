@@ -227,8 +227,6 @@ class renderer extends plugin_renderer_base {
                     $assessmentmapping->disablechangesource = $assessmentmapping->hideremovesourcebutton =
                         !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
 
-                    $componentgrade->assessmentmapping = $assessmentmapping;
-
                     // Extension eligibility.
                     if (extensionmanager::is_extension_eligible($componentgrade, $assessmentdata->source, $mapping)) {
                         $componentgrade->extensioneligible = new \stdClass();
@@ -236,7 +234,13 @@ class renderer extends plugin_renderer_base {
                             $assessmentdata->source->get_overrides_page_url('group', false);
                         $componentgrade->extensioneligible->extensioninfourl =
                             get_config('local_sitsgradepush', 'extension_support_page_url');
+                        $assessmentmapping->removeextensionwarning =
+                            addslashes(str_replace(["\n", "\r"], '', $this->output->render_from_template(
+                            'local_sitsgradepush/remove_extension_warning',
+                            []
+                        )));
                     }
+                    $componentgrade->assessmentmapping = $assessmentmapping;
                 }
             }
 
