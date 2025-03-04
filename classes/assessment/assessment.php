@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\assessment;
 
+use core\clock;
+use core\di;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\sora;
@@ -46,6 +48,9 @@ abstract class assessment implements iassessment {
     /** @var mixed Source instance. */
     protected mixed $sourceinstance;
 
+    /** @var clock Clock instance. */
+    protected readonly clock $clock;
+
     /**
      * Constructor.
      *
@@ -55,6 +60,7 @@ abstract class assessment implements iassessment {
     public function __construct(string $sourcetype, int $sourceid) {
         $this->id = $sourceid;
         $this->type = $sourcetype;
+        $this->clock = di::get(clock::class);
         $this->set_instance();
     }
 
@@ -257,13 +263,14 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Delete all SORA override for a Moodle assessment.
+     * Delete SORA overrides for a mapping.
      * It is used to delete all SORA overrides for an assessment when the mapping is removed.
      *
+     * @param \stdClass $mapping
      * @return void
      * @throws \moodle_exception
      */
-    public function delete_all_sora_overrides(): void {
+    public function delete_sora_overrides_for_mapping(\stdClass $mapping): void {
         // Default not supported. Override in child class if needed.
         throw new \moodle_exception('error:soraextensionnotsupported', 'local_sitsgradepush');
     }
@@ -287,6 +294,16 @@ abstract class assessment implements iassessment {
      */
     public function get_overrides_page_url(string $mode, bool $escape = true): string {
         return '#';
+    }
+
+    /**
+     * Check if the mapping of this assessment should be locked.
+     *
+     * @param \stdClass $mapping
+     * @return bool
+     */
+    public function should_lock_mapping(\stdClass $mapping): bool {
+        return false;
     }
 
     /**

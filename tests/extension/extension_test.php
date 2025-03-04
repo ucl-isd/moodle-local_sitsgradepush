@@ -224,9 +224,8 @@ final class extension_test extends extension_common {
         $message = json_decode($ecjson, true);
 
         // Set the new deadline.
-        $newdeadline = strtotime('+3 days');
         $message['identifier'] = sprintf('%s-%s', $mapcode, $mabseq);
-        $message['new_deadline'] = date('Y-m-d', $newdeadline);
+        $message['new_deadline'] = $this->clock->now()->modify('+3 days')->format('Y-m-d');
 
         return json_encode($message);
     }

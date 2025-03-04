@@ -142,4 +142,11 @@ interface iassessment {
      * @return string
      */
     public function get_overrides_page_url(string $mode, bool $escape = true): string;
+
+    /**
+     * Check if the mapping of this assessment should be locked.
+     * @param \stdClass $mapping
+     * @return bool
+     */
+    public function should_lock_mapping(\stdClass $mapping): bool;
 }

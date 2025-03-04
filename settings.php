@@ -175,6 +175,15 @@ if ($hassiteconfig) {
             50
         ));
 
+        // Change source cut-off time.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/change_source_cutoff_time',
+            get_string('settings:change_source_cutoff_time', 'local_sitsgradepush'),
+            get_string('settings:change_source_cutoff_time:desc', 'local_sitsgradepush'),
+            72, // 3 days.
+            PARAM_INT,
+            10
+        ));
+
         // Setting for AWS.
         $settings->add(new admin_setting_heading('local_sitsgradepush_aws_settings',
             get_string('settings:awssettings', 'local_sitsgradepush'),
@@ -192,7 +201,7 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_key',
             get_string('settings:awskey', 'local_sitsgradepush'),
             get_string('settings:awskey:desc', 'local_sitsgradepush'),
-            'AKIAX3UE2A7B2VLXHL2O'
+            'AKIAFAKEKEY1234567890'
         ));
 
         // AWS secret.
@@ -206,7 +215,7 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_sora_sqs_queue_url',
             get_string('settings:awssoraqueueurl', 'local_sitsgradepush'),
             get_string('settings:awssoraqueueurl:desc', 'local_sitsgradepush'),
-            'https://sqs.eu-west-2.amazonaws.com/540370667459/person-sora-dev'
+            'https://sqs.eu-west-2.amazonaws.com/999999999999/aws_sora_sqs_queue_url'
         ));
 
         // AWS delay process time.

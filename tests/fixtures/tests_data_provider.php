@@ -191,10 +191,13 @@ class tests_data_provider {
     /**
      * Get the SORA testing student data.
      *
+     * @param int  $userid Student User ID.
      * @return array
      */
-    public static function get_sora_testing_student_data(): array {
-        return json_decode(file_get_contents(__DIR__ . "/sora_test_students.json"), true);
+    public static function get_sora_testing_student_data(int $userid): array {
+        $student = json_decode(file_get_contents(__DIR__ . "/sora_test_students.json"), true);
+        $student['moodleuserid'] = $userid;
+        return $student;
     }
 
     /**
