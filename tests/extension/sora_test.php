@@ -32,7 +32,6 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class sora_test extends extension_common {
-
     /**
      * Test no SORA override for past assessments.
      *
@@ -48,16 +47,18 @@ final class sora_test extends extension_common {
         // Set up the SORA overrides.
         $this->setup_for_sora_testing();
 
-        // Modify assignment so that open duration more than 5 hours, i.e. not exam.
+        // Make the assignment a past assessment.
         $DB->update_record('assign', (object) [
             'id' => $this->assign1->id,
-            'duedate' => strtotime('-1 day'),
+            'allowsubmissionsfromdate' => $this->clock->now()->modify('-3 days')->getTimestamp(),
+            'duedate' => $this->clock->now()->modify('-2 days')->getTimestamp(),
         ]);
 
-        // Modify quiz so that time limit more than 5 hours, i.e. not exam.
+        // Make the quiz a past assessment.
         $DB->update_record('quiz', (object) [
             'id' => $this->quiz1->id,
-            'timeclose' => strtotime('-1 day'),
+            'timeopen' => $this->clock->now()->modify('-3 days')->getTimestamp(),
+            'timeclose' => $this->clock->now()->modify('-2 days')->getTimestamp(),
         ]);
 
         // Get mappings.
@@ -219,6 +220,45 @@ final class sora_test extends extension_common {
         // Test SORA override group is deleted in the quiz.
         $override = $DB->record_exists('quiz_overrides', ['quiz' => $this->quiz1->id]);
         $this->assertFalse($override);
+    }
+
+    /**
+     * Test time limit extension for quiz.
+     *
+     * @covers \local_sitsgradepush\assessment\quiz::apply_sora_extension
+     * @return void
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function test_time_limit_extension_for_quiz(): void {
+        global $DB;
+
+        // Set up SORA overrides and find mapping.
+        $this->setup_for_sora_testing();
+        $mapping = $DB->get_record('local_sitsgradepush_mapping', ['sourceid' => $this->quiz1->cmid, 'moduletype' => 'quiz']);
+
+        foreach ([60, 180] as $timelimit) {
+            // The quiz's duration is 3 hours. Update quiz time limit.
+            $DB->update_record('quiz', [
+                'id' => $this->quiz1->id,
+                'timelimit' => $timelimit * MINSECS,
+            ]);
+
+            // Process extension and get override.
+            extensionmanager::update_sora_for_mapping($mapping, [tests_data_provider::get_sora_testing_student_data()]);
+            $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id, 'userid' => null]);
+
+            // When the time limit is 60 minutes, the time close should not be overridden
+            // as the new time limit is less than the quiz's duration.
+            // When the time limit is 180 minutes, the time close should be 25 minutes after the original time close
+            // as the new time limit is more than the quiz's duration.
+            $expectedtimelimit = ($timelimit + 25) * MINSECS;
+            $expectedtimeclose = $timelimit === 180 ? $this->quiz1->timeclose + 25 * MINSECS : null;
+
+            // Assertions.
+            $this->assertEquals($expectedtimelimit, $override->timelimit);
+            $this->assertEquals($expectedtimeclose, $override->timeclose);
+        }
     }
 
     /**
