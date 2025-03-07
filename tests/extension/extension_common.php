@@ -82,10 +82,10 @@ class extension_common extends base_test_class {
         // Create test courses.
         $this->course1 = $dg->create_course(
             ['shortname' => 'C1', 'customfields' => [
-                ['shortname' => 'course_year', 'value' => date('Y')],
+                ['shortname' => 'course_year', 'value' => $this->clock->now()->format('Y')],
             ]]);
         $this->student1 = $dg->create_user(['idnumber' => '12345678']);
-        $dg->enrol_user($this->student1->id, $this->course1->id);
+        $dg->enrol_user($this->student1->id, $this->course1->id, 'student');
 
         $assessmentstartdate = 1739782800; // Start date: 2025-02-17 09:00:00.
         $assessmentenddate = 1739793600; // End date: 2025-02-17 12:00:00.
@@ -133,10 +133,16 @@ class extension_common extends base_test_class {
      * @param int $courseid
      * @param \stdClass $assessment
      * @param string $modtype
+     * @param int $reassess
      * @return bool|int
      * @throws \dml_exception
      */
-    protected function insert_mapping(int $mabid, int $courseid, \stdClass $assessment, string $modtype): bool|int {
+    protected function insert_mapping(
+        int $mabid,
+        int $courseid,
+        \stdClass $assessment,
+        string $modtype,
+        int $reassess = 0): bool|int {
         global $DB;
 
         return $DB->insert_record('local_sitsgradepush_mapping', [
@@ -145,7 +151,7 @@ class extension_common extends base_test_class {
             'sourcetype' => 'mod',
             'moduletype' => $modtype,
             'componentgradeid' => $mabid,
-            'reassessment' => 0,
+            'reassessment' => $reassess,
             'enableextension' => extensionmanager::is_extension_enabled() ? 1 : 0,
             'timecreated' => $this->clock->now()->modify('-3 days')->getTimestamp(),
             'timemodified' => $this->clock->now()->modify('-3 days')->getTimestamp(),

@@ -133,21 +133,17 @@ abstract class extension implements iextension {
 
         // Find all enrolled courses for the student.
         $courses = enrol_get_users_courses($userid);
+        $courseids = array_map(fn($course) => $course->id, $courses);
 
-        // Get courses that are in the current academic year.
-        $courses = array_filter($courses, function($course) {
-            return manager::get_manager()->is_current_academic_year_activity($course->id);
-        });
-
-        // Extract the course IDs.
-        $courseids = array_map(function($course) {
-            return $course->id;
-        }, $courses);
-
-        // Student is not enrolled in any courses that are in the current academic year.
+        // Student is not enrolled in any courses.
         if (empty($courseids)) {
             return [];
         }
+
+        // Get current academic year course IDs.
+        $currentyearcourses = array_map(fn($course) => $course->id,
+            array_filter($courses, fn($course) => manager::get_manager()->is_current_academic_year_activity($course->id))
+        );
 
         [$courseinsql, $courseinparam] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED);
 
@@ -161,7 +157,13 @@ abstract class extension implements iextension {
                 JOIN {". manager::TABLE_COMPONENT_GRADE ."} mab ON am.componentgradeid = mab.id
                 WHERE am.courseid $courseinsql AND am.moduletype $modinsql AND am.enableextension = 1";
 
-        return $DB->get_records_sql($sql, $params);
+        $mappings = $DB->get_records_sql($sql, $params);
+
+        // Filter mappings to keep only those in the current academic year or reassessments.
+        return array_filter(
+            $mappings,
+            fn($mapping) => in_array($mapping->courseid, $currentyearcourses) || $mapping->reassessment == 1
+        );
     }
 
     /**
