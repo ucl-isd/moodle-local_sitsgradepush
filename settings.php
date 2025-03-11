@@ -191,6 +191,14 @@ if ($hassiteconfig) {
             get_string('settings:new_feature_notification_template_html', 'local_sitsgradepush'),
             PARAM_RAW, 100, 8));
 
+        // Switch to enable/disable local assessment type update.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/local_assess_type_update_enabled',
+            get_string('settings:enableassesstypeupdate', 'local_sitsgradepush'),
+            get_string('settings:enableassesstypeupdate:desc', 'local_sitsgradepush'),
+            '1'
+        ));
+
         // Setting for AWS.
         $settings->add(new admin_setting_heading('local_sitsgradepush_aws_settings',
             get_string('settings:awssettings', 'local_sitsgradepush'),
