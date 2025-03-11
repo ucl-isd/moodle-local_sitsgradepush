@@ -72,10 +72,14 @@ async function selectAssessment(button) {
     });
 
     await modal.show();
+
+    // Store a reference to the modal root element.
+    const modalRoot = modal.getRoot();
+
     modal.getRoot().on(ModalEvents.save, () => {
-        // Get the value of the import SoRA extensions checkbox.
-        let soracheckbox = document.getElementById('import-sora');
-        let extensions = soracheckbox ? soracheckbox.checked : false;
+        // Get the current value of the import SoRA extensions checkbox directly from the modal DOM.
+        const soraCheckbox = modalRoot.find('#import-sora')[0];
+        const extensions = soraCheckbox ? soraCheckbox.checked : false;
         mapAssessment(courseid, sourcetype, sourceid, mabid, reassess, extensions, partid).then(
             (result) => {
                 if (result.success) {

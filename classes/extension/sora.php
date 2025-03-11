@@ -140,7 +140,7 @@ class sora extends extension {
      * @return string
      */
     public static function get_extension_group_name(int $sourceid, int $totalextension): string {
-        return sprintf(self::SORA_GROUP_PREFIX . '%d-%s', $sourceid, self::formatextensionstime($totalextension));
+        return sprintf(self::SORA_GROUP_PREFIX . '%d-Extension-%s', $sourceid, self::formatextensionstime($totalextension));
     }
 
     /**
