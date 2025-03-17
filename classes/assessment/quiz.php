@@ -172,7 +172,7 @@ class quiz extends activity {
 
         $params = [
             'quizid' => $this->sourceinstance->id,
-            'name' => sora::SORA_GROUP_PREFIX . '%',
+            'name' => sora::SORA_GROUP_PREFIX . $this->get_id() . '%',
         ];
 
         // Get all the group overrides except the excluded group.
