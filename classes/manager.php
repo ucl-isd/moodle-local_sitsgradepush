@@ -491,9 +491,7 @@ class manager {
         }
         $record->componentgradeid = $data->componentgradeid;
         $record->reassessment = $data->reassessment;
-        $record->enableextension = (extensionmanager::is_extension_enabled() &&
-            (isset($record->moduletype) && extension::is_module_supported($record->moduletype))) &&
-            $assessment->get_end_date() > time() ? 1 : 0; // Assessment must not have ended.
+        $record->enableextension = !empty($data->extensionsselection) ? 1 : 0;
         $record->timecreated = time();
         $record->timemodified = time();
 

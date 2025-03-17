@@ -55,7 +55,14 @@
                 * statusicon - String, assessment mapping status icon.
                 * selectsourceurl - String, select source url.
                 * transferhistoryurl - String, transfer history url.
-                * markstotransfer - String, marks to transfer.
+                * markstotransfer - Integer, marks to transfer.
+                * nonsubmittedcount - Integer, non submitted count.
+                * removesourceurl - String, remove source url.
+                * taskrunning - Boolean, indicate if there is a task running for this mapping.
+                * taskprogress - Integer, task progress.
+                * disablechangesource - Boolean, indicate if the change source button is disabled.
+                * hideremovesourcebutton - Boolean, indicate if the remove source button is hidden.
+                * removeextensionwarning - String, remove extension warning suffix.
     * transfer-all-button-label - String, button label.
     * gradesneedregrading - Boolean, indicate if grades need regrading for the course.
 
@@ -93,14 +100,18 @@
                             "name": "Test assignment 2",
                             "url": "http://test.m4.local:4001/mod/assign/view.php?id=960",
                             "markstotransfer": "1",
-                            "statusicon": "<i class=\"fa-regular fa-file-lines\" data-toggle=\"tooltip\" data-placement=\"top\" title=\"Push records exist\"></i>",
+                            "nonsubmittedcount": "4",
+                            "removesourceurl": "http://test.m4.local:4001/local/sitsgradepush/dashboard.php?id=2&mapid=148&action=removesource",
                             "selectsourceurl": "http://test.m4.local:4001/local/sitsgradepush/select_source.php?courseid=2&mabid=22",
                             "transferhistoryurl": "http://test.m4.local:4001/local/sitsgradepush/index.php?id=22",
                             "taskrunning": false,
                             "taskprogress": "0",
                             "disablechangesource": false,
-                            "hideremovesourcebutton": false
-                        }
+                            "hideremovesourcebutton": false,
+                            "removeextensionwarning": "",
+                            "sourcenotfound": false
+                        },
+                        "extensioneligiblemessage": "SoRA extensions can be automatically applied to this assessment once mapped. A scheduled task will run to check for any updates on SITS every hour."
                     }
                 },
                 "mapcode": "PHAY0063A7PE",
@@ -109,177 +120,174 @@
             }
         ],
         "transfer-all-button-label": "Transfer All",
-        "gradesneedregrading": false
+        "gradesneedregrading": false,
+        "dashboardheader": "SITS assessment mapping",
+        "new-feature-notification": "<div>Some HTML code</div>"
     }
 }}
-{{^currentacademicyear}}
-    <div class="alert alert-warning" role="alert">
-        {{#str}} error:pastcourse, local_sitsgradepush {{/str}}
-    </div>
-{{/currentacademicyear}}
-{{! Jump to dropdown }}
-<div class="dropdown">
-    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="jump-to-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        {{jump-to-label}}
-    </button>
-    <div class="dropdown-menu" aria-labelledby="jump-to-dropdown">
-        {{#jump-to-options}}
-            <div class="dropdown-item jump-to-dropdown-item" data-value="{{name}}">{{name}}</div>
-        {{/jump-to-options}}
-    </div>
-</div>
-{{#module-delivery-tables}}
-    <div id="{{tableid}}" class="pb-3">
-        <hr>
-        <div class="row">
-            <div class="col-6">
-                <small>{{#str}} dashboard:moduledelivery, local_sitsgradepush {{/str}}</small>
-                <h3 class="mb-0">{{{ moduledelivery }}}</h3>
-                <small>{{#str}} dashboard:level, local_sitsgradepush, {{level}} {{/str}} {{graduatetype}}</small>
-            </div>
-            <div class="col-6">
-                <small>Map code<br></small>
-                <div class="h3">{{{ mapcode }}}</div>
-            </div>
+<div id="sitsgradepush-dashboard-container" class="sitsgradepush-dashboard">
+    <h2>{{dashboardheader}}</h2>
+    <p>{{#str}} dashboard:header:desc, local_sitsgradepush {{/str}}</p>
+    {{{new-feature-notification}}}
+    {{^currentacademicyear}}
+        <div class="alert alert-warning" role="alert">
+            {{#str}} error:pastcourse, local_sitsgradepush {{/str}}
+        </div>
+    {{/currentacademicyear}}
+    {{! Jump to dropdown }}
+    <div class="dropdown">
+        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="jump-to-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {{jump-to-label}}
+        </button>
+        <div class="dropdown-menu" aria-labelledby="jump-to-dropdown">
+            {{#jump-to-options}}
+                <div class="dropdown-item jump-to-dropdown-item" data-value="{{name}}">{{name}}</div>
+            {{/jump-to-options}}
         </div>
     </div>
-    <table class="module-delivery-table table table-bordered mb-5" aria-describedby="{{tableid}}">
-        <thead class="thead-light">
-        <tr class="small">
-            <th>{{#str}} dashboard:seq, local_sitsgradepush {{/str}}</th>
-            <th>{{#str}} dashboard:sits_assessment, local_sitsgradepush {{/str}}</th>
-            <th>{{#str}} dashboard:weight, local_sitsgradepush {{/str}}</th>
-            <th id="moodleactivitycol-{{tableno}}">{{#str}} dashboard:moodle_activity, local_sitsgradepush {{/str}}</th>
-            <th id="markstotransfercol-{{tableno}}">{{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}}</th>
-        </tr>
-        </thead>
-        <tbody>
-        {{#componentgrades}}
-            <tr>
-                <td>{{mabseq}}</td>
-                <th scope="row">
-                    {{mabname}}
-                    {{#extensioneligible}}
-                        <div class="alert alert-warning">
-                            <div class="badge badge-warning">{{#str}} dashboard:extensions, local_sitsgradepush {{/str}}</div>
-                            <a href="{{extensioninfourl}}" target="_blank" class="small">
-                                {{#str}} dashboard:details, local_sitsgradepush {{/str}}
-                            </a>
-                            <div class="small">{{#str}} dashboard:extensions:desc, local_sitsgradepush {{/str}}
-                                <a href="{{overrideurl}}" target="_blank">{{#str}} dashboard:extensions:view, local_sitsgradepush {{/str}}</a>
-                            </div>
-                        </div>
-                    {{/extensioneligible}}
-                </th>
-                <td>{{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}</td>
-                <td>
-                    {{#assessmentmapping}}
-                        {{#sourcenotfound}}
-                            <div class="alert alert-danger" role="alert">
-                                {{#str}} error:assessmentmappingsourcenotfound, local_sitsgradepush {{/str}}
-                            </div>
-                        {{/sourcenotfound}}
-                        {{^sourcenotfound}}
-                        <p>
-                            <span class="badge badge-info">{{type}}</span>
-                            <a href="{{url}}" target="_blank">{{name}}</a>
-                        </p>
-                        {{/sourcenotfound}}
-                    {{#currentacademicyear}}
-                        <a id="change-source-button-{{id}}" href="{{selectsourceurl}}" class="btn btn-secondary btn-sm change-source {{#disablechangesource}}d-none{{/disablechangesource}}">
-                            {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
-                            <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
-                        </a>
-                        <button type="button"
-                                class="btn btn-danger btn-sm {{#hideremovesourcebutton}}d-none{{/hideremovesourcebutton}}"
-                                data-confirmation="modal"
-                                data-confirmation-title-str='["dashboard:remove_btn_title", "local_sitsgradepush"]'
-                                data-confirmation-content-str='["dashboard:remove_btn_content", "local_sitsgradepush", {"sourcename": "{{name}}", "mabseq": "{{mabseq}}", "mabname": "{{mabname}}", "warning": "{{removeextensionwarning}}"}]'
-                                data-confirmation-yes-button-str='["confirm"]'
-                                data-confirmation-destination="{{removesourceurl}}"
-                        >
-                            {{#str}} dashboard:remove_btn_title, local_sitsgradepush {{/str}}
-                            <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
-                        </button>
-                    {{/currentacademicyear}}
-                    {{/assessmentmapping}}
-                    {{#currentacademicyear}}
-                    {{^assessmentmapping}}
-                        {{#available}}
-                            <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
-                                {{#str}} selectsource:header, local_sitsgradepush {{/str}}
+    {{#module-delivery-tables}}
+        <div id="{{tableid}}" class="pb-3">
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <small>{{#str}} dashboard:moduledelivery, local_sitsgradepush {{/str}}</small>
+                    <h3 class="mb-0">{{{ moduledelivery }}}</h3>
+                    <small>{{#str}} dashboard:level, local_sitsgradepush, {{level}} {{/str}} {{graduatetype}}</small>
+                </div>
+                <div class="col-6">
+                    <small>Map code<br></small>
+                    <div class="h3">{{{ mapcode }}}</div>
+                </div>
+            </div>
+        </div>
+        <table class="module-delivery-table table table-bordered mb-5" aria-describedby="{{tableid}}">
+            <thead class="thead-light">
+            <tr class="small">
+                <th>{{#str}} dashboard:seq, local_sitsgradepush {{/str}}</th>
+                <th>{{#str}} dashboard:sits_assessment, local_sitsgradepush {{/str}}</th>
+                <th>{{#str}} dashboard:weight, local_sitsgradepush {{/str}}</th>
+                <th id="moodleactivitycol-{{tableno}}">{{#str}} dashboard:moodle_activity, local_sitsgradepush {{/str}}</th>
+                <th id="markstotransfercol-{{tableno}}">{{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#componentgrades}}
+                <tr>
+                    <td>{{mabseq}}</td>
+                    <th scope="row">
+                        {{mabname}}
+                        {{{extensioneligiblemessage}}}
+                    </th>
+                    <td>{{#str}} dashboard:mab_perc, local_sitsgradepush, {{mabperc}} {{/str}}</td>
+                    <td>
+                        {{#assessmentmapping}}
+                            {{#sourcenotfound}}
+                                <div class="alert alert-danger" role="alert">
+                                    {{#str}} error:assessmentmappingsourcenotfound, local_sitsgradepush {{/str}}
+                                </div>
+                            {{/sourcenotfound}}
+                            {{^sourcenotfound}}
+                            <p>
+                                <span class="badge badge-info">{{type}}</span>
+                                <a href="{{url}}" target="_blank">{{name}}</a>
+                            </p>
+                            {{/sourcenotfound}}
+                        {{#currentacademicyear}}
+                            <a id="change-source-button-{{id}}" href="{{selectsourceurl}}" class="btn btn-secondary btn-sm change-source {{#disablechangesource}}d-none{{/disablechangesource}}">
+                                {{#str}} dashboard:changesource, local_sitsgradepush {{/str}}
                                 <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
                             </a>
-                        {{/available}}
-                        {{^available}}
-                            {{{unavailablereasons}}}
-                        {{/available}}
-                    {{/assessmentmapping}}
-                    {{/currentacademicyear}}
-                </td>
-                <td class="marks-col">
-                    {{#assessmentmapping}}
-                        {{^sourcenotfound}}
-                            {{^gradesneedregrading}}
-                                <div
-                                        id="marks-col-field-{{id}}"
-                                        class="marks-col-field"
-                                        data-assessmentmappingid="{{id}}"
-                                        data-markscount="{{markstotransfer}}"
-                                        data-nonsubmittedcount="{{nonsubmittedcount}}"
-                                        data-task-running="{{taskrunning}}"
-                                >
-                                    <div class="marks-container {{#taskrunning}}d-none{{/taskrunning}}">
-                                        <p>
-                                            <a href="{{transferhistoryurl}}" target="_blank"
-                                            >
-                                                <span class="marks-count">{{markstotransfer}}</span>
-                                                <span class="sr-only"> {{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}} </span>
-                                                <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small>
-                                                <span class="sr-only">for {{mabseq}} {{mabname}}</span>
-                                            </a>
-                                        </p>
-                                        {{#currentacademicyear}}
-                                            <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}{{^nonsubmittedcount}}d-none{{/nonsubmittedcount}}{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
-                                                <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
-                                                <span class="sr-only">for {{mabseq}} {{mabname}}</span>
-                                            </button>
-                                        {{/currentacademicyear}}
-                                    </div>
-                                    <div class="task-status-container {{^taskrunning}}d-none{{/taskrunning}}">
-                                        <a href="{{transferhistoryurl}}" target="_blank" class="badge badge-warning p-2"><i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
-                                        <small>Progress: {{taskprogress}}%</small>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{taskprogress}}" style="width: {{taskprogress}}%" aria-valuemin="0" aria-valuemax="100"></div>
+                            <button type="button"
+                                    class="btn btn-danger btn-sm {{#hideremovesourcebutton}}d-none{{/hideremovesourcebutton}}"
+                                    data-confirmation="modal"
+                                    data-confirmation-title-str='["dashboard:remove_btn_title", "local_sitsgradepush"]'
+                                    data-confirmation-content-str='["dashboard:remove_btn_content", "local_sitsgradepush", {"sourcename": "{{name}}", "mabseq": "{{mabseq}}", "mabname": "{{mabname}}", "warning": "{{removeextensionwarning}}"}]'
+                                    data-confirmation-yes-button-str='["confirm"]'
+                                    data-confirmation-destination="{{removesourceurl}}"
+                            >
+                                {{#str}} dashboard:remove_btn_title, local_sitsgradepush {{/str}}
+                                <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
+                            </button>
+                        {{/currentacademicyear}}
+                        {{/assessmentmapping}}
+                        {{#currentacademicyear}}
+                        {{^assessmentmapping}}
+                            {{#available}}
+                                <a href="{{selectsourceurl}}" class="btn btn-secondary btn-sm">
+                                    {{#str}} selectsource:header, local_sitsgradepush {{/str}}
+                                    <span class="sr-only"> for {{mabseq}} {{mabname}}</span>
+                                </a>
+                            {{/available}}
+                            {{^available}}
+                                {{{unavailablereasons}}}
+                            {{/available}}
+                        {{/assessmentmapping}}
+                        {{/currentacademicyear}}
+                    </td>
+                    <td class="marks-col">
+                        {{#assessmentmapping}}
+                            {{^sourcenotfound}}
+                                {{^gradesneedregrading}}
+                                    <div
+                                            id="marks-col-field-{{id}}"
+                                            class="marks-col-field"
+                                            data-assessmentmappingid="{{id}}"
+                                            data-markscount="{{markstotransfer}}"
+                                            data-nonsubmittedcount="{{nonsubmittedcount}}"
+                                            data-task-running="{{taskrunning}}"
+                                    >
+                                        <div class="marks-container {{#taskrunning}}d-none{{/taskrunning}}">
+                                            <p>
+                                                <a href="{{transferhistoryurl}}" target="_blank"
+                                                >
+                                                    <span class="marks-count">{{markstotransfer}}</span>
+                                                    <span class="sr-only"> {{#str}} dashboard:marks_to_transfer, local_sitsgradepush {{/str}} </span>
+                                                    <small> - {{#str}} dashboard:view_details, local_sitsgradepush {{/str}}</small>
+                                                    <span class="sr-only">for {{mabseq}} {{mabname}}</span>
+                                                </a>
+                                            </p>
+                                            {{#currentacademicyear}}
+                                                <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}{{^nonsubmittedcount}}d-none{{/nonsubmittedcount}}{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
+                                                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
+                                                    <span class="sr-only">for {{mabseq}} {{mabname}}</span>
+                                                </button>
+                                            {{/currentacademicyear}}
+                                        </div>
+                                        <div class="task-status-container {{^taskrunning}}d-none{{/taskrunning}}">
+                                            <a href="{{transferhistoryurl}}" target="_blank" class="badge badge-warning p-2"><i class="fa-solid fa-hourglass-half mr-1"></i> {{#str}} dashboard:marks_transfer_in_progress, local_sitsgradepush {{/str}}</a>
+                                            <small>Progress: {{taskprogress}}%</small>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{taskprogress}}" style="width: {{taskprogress}}%" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            {{/gradesneedregrading}}
-                            {{#gradesneedregrading}}
-                                <div class="alert alert-warning" role="alert">
-                                    {{#str}} error:gradesneedregrading, local_sitsgradepush {{/str}}
-                                </div>
-                            {{/gradesneedregrading}}
-                        {{/sourcenotfound}}
-                    {{/assessmentmapping}}
-                </td>
-            </tr>
-        {{/componentgrades}}
-        {{^componentgrades}}
-            <tr>
-                <td colspan="4">{{#str}} error:no_mab_found, local_sitsgradepush {{/str}}</td>
-            </tr>
-        {{/componentgrades}}
-        </tbody>
-    </table>
-{{/module-delivery-tables}}
+                                {{/gradesneedregrading}}
+                                {{#gradesneedregrading}}
+                                    <div class="alert alert-warning" role="alert">
+                                        {{#str}} error:gradesneedregrading, local_sitsgradepush {{/str}}
+                                    </div>
+                                {{/gradesneedregrading}}
+                            {{/sourcenotfound}}
+                        {{/assessmentmapping}}
+                    </td>
+                </tr>
+            {{/componentgrades}}
+            {{^componentgrades}}
+                <tr>
+                    <td colspan="4">{{#str}} error:no_mab_found, local_sitsgradepush {{/str}}</td>
+                </tr>
+            {{/componentgrades}}
+            </tbody>
+        </table>
+    {{/module-delivery-tables}}
 
-<div class="text-right py-3">
-    {{^gradesneedregrading}}
-        {{#currentacademicyear}}
-            {{> local_sitsgradepush/transfer_all_button }}
-        {{/currentacademicyear}}
-    {{/gradesneedregrading}}
+    <div class="text-right py-3">
+        {{^gradesneedregrading}}
+            {{#currentacademicyear}}
+                {{> local_sitsgradepush/transfer_all_button }}
+            {{/currentacademicyear}}
+        {{/gradesneedregrading}}
+    </div>
 </div>
 
 {{! Modal }}
