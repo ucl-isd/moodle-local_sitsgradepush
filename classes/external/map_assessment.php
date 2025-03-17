@@ -44,6 +44,7 @@ class map_assessment extends external_api {
             'sourceid' => new external_value(PARAM_INT, 'Source ID', VALUE_REQUIRED),
             'mabid' => new external_value(PARAM_INT, 'Assessment Component ID', VALUE_REQUIRED),
             'reassess' => new external_value(PARAM_INT, 'Reassessment Flag', VALUE_REQUIRED),
+            'extensions' => new external_value(PARAM_BOOL, 'Extensions', VALUE_REQUIRED),
             'partid' => new external_value(PARAM_INT, 'Assessment Part ID', VALUE_DEFAULT, null),
         ]);
     }
@@ -63,16 +64,17 @@ class map_assessment extends external_api {
     /**
      * Map an assessment to an SITS assessment component (MAB).
      *
-     * @param int $courseid
-     * @param string $sourcetype
-     * @param int $sourceid
-     * @param int $mabid
-     * @param int $reassess
-     * @param int|null $partid
+     * @param int $courseid Course ID.
+     * @param string $sourcetype Moodle source type.
+     * @param int $sourceid Moodle source ID.
+     * @param int $mabid Assessment component ID.
+     * @param int $reassess Indicate if the mapping is a reassessment.
+     * @param bool $extensions User choice to apply extensions to the assessment.
+     * @param int|null $partid Not used for now.
      * @return array
      */
     public static function execute(
-      int $courseid, string $sourcetype, int $sourceid, int $mabid, int $reassess, ?int $partid = null) {
+      int $courseid, string $sourcetype, int $sourceid, int $mabid, int $reassess, bool $extensions, ?int $partid = null) {
         try {
             if (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($courseid))) {
                 throw new \moodle_exception('error:mapassessment', 'local_sitsgradepush');
@@ -86,6 +88,7 @@ class map_assessment extends external_api {
                     'sourceid' => $sourceid,
                     'mabid' => $mabid,
                     'reassess' => $reassess,
+                    'extensions' => $extensions,
                     'partid' => $partid,
                 ]
             );
@@ -97,6 +100,7 @@ class map_assessment extends external_api {
             $data->sourcetype = $params['sourcetype'];
             $data->sourceid = $params['sourceid'];
             $data->reassessment = $params['reassess'];
+            $data->extensionsselection = $params['extensions'];
             $data->partid = $params['partid'];
             $mappingid = $manager->save_assessment_mapping($data);
 
