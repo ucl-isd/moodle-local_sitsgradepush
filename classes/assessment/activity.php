@@ -210,6 +210,18 @@ abstract class activity extends assessment {
     }
 
     /**
+     * Check if the assessment has automated SORA override groups created.
+     *
+     * @return bool
+     */
+    public function has_sora_override_groups(): bool {
+        if (!$this->is_extension_supported()) {
+            return false;
+        }
+        return !empty($this->get_assessment_sora_overrides());
+    }
+
+    /**
      * Set the module instance.
      * @return void
      * @throws \dml_exception

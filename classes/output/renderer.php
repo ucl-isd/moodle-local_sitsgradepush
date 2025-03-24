@@ -229,16 +229,21 @@ class renderer extends plugin_renderer_base {
                     $assessmentmapping->disablechangesource = $assessmentmapping->hideremovesourcebutton =
                         !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
 
-                    $componentgrade->assessmentmapping = $assessmentmapping;
-
                     // Extension eligibility.
+                    $removeextensionwarning = get_string('dashboard:remove_btn_content_extension', 'local_sitsgradepush');
                     if (extensionmanager::is_extension_eligible($componentgrade, $assessmentdata->source, $mapping)) {
                         $componentgrade->extensioneligible = new \stdClass();
                         $componentgrade->extensioneligible->overrideurl =
                             $assessmentdata->source->get_overrides_page_url('group', false);
                         $componentgrade->extensioneligible->extensioninfourl =
                             get_config('local_sitsgradepush', 'extension_support_page_url');
+                        $assessmentmapping->removeextensionwarning = $removeextensionwarning;
+                    } else if ($assessmentdata->source->has_sora_override_groups()) {
+                        // Extension is not eligible, e.g. the extension is disabled.
+                        // Still add remove extension warning if there is automated SORA override groups created for the activity.
+                        $assessmentmapping->removeextensionwarning = $removeextensionwarning;
                     }
+                    $componentgrade->assessmentmapping = $assessmentmapping;
                 }
             }
 
