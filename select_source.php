@@ -104,8 +104,10 @@ echo $OUTPUT->header();
 $renderer = $PAGE->get_renderer('local_sitsgradepush');
 echo $renderer->render_select_source_page($courseid, $mab, $reassess);
 
+$extensioninfopageurl = get_config('local_sitsgradepush', 'extension_support_page_url');
+
 // Include JS.
-$PAGE->requires->js_call_amd('local_sitsgradepush/select_source', 'init', []);
+$PAGE->requires->js_call_amd('local_sitsgradepush/select_source', 'init', [$extensioninfopageurl]);
 
 // Page footer.
 echo $OUTPUT->footer();

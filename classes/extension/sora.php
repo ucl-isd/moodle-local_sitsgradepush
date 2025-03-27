@@ -31,7 +31,7 @@ use local_sitsgradepush\manager;
 class sora extends extension {
 
     /** @var string Prefix used to create SORA groups */
-    const SORA_GROUP_PREFIX = 'SORA-CM-';
+    const SORA_GROUP_PREFIX = 'SORA-Activity-';
 
     /** @var string AWS datasource */
     const DATASOURCE_AWS = 'aws';
@@ -135,12 +135,33 @@ class sora extends extension {
     /**
      * Get the SORA group name.
      *
-     * @param int $cmid The course module ID.
+     * @param int $sourceid The moodle source ID.
      * @param int $totalextension The total extension in minutes, including extra and rest duration.
      * @return string
      */
-    public static function get_extension_group_name(int $cmid, int $totalextension): string {
-        return sprintf(self::SORA_GROUP_PREFIX . '%d-EX-%d', $cmid, $totalextension);
+    public static function get_extension_group_name(int $sourceid, int $totalextension): string {
+        return sprintf(self::SORA_GROUP_PREFIX . '%d-Extension-%s', $sourceid, self::formatextensionstime($totalextension));
+    }
+
+    /**
+     * Format the extension time.
+     *
+     * @param int $minutes
+     * @return string
+     */
+    public static function formatextensionstime(int $minutes): string {
+        if ($minutes < HOURMINS) {
+            return "{$minutes}mins";
+        }
+
+        $hours = floor($minutes / HOURMINS);
+        $remainingminutes = $minutes % HOURMINS;
+
+        if ($remainingminutes == 0) {
+            return "{$hours}hr" . ($hours > 1 ? "s" : "");
+        }
+
+        return "{$hours}hr" . ($hours > 1 ? "s" : "") . "{$remainingminutes}mins";
     }
 
     /**

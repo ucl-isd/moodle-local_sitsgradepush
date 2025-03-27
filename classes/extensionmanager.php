@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush;
 
+use core\clock;
+use core\di;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extension\extension;
@@ -148,19 +150,29 @@ class extensionmanager {
     }
 
     /**
-     * Check if the extension is eligible for the mapping.
+     * Check if the extension is eligible for the SITS assessment.
      *
      * @param \stdClass $componentgrade
-     * @param assessment $source
-     * @param \stdClass $mapping
      * @return bool
      * @throws \dml_exception
      */
-    public static function is_extension_eligible(\stdClass $componentgrade, assessment $source, \stdClass $mapping): bool {
+    public static function is_sits_assessment_extension_eligible(\stdClass $componentgrade): bool {
         return self::is_extension_enabled() && // Extension is enabled.
-            $mapping->enableextension === '1' && // Extension is enabled for the mapping.
-            self::is_assessment_types_sora_supported($componentgrade->astcode) && // Assessment type is supported for API V1.
-            $source->is_extension_supported() && // Extension is supported for the source.
-            $source->is_valid_for_extension()->valid; // Source has start date and end date set.
+            self::is_assessment_types_sora_supported($componentgrade->astcode); // Assessment type is supported for API V1.
+    }
+
+    /**
+     * Check if the extension is eligible for the Moodle source.
+     *
+     * @param assessment $assessment
+     * @param bool $duedatecheck Check if the due date is in the future.
+     * @return bool
+     */
+    public static function is_source_extension_eligible(assessment $assessment, bool $duedatecheck = true): bool {
+        $primarycheck = self::is_extension_enabled() &&
+            $assessment->is_extension_supported() &&
+            $assessment->is_valid_for_extension()->valid;
+
+        return $duedatecheck ? $primarycheck && $assessment->get_end_date() > di::get(clock::class)->time() : $primarycheck;
     }
 }
