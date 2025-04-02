@@ -32,10 +32,11 @@ export const schedulePushTask = async(assessmentmappingid, recordnonsubmission =
  * @param {int} sourceid
  * @param {int} mabid
  * @param {int} reassess
+ * @param {boolean} extensions
  * @param {int|null} partid
  * @return {Promise}
  */
-export const mapAssessment = async(courseid, sourcetype, sourceid, mabid, reassess, partid = null) => {
+export const mapAssessment = async(courseid, sourcetype, sourceid, mabid, reassess, extensions, partid = null) => {
     return new Promise((resolve, reject) => {
         Ajax.call([{
             methodname: 'local_sitsgradepush_map_assessment',
@@ -45,6 +46,7 @@ export const mapAssessment = async(courseid, sourcetype, sourceid, mabid, reasse
                 'sourceid': sourceid,
                 'mabid': mabid,
                 'reassess': reassess,
+                'extensions': extensions,
                 'partid': partid,
             },
         }])[0].done(function(response) {

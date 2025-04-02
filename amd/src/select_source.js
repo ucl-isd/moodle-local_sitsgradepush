@@ -3,8 +3,15 @@ import notification from "core/notification";
 import ModalEvents from 'core/modal_events';
 import ModalSaveCancel from 'core/modal_save_cancel';
 import {mapAssessment} from './sitsgradepush_helper';
+import {getString} from 'core/str';
 
-export const init = () => {
+// The global variable for extension information page URL.
+let extensionInfoPageUrl = null;
+
+export const init = (extensioninfopageurl) => {
+    // Set extension Information page url.
+    extensionInfoPageUrl = extensioninfopageurl;
+
     // Initialise the table helper.
     tableHelperInit('existing-activity-table', 2, 'filterInput');
 
@@ -43,11 +50,13 @@ async function selectAssessment(button) {
     let mapcode = button.getAttribute('data-mapcode');
     let mabseq = button.getAttribute('data-mabseq');
     let mabid = button.getAttribute('data-mabid');
+    let mabname = button.getAttribute('data-mabname');
     let courseid = button.getAttribute('data-courseid');
     let sourcetype = button.getAttribute('data-sourcetype');
     let sourceid = button.getAttribute('data-sourceid');
     let reassess = button.getAttribute('data-reassess');
     let partid = button.getAttribute('data-partid');
+    let extensioneligible = button.getAttribute('data-extensioneligible');
 
     // Find the closest row to the button.
     let currentrow = button.closest('tr');
@@ -57,14 +66,21 @@ async function selectAssessment(button) {
 
     const modal = await ModalSaveCancel.create({
         title: 'Confirmation',
-        body: getModalBody(type, name, endDate, mapcode, mabseq),
+        body: getModalBody(type, name, endDate, mapcode, mabseq, mabname, extensioneligible),
         large: true,
         buttons: {'save': 'Confirm', 'cancel': 'Cancel'}
     });
 
     await modal.show();
+
+    // Store a reference to the modal root element.
+    const modalRoot = modal.getRoot();
+
     modal.getRoot().on(ModalEvents.save, () => {
-        mapAssessment(courseid, sourcetype, sourceid, mabid, reassess, partid).then(
+        // Get the current value of the import SoRA extensions checkbox directly from the modal DOM.
+        const soraCheckbox = modalRoot.find('#import-sora')[0];
+        const extensions = soraCheckbox ? soraCheckbox.checked : false;
+        mapAssessment(courseid, sourcetype, sourceid, mabid, reassess, extensions, partid).then(
             (result) => {
                 if (result.success) {
                     // Store the success message in localStorage for display on the dashboard page.
@@ -98,34 +114,77 @@ async function selectAssessment(button) {
  * @param {string} endDate
  * @param {string} mapcode
  * @param {string} mabseq
+ * @param {string} mabname
+ * @param {string} extensioneligible
  * @return {string}
  */
-function getModalBody(type, name, endDate, mapcode, mabseq) {
+async function getModalBody(type, name, endDate, mapcode, mabseq, mabname, extensioneligible) {
+    // Fetch all strings in parallel.
+    const [
+        titleSubtitle, titleMapcode, titleSequence, titleSitsAssessment,
+        titleType, titleName, titleEndDate, titleExtensionsText
+    ] = await Promise.all([
+        getString('selectsource:modal:subtitle', 'local_sitsgradepush'),
+        getString('selectsource:modal:mapcode', 'local_sitsgradepush'),
+        getString('selectsource:modal:sequence', 'local_sitsgradepush'),
+        getString('selectsource:modal:sitsassessment', 'local_sitsgradepush'),
+        getString('selectsource:modal:type', 'local_sitsgradepush'),
+        getString('selectsource:modal:name', 'local_sitsgradepush'),
+        getString('selectsource:modal:enddate', 'local_sitsgradepush'),
+        getString('selectsource:modal:extensions', 'local_sitsgradepush')
+    ]);
+
+    // Handle SoRA extension checkbox conditionally.
+    const extensionSection = extensioneligible === '1' ? `
+        <th>${titleExtensionsText}</th>
+    ` : '';
+
+    const extensionContent = extensioneligible === '1' ? `
+        <td>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="import-sora" checked>
+                <label class="form-check-label" for="import-sora">Import SoRA extensions</label>
+            </div>
+            <p>
+                <a href="${extensionInfoPageUrl}" target="_blank">
+                    View the guide on automating SoRA extensions in Moodle
+                </a>
+            </p>
+        </td>
+    ` : '';
+
     return `
-    <div class="modal-body">
-      <p>Confirm you want to return marks from:</p>
-      <table class="table table-hover table-bordered">
-        <thead style="background-color: lightgrey">
-          <th>Type</th>
-          <th>Name</th>
-          <th>End Date</th>
-        </thead>
-        <tr>
-          <td>${type}</td>
-          <td>${name}</td>
-          <td>${endDate}</td>
-        </tr>
-      </table>
-      <p>to</p>
-      <table class="table table-hover table-bordered">
-        <thead style="background-color: lightgrey">
-          <th>MAB</th>
-          <th>SEQ</th>
-        </thead>
-        <tr>
-          <td>${mapcode}</td>
-          <td>${mabseq}</td>
-        </tr>
-      </table>
-    </div>`;
+        <div class="modal-body">
+            <p>${titleSubtitle}</p>
+
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <th>${titleMapcode}</th>
+                    <th>${titleSequence}</th>
+                    <th>${titleSitsAssessment}</th>
+                    ${extensionSection}
+                </thead>
+                <tr>
+                    <td>${mapcode}</td>
+                    <td>${mabseq}</td>
+                    <td>${mabname}</td>
+                    ${extensionContent}
+                </tr>
+            </table>
+
+            <p>to Moodle activity</p>
+
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <th>${titleType}</th>
+                    <th>${titleName}</th>
+                    <th>${titleEndDate}</th>
+                </thead>
+                <tr>
+                    <td>${type}</td>
+                    <td>${name}</td>
+                    <td>${endDate}</td>
+                </tr>
+            </table>
+        </div>`;
 }
