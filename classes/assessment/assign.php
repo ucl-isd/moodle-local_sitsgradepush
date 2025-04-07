@@ -137,7 +137,7 @@ class assign extends activity {
 
         $params = [
             'assignid' => $this->sourceinstance->id,
-            'name' => sora::SORA_GROUP_PREFIX . '%',
+            'name' => sora::SORA_GROUP_PREFIX . $this->get_id(). '%',
         ];
 
         // Get all sora group overrides.

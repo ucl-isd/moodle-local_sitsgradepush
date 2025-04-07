@@ -240,16 +240,37 @@ class behat_sitsgradepush extends behat_base {
     }
 
     /**
+     * Map a source to a SITS assessment component with extension.
+     *
+     * @param string $sourcetype
+     * @param string $sourcename
+     * @param string $mabname
+     *
+     * @throws \dml_exception|\moodle_exception
+     *
+     * @Given the :sourcetype :sourcename is mapped to :mabname with extension
+     */
+    public function the_source_is_mapped_to_with_extension(string $sourcetype, string $sourcename, string $mabname): void {
+        $this->map_source($sourcetype, $sourcename, $mabname, false, true);
+    }
+
+    /**
      * Map a source to a SITS assessment component.
      *
      * @param string $sourcetype
      * @param string $sourcename
      * @param string $mabname
      * @param bool $reassessment
+     * @param bool $extension
      *
      * @throws \dml_exception|\moodle_exception
      */
-    public function map_source(string $sourcetype, string $sourcename, string $mabname, bool $reassessment): void {
+    public function map_source(
+        string $sourcetype,
+        string $sourcename,
+        string $mabname,
+        bool $reassessment,
+        bool $extension = false): void {
         global $DB;
         $manager = manager::get_manager();
 
@@ -259,15 +280,15 @@ class behat_sitsgradepush extends behat_base {
         $source = match ($sourceexplode[0]) {
             'mod' => $this->get_coursemodule($sourceexplode[1], $sourcename),
             'gradeitem' => $DB->get_record(
-              'grade_items',
-              ['idnumber' => $sourcename]
+                'grade_items',
+                ['idnumber' => $sourcename]
             ),
             'gradecategory' => $DB->get_record(
-              'grade_categories',
-              ['fullname' => $sourcename]
+                'grade_categories',
+                ['fullname' => $sourcename]
             ),
             default => throw new Exception(
-              "Source type '$sourcetype' not recognized."
+                "Source type '$sourcetype' not recognized."
             ),
         };
 
@@ -287,6 +308,7 @@ class behat_sitsgradepush extends behat_base {
         }
         $record->componentgradeid = $mab->id;
         $record->reassessment = $reassessment;
+        $record->enableextension = $extension ? 1 : 0;
         $record->timecreated = time();
         $record->timemodified = time();
 
