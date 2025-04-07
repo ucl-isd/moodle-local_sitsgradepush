@@ -175,6 +175,14 @@ if ($hassiteconfig) {
             50
         ));
 
+        // Switch to enable/disable local assessment type update.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/local_assess_type_update_enabled',
+            get_string('settings:enableassesstypeupdate', 'local_sitsgradepush'),
+            get_string('settings:enableassesstypeupdate:desc', 'local_sitsgradepush'),
+            '1'
+        ));
+
         // Setting to enable/disable new feature notification.
         $settings->add(new admin_setting_configcheckbox(
             'local_sitsgradepush/new_feature_notification_enabled',
