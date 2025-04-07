@@ -1,0 +1,41 @@
+{{!
+    This file is part the Local SITS Grade Push plugin for Moodle
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sitsgradepush/extensions_mapped_eligible
+
+    Template for displaying a extensions eligible message for a mapping.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * none
+
+    Example context (json):
+    {"overrideurl":"http://test.m45.local:40455/mod/quiz/overrides.php?cmid=28&mode=group"}
+}}
+
+<div class="alert alert-success">
+    <div class="badge badge-success">{{#str}} dashboard:extensions, local_sitsgradepush {{/str}}</div>
+    <div class="small">
+        <i class="fa-solid fa-circle-check text-success" aria-hidden="true"></i>
+        {{#str}} dashboard:extensions:mapped:desc, local_sitsgradepush {{/str}}<br>
+        <a href="{{overrideurl}}" target="_blank">{{#str}} dashboard:extensions:view, local_sitsgradepush {{/str}}</a>
+    </div>
+</div>

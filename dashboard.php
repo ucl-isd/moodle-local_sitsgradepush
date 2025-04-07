@@ -119,11 +119,7 @@ $result = $manager->get_component_grade_options($courseid);
 
 // Render the dashboard.
 if (!empty($result)) {
-    echo '<div id="sitsgradepush-dasboard-container" class="sitsgradepush-dasboard">';
-    echo '<h2>' . $header . '</h2>
-          <p>' . get_string('dashboard:header:desc', 'local_sitsgradepush') . '</p>';
     echo $renderer->render_dashboard($result, $courseid, $reassess);
-    echo '</div>';
 } else {
     echo get_string('error:nomoduledeliveryfound', 'local_sitsgradepush');
 }

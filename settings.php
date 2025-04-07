@@ -183,6 +183,22 @@ if ($hassiteconfig) {
             '1'
         ));
 
+        // Setting to enable/disable new feature notification.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/new_feature_notification_enabled',
+            get_string('settings:new_feature_notification_enabled', 'local_sitsgradepush'),
+            get_string('settings:new_feature_notification_enabled:desc', 'local_sitsgradepush'),
+            '0'
+        ));
+
+        // New feature notification message in HTML.
+        $settings->add(new admin_setting_configtextarea(
+            'local_sitsgradepush/new_feature_notification_html',
+            get_string('settings:new_feature_notification_html', 'local_sitsgradepush'),
+            get_string('settings:new_feature_notification_html:desc', 'local_sitsgradepush'),
+            get_string('settings:new_feature_notification_template_html', 'local_sitsgradepush'),
+            PARAM_RAW, 100, 8));
+
         // Setting for AWS.
         $settings->add(new admin_setting_heading('local_sitsgradepush_aws_settings',
             get_string('settings:awssettings', 'local_sitsgradepush'),

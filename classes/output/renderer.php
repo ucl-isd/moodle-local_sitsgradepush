@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\output;
 
+use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\unknownassessment;
 use local_sitsgradepush\assessment\gradebook;
 use local_sitsgradepush\errormanager;
@@ -193,6 +194,8 @@ class renderer extends plugin_renderer_base {
                         ]
                     );
                     $componentgrade->selectsourceurl = $selectsourceurl->out(false);
+                    $componentgrade->extensioneligiblemessage =
+                        $this->get_extensions_eligible_message($componentgrade);
 
                     // No need to render mapping information if the component grade is not mapped
                     // for the given marks transfer type.
@@ -229,21 +232,13 @@ class renderer extends plugin_renderer_base {
                     $assessmentmapping->disablechangesource = $assessmentmapping->hideremovesourcebutton =
                         !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
 
-                    // Extension eligibility.
                     $removeextensionwarning = get_string('dashboard:remove_btn_content_extension', 'local_sitsgradepush');
-                    if (extensionmanager::is_extension_eligible($componentgrade, $assessmentdata->source, $mapping)) {
-                        $componentgrade->extensioneligible = new \stdClass();
-                        $componentgrade->extensioneligible->overrideurl =
-                            $assessmentdata->source->get_overrides_page_url('group', false);
-                        $componentgrade->extensioneligible->extensioninfourl =
-                            get_config('local_sitsgradepush', 'extension_support_page_url');
-                        $assessmentmapping->removeextensionwarning = $removeextensionwarning;
-                    } else if ($assessmentdata->source->has_sora_override_groups()) {
-                        // Extension is not eligible, e.g. the extension is disabled.
-                        // Still add remove extension warning if there is automated SORA override groups created for the activity.
-                        $assessmentmapping->removeextensionwarning = $removeextensionwarning;
-                    }
+                    $extensioneligiblemessage =
+                        $this->get_extensions_eligible_message($componentgrade, $assessmentdata->source, $mapping);
+                    $assessmentmapping->removeextensionwarning = !empty($extensioneligiblemessage) ||
+                    $assessmentdata->source->has_sora_override_groups() ? $removeextensionwarning : '';
                     $componentgrade->assessmentmapping = $assessmentmapping;
+                    $componentgrade->extensioneligiblemessage = $extensioneligiblemessage;
                 }
             }
 
@@ -264,12 +259,15 @@ class renderer extends plugin_renderer_base {
             'local_sitsgradepush/dashboard',
             [
                 'currentacademicyear' => $iscurrentacademicyear,
+                'dashboardheader' => $reassess ? get_string('dashboard:header:reassess', 'local_sitsgradepush') :
+                    get_string('dashboard:header', 'local_sitsgradepush'),
                 'module-delivery-tables' => $moduledeliverytables,
                 'jump-to-options' => $options,
                 'jump-to-label' => get_string('label:jumpto', 'local_sitsgradepush'),
                 'transfer-all-button-label' => get_string('label:pushall', 'local_sitsgradepush'),
                 'gradesneedregrading' => grade_needs_regrade_final_grades($courseid),
                 'recordnonsubmission' => true, // Show the record non-submission as 0 AB checkbox.
+                'new-feature-notification' => $this->get_new_feature_notification_html(),
             ]
         );
     }
@@ -310,6 +308,7 @@ class renderer extends plugin_renderer_base {
             $formattedassessment->mabid = $mab->id;
             $formattedassessment->mapcode = $mab->mapcode;
             $formattedassessment->mabseq = $mab->mabseq;
+            $formattedassessment->mabname = $mab->mabname;
             $formattedassessment->sourcetype = $assessment->get_type();
             $formattedassessment->sourceid = $assessment->get_id();
             $formattedassessment->type = $assessment->get_display_type_name();
@@ -319,6 +318,9 @@ class renderer extends plugin_renderer_base {
             $formattedassessment->enddate =
                 !empty($assessment->get_end_date()) ? date('d/m/Y H:i:s', $assessment->get_end_date()) : '-';
             $formattedassessment->reassess = $reassess;
+            $formattedassessment->extensioneligible =
+            extensionmanager::is_source_extension_eligible($assessment) &&
+            extensionmanager::is_sits_assessment_extension_eligible($mab) ? 1 : 0;
             $validassessments[] = $formattedassessment;
         }
 
@@ -483,5 +485,71 @@ class renderer extends plugin_renderer_base {
             '/local/sitsgradepush/dashboard.php',
             $params
         );
+    }
+
+    /**
+     * Get the new feature notification HTML.
+     *
+     * @return string
+     */
+    private function get_new_feature_notification_html(): string {
+        if (get_config('local_sitsgradepush', 'new_feature_notification_enabled') == '1' &&
+            !empty(get_config('local_sitsgradepush', 'new_feature_notification_html'))) {
+            return get_config('local_sitsgradepush', 'new_feature_notification_html');
+        }
+        return '';
+    }
+
+    /**
+     * Get the extensions eligible message.
+     *
+     * @param \stdClass $componentgrade
+     * @param assessment|null $assessment
+     * @param \stdClass|null $mapping
+     *
+     * @return string
+     */
+    private function get_extensions_eligible_message(
+        \stdClass $componentgrade,
+        ?assessment $assessment = null,
+        ?\stdClass $mapping = null
+    ): string {
+        // Check if extension is enabled for mapping.
+        if (!empty($mapping) && $mapping->enableextension != '1') {
+            return '';
+        }
+
+        [$valid] = manager::get_manager()->is_component_grade_valid_for_mapping($componentgrade);
+        // Do not show the message if the SITS assessment is not valid for mapping if it is not already mapped.
+        if (!$valid && empty($mapping)) {
+            return '';
+        }
+
+        // Check if the component grade is eligible for extensions.
+        $componentgradeeligible = extensionmanager::is_sits_assessment_extension_eligible($componentgrade);
+
+        // Check if the moodle source is eligible for extensions.
+        // Ignore the due date check as the warning message should be shown after the source's due date
+        // if the source is eligible for extensions at the time when it is mapped.
+        $assessmenteligible = $assessment && extensionmanager::is_source_extension_eligible($assessment, false);
+
+        if ($componentgradeeligible) {
+            // Currently not mapped.
+            if (!$assessment) {
+                // Return component grade extension eligibility message.
+                return $this->output->render_from_template('local_sitsgradepush/extensions_eligible_message', []);
+            }
+            // Mapped and both SITS assessment and moodle source are eligible for extensions.
+            if ($assessmenteligible) {
+                // Return mapped assessment extension eligibility message.
+                return $this->output->render_from_template('local_sitsgradepush/extensions_mapped_eligible_message',
+                    ['overrideurl' => $assessment->get_overrides_page_url('group', false)]
+                );
+            } else {
+                // SITS assessment is eligible for extension but moodle source is not.
+                return '';
+            }
+        }
+        return '';
     }
 }

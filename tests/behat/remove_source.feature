@@ -28,14 +28,32 @@ Feature: Remove Moodle source for SITS assessment component
       | assign          | Assign 1   | A1 desc | C1     | assign1     | 1       |
       | quiz            | Quiz 1     | Q1 desc | C1     | quiz1       | 1       |
     And the course "C1" is regraded
-    And the "mod_assign" "assign1" is mapped to "72hr take-home examination (3000 words)"
 
   @javascript
   Scenario: Remove source for a SITS assessment component
-    Given I am on the "Course 1" course page logged in as teacher1
+    Given the "mod_assign" "assign1" is mapped to "72hr take-home examination (3000 words)"
+    And I am on the "Course 1" course page logged in as teacher1
     And I click on "More" "link" in the ".secondary-navigation" "css_element"
     And I select "SITS Marks Transfer" from secondary navigation
     And I should see "Assign 1" is mapped to "72hr take-home examination (3000 words)"
     And I click on the "Remove source" button for "72hr take-home examination (3000 words)"
+    Then I should see "Are you sure you want to remove source Assign 1 for SITS assessment (001) 72hr take-home examination (3000 words)"
+    And I click on "Confirm" "button" in the "Remove source" "dialogue"
+    Then I should see "72hr take-home examination (3000 words)" is not mapped
+
+  @javascript
+  Scenario: Remove a source that is eligible for extensions
+    Given the following config values are set as admin:
+      | extension_enabled         | 1  | local_sitsgradepush |
+    And the following "activities" exist:
+      | activity        | name       | intro   | course | idnumber    | section | allowsubmissionsfromdate | duedate       |
+      | assign          | Assign 2   | A2 desc | C1     | assign2     | 1       | ## +1 day ##             | ## +4 days ## |
+    And the "mod_assign" "assign2" is mapped to "72hr take-home examination (3000 words)" with extension
+    And I am on the "Course 1" course page logged in as teacher1
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And I should see "Assign 2" is mapped to "72hr take-home examination (3000 words)"
+    And I click on the "Remove source" button for "72hr take-home examination (3000 words)"
+    Then I should see "Are you sure you want to remove source Assign 2 for SITS assessment (001) 72hr take-home examination (3000 words) including automated SoRA extension groups?"
     And I click on "Confirm" "button" in the "Remove source" "dialogue"
     Then I should see "72hr take-home examination (3000 words)" is not mapped
