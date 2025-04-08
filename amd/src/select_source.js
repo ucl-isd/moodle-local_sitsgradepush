@@ -122,7 +122,7 @@ async function getModalBody(type, name, endDate, mapcode, mabseq, mabname, exten
     // Fetch all strings in parallel.
     const [
         titleSubtitle, titleMapcode, titleSequence, titleSitsAssessment,
-        titleType, titleName, titleEndDate, titleExtensionsText
+        titleType, titleName, titleEndDate, titleExtensionsText, titleImportSoraExtension, titleViewGuide, textToMoodleActivity
     ] = await Promise.all([
         getString('selectsource:modal:subtitle', 'local_sitsgradepush'),
         getString('selectsource:modal:mapcode', 'local_sitsgradepush'),
@@ -131,7 +131,10 @@ async function getModalBody(type, name, endDate, mapcode, mabseq, mabname, exten
         getString('selectsource:modal:type', 'local_sitsgradepush'),
         getString('selectsource:modal:name', 'local_sitsgradepush'),
         getString('selectsource:modal:enddate', 'local_sitsgradepush'),
-        getString('selectsource:modal:extensions', 'local_sitsgradepush')
+        getString('selectsource:modal:extensions', 'local_sitsgradepush'),
+        getString('selectsource:modal:importsoraextension', 'local_sitsgradepush'),
+        getString('selectsource:modal:viewguide', 'local_sitsgradepush'),
+        getString('selectsource:modal:tomoodleactivity', 'local_sitsgradepush')
     ]);
 
     // Handle SoRA extension checkbox conditionally.
@@ -143,11 +146,11 @@ async function getModalBody(type, name, endDate, mapcode, mabseq, mabname, exten
         <td>
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="import-sora" checked>
-                <label class="form-check-label" for="import-sora">Import SoRA extensions</label>
+                <label class="form-check-label" for="import-sora">${titleImportSoraExtension}</label>
             </div>
             <p>
                 <a href="${extensionInfoPageUrl}" target="_blank">
-                    View the guide on automating SoRA extensions in Moodle
+                    ${titleViewGuide}
                 </a>
             </p>
         </td>
@@ -172,7 +175,7 @@ async function getModalBody(type, name, endDate, mapcode, mabseq, mabname, exten
                 </tr>
             </table>
 
-            <p>to Moodle activity</p>
+            <p>${textToMoodleActivity}</p>
 
             <table class="table table-bordered">
                 <thead class="thead-light">
