@@ -77,6 +77,11 @@ abstract class assessment implements iassessment {
             throw new \moodle_exception($check->errorcode, 'local_sitsgradepush');
         }
 
+        // Skip extension if there is an extension added by exam guard.
+        if ($this->has_exam_guard_extension()) {
+            return;
+        }
+
         // Do extension base on the extension type.
         if ($extension instanceof ec) {
             $this->apply_ec_extension($extension);
@@ -302,6 +307,28 @@ abstract class assessment implements iassessment {
      * @return bool
      */
     public function has_sora_override_groups(): bool {
+        return false;
+    }
+
+    /**
+     * Check if there is an extension record added by the exam guard plugin.
+     *
+     * @return bool
+     */
+    protected function has_exam_guard_extension(): bool {
+        // Check if local_examguard plugin is installed and the moodle activity is an exam guard supported.
+        if (\core_plugin_manager::instance()->get_plugin_info('local_examguard') &&
+            $this->get_type() === assessmentfactory::SOURCETYPE_MOD &&
+            \local_examguard\manager::is_exam_guard_supported_activity($this->get_module_name())) {
+            // Check if there is an existing extension record for this course module.
+            $examactivity = \local_examguard\examactivity\examactivityfactory::get_exam_activity(
+                $this->get_id(),
+                $this->get_module_name()
+            );
+
+            // An exam guard time extension was added to the moodle activity if current extension is greater than 0.
+            return $examactivity->get_current_extension() > 0;
+        }
         return false;
     }
 
