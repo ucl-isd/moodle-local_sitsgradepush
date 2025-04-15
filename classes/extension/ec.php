@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\extension;
 
+use DateTime;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\logger;
 
@@ -28,9 +29,8 @@ use local_sitsgradepush\logger;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class ec extends extension {
-
     /** @var string New deadline */
-    private string $newdeadline;
+    private string $newdeadline = '';
 
     /** @var string MAB identifier, e.g. CCME0158A6UF-001 */
     protected string $mabidentifier;
@@ -48,11 +48,16 @@ class ec extends extension {
      * Process the extension.
      *
      * @param array $mappings
-     * @throws \dml_exception
+     * @throws \dml_exception|\coding_exception
      */
     public function process_extension(array $mappings): void {
-        // Exit if empty mappings.
-        if (empty($mappings)) {
+        // Pre-process extension checks.
+        if (!$this->pre_process_extension_checks($mappings)) {
+            return;
+        }
+
+        // Skip if the new deadline is empty.
+        if (empty($this->get_new_deadline()) || strtotime($this->get_new_deadline()) < $this->clock->time()) {
             return;
         }
 
@@ -88,6 +93,10 @@ class ec extends extension {
 
         // Set new deadline.
         $this->newdeadline = $messagedata->new_deadline;
+
+        // Set data source.
+        $this->datasource = self::DATASOURCE_AWS;
+        $this->dataisset = true;
     }
 
     /**
@@ -97,6 +106,53 @@ class ec extends extension {
      * @return void
      */
     public function set_properties_from_get_students_api(array $student): void {
-        // Will implement this when the get students API includes EC data.
+        // Set the user ID of the student.
+        $this->set_userid($student['association']['supplementary']['student_code']);
+
+        // Set new deadline.
+        // $student['extenuating_circumstance'] is an array.
+        if (!empty($student['extenuating_circumstance'])) {
+            $this->newdeadline = $this->get_latest_deadline($student['extenuating_circumstance']);
+        }
+
+        // Set data source.
+        $this->datasource = self::DATASOURCE_API;
+        $this->dataisset = true;
+    }
+
+    /**
+     * Get the latest deadline.
+     *
+     * @param array $extensions An array of extenuating circumstances.
+     * @return string
+     */
+    protected function get_latest_deadline(array $extensions): string {
+        $latest = null;
+
+        // Use the latest deadline from the extenuating circumstances.
+        // TODO: Update the logic when we worked out the ec & dap logic.
+        foreach ($extensions as $extension) {
+            if (empty($extension['new_due_date'])) {
+                continue;
+            }
+
+            $current = new DateTime($extension['new_due_date']);
+
+            if (!$latest || $current > $latest) {
+                $latest = $current;
+            }
+        }
+
+        return $latest ? $latest->format('Y-m-d') : '';
+    }
+
+    /**
+     * Set the MAB identifier.
+     *
+     * @param string $mabidentifier Map code and MAB sequence number, e.g. CCME0158A6UF-001.
+     * @return void
+     */
+    public function set_mabidentifier(string $mabidentifier): void {
+        $this->mabidentifier = $mabidentifier;
     }
 }

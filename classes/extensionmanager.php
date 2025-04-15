@@ -20,6 +20,7 @@ use core\clock;
 use core\di;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\task\process_extensions_new_enrolment;
@@ -61,6 +62,39 @@ class extensionmanager {
                 $sora->process_extension([$mapping]);
             } catch (\Exception $e) {
                 $studentcode = $student["code"] ?? '';
+                logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, Student Idnumber: $studentcode");
+            }
+        }
+    }
+
+    /**
+     * Update EC extension for students in a mapping using the SITS get students API as the data source.
+     *
+     * @param \stdClass $mapping Assessment component mapping ID.
+     * @param array $students Students data from the SITS get students API.
+     * @return void
+     * @throws \dml_exception|\moodle_exception
+     */
+    public static function update_ec_for_mapping(\stdClass $mapping, array $students): void {
+        // Nothing to do if the extension is not enabled for the mapping.
+        if ($mapping->enableextension !== '1') {
+            return;
+        }
+
+        // If no students returned from SITS, nothing to do.
+        if (empty($students)) {
+            return;
+        }
+
+        // Process EC extension.
+        foreach ($students as $student) {
+            try {
+                $ec = new ec();
+                $ec->set_mabidentifier($mapping->mapcode . '-' . $mapping->mabseq);
+                $ec->set_properties_from_get_students_api($student);
+                $ec->process_extension([$mapping]);
+            } catch (\Exception $e) {
+                $studentcode = $student['association']['supplementary']['student_code'] ?? '';
                 logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, Student Idnumber: $studentcode");
             }
         }

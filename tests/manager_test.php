@@ -540,7 +540,7 @@ final class manager_test extends base_test_class {
         $this->assertEquals('12345678/1', $student['spr_code'] );
 
         // Get student cache.
-        $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $this->mab1->mapcode, $this->mab1->mabseq]);
+        $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $this->mab1->mapcode, $this->mab1->mabseq, 1]);
         $students = cachemanager::get_cache(cachemanager::CACHE_AREA_STUDENTSPR, $key);
 
         // Test student is found in cache.

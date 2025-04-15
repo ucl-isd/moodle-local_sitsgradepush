@@ -327,7 +327,7 @@ abstract class assessment implements iassessment {
             );
 
             // An exam guard time extension was added to the moodle activity if current extension is greater than 0.
-            return $examactivity->get_current_extension() > 0;
+            return $examactivity->get_latest_extension() > 0;
         }
         return false;
     }

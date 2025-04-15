@@ -24,6 +24,7 @@ use sitsapiclient_easikit\requests\getcomponentgrade;
 use sitsapiclient_easikit\requests\getmarkingschemes;
 use sitsapiclient_easikit\requests\getstudent;
 use sitsapiclient_easikit\requests\getstudents;
+use sitsapiclient_easikit\requests\getstudentsv2;
 use sitsapiclient_easikit\requests\pushgrade;
 use sitsapiclient_easikit\requests\pushsubmissionlog;
 use sitsapiclient_easikit\requests\request;
@@ -56,31 +57,16 @@ class easikit extends client {
      * @throws \moodle_exception
      */
     public function build_request(string $action, ?\stdClass $data = null, ?submission $submission = null) {
-        switch ($action) {
-            case manager::PUSH_GRADE:
-                $request = new pushgrade($data);
-                break;
-            case manager::GET_COMPONENT_GRADE:
-                $request = new getcomponentgrade($data);
-                break;
-            case manager::GET_STUDENT:
-                $request = new getstudent($data);
-                break;
-            case manager::GET_STUDENTS:
-                $request = new getstudents($data);
-                break;
-            case manager::PUSH_SUBMISSION_LOG:
-                $request = new pushsubmissionlog($data, $submission);
-                break;
-            case manager::GET_MARKING_SCHEMES:
-                $request = new getmarkingschemes();
-                break;
-            default:
-                $request = null;
-                break;
-        }
-
-        return $request;
+        return match ($action) {
+            manager::PUSH_GRADE => new pushgrade($data),
+            manager::GET_COMPONENT_GRADE => new getcomponentgrade($data),
+            manager::GET_STUDENT => new getstudent($data),
+            manager::GET_STUDENTS => new getstudents($data),
+            manager::GET_STUDENTS_V2 => new getstudentsv2($data),
+            manager::PUSH_SUBMISSION_LOG => new pushsubmissionlog($data, $submission),
+            manager::GET_MARKING_SCHEMES => new getmarkingschemes(),
+            default => null,
+        };
     }
 
     /**
