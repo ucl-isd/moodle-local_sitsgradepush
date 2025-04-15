@@ -31,6 +31,12 @@ abstract class extension implements iextension {
     /** @var array Supported module types */
     const SUPPORTED_MODULE_TYPES = ['assign', 'quiz'];
 
+    /** @var string AWS datasource */
+    const DATASOURCE_AWS = 'aws';
+
+    /** @var string API datasource */
+    const DATASOURCE_API = 'api';
+
     /** @var int User ID */
     protected int $userid;
 
@@ -39,6 +45,9 @@ abstract class extension implements iextension {
 
     /** @var bool Used to check if the extension data is set. */
     protected bool $dataisset = false;
+
+    /** @var string Datasource */
+    protected string $datasource;
 
     /**
      * Set properties from JSON message like SORA / EC update message from AWS.
@@ -195,7 +204,31 @@ abstract class extension implements iextension {
         global $DB;
 
         // Find and set the user ID of the student.
-        $user = $DB->get_record('user', ['idnumber' => $studentcode], 'id', MUST_EXIST);
-        $this->userid = $user->id;
+        $user = $DB->get_record('user', ['idnumber' => $studentcode], 'id');
+        $this->userid = $user ? $user->id : 0;
+    }
+
+    /**
+     * Pre-process extension checks.
+     *
+     * @param array $mappings
+     * @return bool true if the checks pass, false otherwise
+     * @throws \coding_exception if extension data is not set
+     */
+    protected function pre_process_extension_checks(array $mappings): bool {
+        // Exit if empty mappings.
+        if (empty($mappings)) {
+            return false;
+        }
+
+        if (!$this->userid) {
+            return false;
+        }
+
+        if (!$this->dataisset) {
+            throw new \coding_exception('error:extensiondataisnotset', 'local_sitsgradepush');
+        }
+
+        return true;
     }
 }

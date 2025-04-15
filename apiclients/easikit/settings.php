@@ -95,4 +95,24 @@ if ($ADMIN->fulltree) {
         get_string('settings:endpoint_mark_schemes:desc', 'sitsapiclient_easikit'),
         'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component/mark-scheme'
     ));
+
+    // Setting for AWS.
+    $settings->add(new admin_setting_heading('sitsapiclient_easikit_v2_settings',
+        get_string('settings:version2settings', 'sitsapiclient_easikit'),
+        ''
+    ));
+
+    // Target client ID.
+    $settings->add(new admin_setting_configtext('sitsapiclient_easikit/assessmenttargetclientidv2',
+        get_string('settings:assessmenttargetclientid', 'sitsapiclient_easikit'),
+        get_string('settings:assessmenttargetclientid:desc', 'sitsapiclient_easikit'),
+        'change-me-to-your-client-id'
+    ));
+
+    // Get student endpoint v2.
+    $settings->add(new admin_setting_configtext('sitsapiclient_easikit/endpoint_get_student_v2',
+        get_string('settings:endpoint_get_student_v2', 'sitsapiclient_easikit'),
+        get_string('settings:endpoint_get_student_v2:desc', 'sitsapiclient_easikit'),
+        'https://change-me-to-your-endpoint/url'
+    ));
 }

@@ -48,11 +48,16 @@ class ec extends extension {
      * Process the extension.
      *
      * @param array $mappings
-     * @throws \dml_exception
+     * @throws \dml_exception|\coding_exception
      */
     public function process_extension(array $mappings): void {
-        // Exit if empty mappings.
-        if (empty($mappings)) {
+        // Pre-process extension checks.
+        if ($this->pre_process_extension_checks($mappings)) {
+            return;
+        }
+
+        // Skip if the new deadline is empty.
+        if (empty($this->get_new_deadline())) {
             return;
         }
 
@@ -88,6 +93,10 @@ class ec extends extension {
 
         // Set new deadline.
         $this->newdeadline = $messagedata->new_deadline;
+
+        // Set data source.
+        $this->datasource = self::DATASOURCE_AWS;
+        $this->dataisset = true;
     }
 
     /**
@@ -97,6 +106,15 @@ class ec extends extension {
      * @return void
      */
     public function set_properties_from_get_students_api(array $student): void {
-        // Will implement this when the get students API includes EC data.
+        // Set the user ID of the student.
+        $this->set_userid($student['association']['supplementary']['student_code']);
+
+        // Set new deadline.
+        // $student['extenuating_circumstance'] is an array.
+        $this->newdeadline = $student['extenuating_circumstance']['new_due_date'] ?? '';
+
+        // Set data source.
+        $this->datasource = self::DATASOURCE_API;
+        $this->dataisset = true;
     }
 }

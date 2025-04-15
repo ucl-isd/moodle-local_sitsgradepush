@@ -59,12 +59,11 @@ class process_extensions_new_mapping extends adhoc_task {
                 throw new \moodle_exception('error:mab_or_mapping_not_found', 'local_sitsgradepush', '', $data->mapid);
             }
 
-            $students = manager::get_manager()->get_students_from_sits($mapping, true);
-
             // Process SORA extension.
-            extensionmanager::update_sora_for_mapping($mapping, $students);
+            extensionmanager::update_sora_for_mapping($mapping, manager::get_manager()->get_students_from_sits($mapping, true));
 
-            // Process EC extension (To be implemented).
+            // Process EC extension.
+            extensionmanager::update_ec_for_mapping($mapping, manager::get_manager()->get_students_from_sits($mapping, true, 2));
         } catch (\Exception $e) {
             $mapid = $data->mapid ? 'Map ID: ' . $data->mapid : '';
             logger::log($e->getMessage(), null, $mapid);
