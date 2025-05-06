@@ -33,12 +33,6 @@ class sora extends extension {
     /** @var string Prefix used to create SORA groups */
     const SORA_GROUP_PREFIX = 'SORA-Activity-';
 
-    /** @var string AWS datasource */
-    const DATASOURCE_AWS = 'aws';
-
-    /** @var string API datasource */
-    const DATASOURCE_API = 'api';
-
     /** @var string SORA message type - EXAM */
     const SORA_MESSAGE_TYPE_EXAM = 'EXAM';
 
@@ -50,9 +44,6 @@ class sora extends extension {
 
     /** @var int Time extension in seconds, including extra and rest duration */
     protected int $timeextension;
-
-    /** @var string Datasource */
-    protected string $datasource;
 
     /** @var string|null SORA message type */
     protected ?string $soramessagetype;
@@ -235,13 +226,9 @@ class sora extends extension {
      * @throws \dml_exception|\moodle_exception
      */
     public function process_extension(array $mappings): void {
-        // Empty mappings, exit early.
-        if (empty($mappings)) {
+        // Pre-process extension checks.
+        if (!$this->pre_process_extension_checks($mappings)) {
             return;
-        }
-
-        if (!$this->dataisset) {
-            throw new \coding_exception('error:extensiondataisnotset', 'local_sitsgradepush');
         }
 
         // Apply the extension to the assessments.

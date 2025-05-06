@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'sitsapiclient_easikit';
 $plugin->release = '0.1.0';
-$plugin->version = 2023051900;
+$plugin->version = 2025041002;
 $plugin->requires = 2021051708;
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->dependencies = [

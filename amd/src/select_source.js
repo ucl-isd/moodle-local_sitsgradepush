@@ -132,7 +132,7 @@ async function getModalBody(type, name, endDate, mapcode, mabseq, mabname, exten
         getString('selectsource:modal:name', 'local_sitsgradepush'),
         getString('selectsource:modal:enddate', 'local_sitsgradepush'),
         getString('selectsource:modal:extensions', 'local_sitsgradepush'),
-        getString('selectsource:modal:importsoraextension', 'local_sitsgradepush'),
+        getString('selectsource:modal:importextension', 'local_sitsgradepush'),
         getString('selectsource:modal:viewguide', 'local_sitsgradepush'),
         getString('selectsource:modal:tomoodleactivity', 'local_sitsgradepush')
     ]);

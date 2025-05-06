@@ -318,9 +318,7 @@ class renderer extends plugin_renderer_base {
             $formattedassessment->enddate =
                 !empty($assessment->get_end_date()) ? date('d/m/Y H:i:s', $assessment->get_end_date()) : '-';
             $formattedassessment->reassess = $reassess;
-            $formattedassessment->extensioneligible =
-            extensionmanager::is_source_extension_eligible($assessment) &&
-            extensionmanager::is_sits_assessment_extension_eligible($mab) ? 1 : 0;
+            $formattedassessment->extensioneligible = extensionmanager::is_source_extension_eligible($assessment);
             $validassessments[] = $formattedassessment;
         }
 
