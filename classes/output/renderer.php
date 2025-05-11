@@ -221,6 +221,7 @@ class renderer extends plugin_renderer_base {
                     $assessmentmapping->transferhistoryurl = $assessmentdata->source->get_assessment_transfer_history_url(false);
                     $assessmentmapping->removesourceurl =
                         $this->get_remove_source_url($courseid, $mapping->id, $reassess)->out(false);
+                    $assessmentmapping->errorgettingstudents = $assessmentdata->errorgettingstudents;
 
                     // Check if there is a task running for the assessment mapping.
                     $taskrunning = taskmanager::get_pending_task_in_queue($mapping->id);

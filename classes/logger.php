@@ -61,8 +61,12 @@ class logger {
      * @return bool|int
      * @throws \dml_exception
      */
-    public static function log_request_error(string $message, irequest $request, ?string $response = null) {
+    public static function log_request_error(string $message, irequest $request, ?string $response = null): bool|int {
         global $DB, $USER;
+
+        if (!get_config('local_sitsgradepush', 'request_error_logging') == '1' && !$request->log_error_by_default()) {
+            return false;
+        }
 
         // Create the insert object.
         $error = new \stdClass();

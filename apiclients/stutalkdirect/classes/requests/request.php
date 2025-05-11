@@ -179,6 +179,15 @@ abstract class request implements irequest {
     }
 
     /**
+     * Log errors by default.
+     *
+     * @return bool
+     */
+    public function log_error_by_default(): bool {
+        return false;
+    }
+
+    /**
      * Replace invalid characters in parameter value.
      *
      * @param string $data

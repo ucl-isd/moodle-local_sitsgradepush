@@ -268,6 +268,11 @@
                                     </div>
                                 {{/gradesneedregrading}}
                             {{/sourcenotfound}}
+                            {{#errorgettingstudents}}
+                                <div class="alert alert-danger" role="alert">
+                                    {{#str}} error:failtogetstudentsfromsits, local_sitsgradepush {{/str}}
+                                </div>
+                            {{/errorgettingstudents}}
                         {{/assessmentmapping}}
                     </td>
                 </tr>
