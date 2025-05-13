@@ -110,6 +110,7 @@ $string['error:empty_json_data'] = 'Empty JSON data';
 $string['error:emptyresponse'] = 'Empty response received when calling {$a}.';
 $string['error:extension_not_enabled_for_mapping'] = 'Extension is not enabled for this mapping. Mapping ID: {$a}';
 $string['error:extensiondataisnotset'] = 'Extension data is not set.';
+$string['error:failtogetstudentsfromsits'] = 'Failed to get students data from SITS.';
 $string['error:failtomapassessment'] = 'Failed to map assessment component to source.';
 $string['error:grade_items_not_found'] = 'Grade items not found.';
 $string['error:gradebook_disabled'] = 'Gradebook transfer feature is disabled.';
@@ -269,6 +270,7 @@ $string['settings:new_feature_notification_template_html'] = '
 <span>SoRA extensions from Portico can now be automatically applied to assignment and quiz activities in Moodle. <a href="#" target="_blank">View the guide on automating SoRA extensions in Moodle.</a></span></p>';
 $string['settings:reassessment_enabled'] = 'Enable Re-assessment Marks Transfer';
 $string['settings:reassessment_enabled:desc'] = 'Allow Re-assessment Marks Transfer';
+$string['settings:request_error_logging'] = 'Log request errors';
 $string['settings:subpluginheader'] = 'Subplugin Settings';
 $string['settings:support_page_url'] = 'Support Page URL';
 $string['settings:support_page_url:desc'] = 'Used in the notification email to provide a link to the support page';

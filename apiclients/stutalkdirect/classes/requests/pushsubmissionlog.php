@@ -92,6 +92,15 @@ class pushsubmissionlog extends request {
     }
 
     /**
+     * Log errors by default.
+     *
+     * @return bool
+     */
+    public function log_error_by_default(): bool {
+        return true;
+    }
+
+    /**
      * Replace invalid characters in parameter value.
      *
      * @param string $data

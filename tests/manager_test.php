@@ -239,6 +239,46 @@ final class manager_test extends base_test_class {
     }
 
     /**
+     * Test unmapped local component grades will be deleted if exception occurred when fetching component grades from SITS.
+     *
+     * @covers \local_sitsgradepush\manager::fetch_component_grades_from_sits
+     * @return void
+     * @throws \ReflectionException
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws moodle_exception
+     */
+    public function test_fetch_component_grades_from_sits_exception(): void {
+        global $DB;
+
+        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
+
+        // Set private property apiclient accessible.
+        $apiclientproperty = $this->reflectionmanager->getProperty('apiclient');
+        $apiclientproperty->setValue($this->manager, $this->get_apiclient_for_testing(true));
+
+        // Two component grades exist at the beginning.
+        $this->assertCount(2, $DB->get_records('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF']));
+
+        $modocc = new \stdClass();
+        $modocc->mod_code = 'LAWS0024';
+        $modocc->mod_occ_mav = 'A6U';
+        $modocc->mod_occ_psl_code = 'T1/2';
+        $modocc->mod_occ_year_code = '2023';
+        $this->manager->fetch_component_grades_from_sits([$modocc]);
+
+        // Verify component grade 001 is retained as it is mapped.
+        $mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001'], 'id');
+        $this->assertNotNull($mab1);
+
+        // Verify only one component grade left for module occurence 'LAWS0024A6UF'.
+        $this->assertCount(1, $DB->get_records('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF']));
+
+        // Verify component grade 002 is deleted as it is not mapped.
+        $this->assertEmpty($DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002'], 'id'));
+    }
+
+    /**
      * Test the fetch marking scheme from sits method.
      *
      * @covers \local_sitsgradepush\manager::fetch_marking_scheme_from_sits
@@ -428,7 +468,16 @@ final class manager_test extends base_test_class {
         global $DB;
         // Two component grades to save.
         $sitscomponentgrades = tests_data_provider::get_sits_component_grades_data();
-        $this->manager->save_component_grades($sitscomponentgrades);
+
+        // Get the module occurrence data from the MABs.
+        $firstmab = reset($sitscomponentgrades);
+        $occ = new \stdClass();
+        $occ->mod_code = $firstmab['MOD_CODE'];
+        $occ->mod_occ_mav = $firstmab['MAV_OCCUR'];
+        $occ->mod_occ_psl_code = $firstmab['PSL_CODE'];
+        $occ->mod_occ_year_code = $firstmab['AYR_CODE'];
+
+        $this->manager->save_component_grades($sitscomponentgrades, $occ);
         $mabs = $DB->get_records('local_sitsgradepush_mab');
 
         // Test that the component grades have been saved.
@@ -438,9 +487,16 @@ final class manager_test extends base_test_class {
         $sitscomponentgrades[0]['MAB_NAME'] = 'Test update';
 
         // Test that the component grades can be updated.
-        $this->manager->save_component_grades($sitscomponentgrades);
+        $this->manager->save_component_grades($sitscomponentgrades, $occ);
         $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
         $this->assertEquals('Test update', $mab->mabname);
+
+        // Simulate only component grade 001 returned from SITS, because 002 is not mapped so it can be deleted.
+        $this->manager->save_component_grades([$firstmab], $occ);
+
+        // Verify 002 is deleted.
+        $this->assertFalse($DB->record_exists('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']));
+
     }
 
     /**

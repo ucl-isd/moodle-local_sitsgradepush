@@ -186,9 +186,10 @@ class manager {
                     cachemanager::set_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key, $response, HOURSECS);
 
                     // Save component grades to DB.
-                    $this->save_component_grades($response);
+                    $this->save_component_grades($response, $occ);
                 } catch (\moodle_exception $e) {
-                    $this->apierrors[] = $e->getMessage();
+                    $this->delete_unmapped_local_mabs($occ);
+                    cachemanager::purge_cache(cachemanager::CACHE_AREA_COMPONENTGRADES, $key);
                 }
             }
         }
@@ -411,47 +412,63 @@ class manager {
      * Save component grades from SITS to database.
      *
      * @param array $componentgrades
+     * @param \stdClass $occ
      * @return void
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function save_component_grades(array $componentgrades): void {
+    public function save_component_grades(array $componentgrades, \stdClass $occ): void {
         global $DB;
 
-        if (!empty($componentgrades)) {
-            $recordsinsert = [];
-            foreach ($componentgrades as $componentgrade) {
-                if ($record = $DB->get_record(self::TABLE_COMPONENT_GRADE, [
-                    'modcode' => $componentgrade['MOD_CODE'],
-                    'modocc' => $componentgrade['MAV_OCCUR'],
-                    'academicyear' => $componentgrade['AYR_CODE'],
-                    'periodslotcode' => $componentgrade['PSL_CODE'],
-                    'mapcode' => $componentgrade['MAP_CODE'],
-                    'mabseq' => $componentgrade['MAB_SEQ'],
-                ])) {
-                    // Update record if this component grade already exists.
-                    $record->astcode = $componentgrade['AST_CODE'];
-                    $record->mabperc = $componentgrade['MAB_PERC'];
-                    $record->mabname = $componentgrade['MAB_NAME'];
-                    $record->examroomcode = $componentgrade['APA_ROMC'];
-                    $record->mkscode = $componentgrade['MKS_CODE'];
-                    $record->timemodified = time();
+        if (empty($componentgrades)) {
+            return;
+        }
 
-                    $DB->update_record(self::TABLE_COMPONENT_GRADE, $record);
-                } else {
-                    // Insert record if it's a new component grade.
-                    $record = [];
-                    foreach (self::MAPPING_COMPONENT_GRADE as $key => $value) {
-                        $record[$key] = $componentgrade[$value];
-                    }
-                    $record['timecreated'] = time();
-                    $record['timemodified'] = time();
-                    $recordsinsert[] = $record;
+        // Handle deletion of unmapped MABs not in component grades.
+        $unmappedmabs = $this->get_unmapped_local_mabs($occ);
+        if (!empty($unmappedmabs)) {
+            $mabseqstokeep = array_column($componentgrades, 'MAB_SEQ');
+            $mabstodelete = array_filter($unmappedmabs, function($mab) use ($mabseqstokeep) {
+                return !in_array($mab->mabseq, $mabseqstokeep);
+            });
+
+            if (!empty($mabstodelete)) {
+                $DB->delete_records_list(self::TABLE_COMPONENT_GRADE, 'id', array_column($mabstodelete, 'id'));
+            }
+        }
+
+        $recordsinsert = [];
+        foreach ($componentgrades as $componentgrade) {
+            if ($record = $DB->get_record(self::TABLE_COMPONENT_GRADE, [
+                'modcode' => $componentgrade['MOD_CODE'],
+                'modocc' => $componentgrade['MAV_OCCUR'],
+                'academicyear' => $componentgrade['AYR_CODE'],
+                'periodslotcode' => $componentgrade['PSL_CODE'],
+                'mapcode' => $componentgrade['MAP_CODE'],
+                'mabseq' => $componentgrade['MAB_SEQ'],
+            ])) {
+                // Update record if this component grade already exists.
+                $record->astcode = $componentgrade['AST_CODE'];
+                $record->mabperc = $componentgrade['MAB_PERC'];
+                $record->mabname = $componentgrade['MAB_NAME'];
+                $record->examroomcode = $componentgrade['APA_ROMC'];
+                $record->mkscode = $componentgrade['MKS_CODE'];
+                $record->timemodified = time();
+
+                $DB->update_record(self::TABLE_COMPONENT_GRADE, $record);
+            } else {
+                // Insert record if it's a new component grade.
+                $record = [];
+                foreach (self::MAPPING_COMPONENT_GRADE as $key => $value) {
+                    $record[$key] = $componentgrade[$value];
                 }
+                $record['timecreated'] = time();
+                $record['timemodified'] = time();
+                $recordsinsert[] = $record;
             }
-            if (!empty($recordsinsert)) {
-                $DB->insert_records(self::TABLE_COMPONENT_GRADE, $recordsinsert);
-            }
+        }
+        if (!empty($recordsinsert)) {
+            $DB->insert_records(self::TABLE_COMPONENT_GRADE, $recordsinsert);
         }
     }
 
@@ -983,13 +1000,20 @@ class manager {
         // Fetch students from SITS.
         foreach ($mappings as $mapping) {
             $mabkey = $mapping->mapcode . '-' . $mapping->mabseq;
-            $studentsfromsits[$mabkey] = array_column($this->get_students_from_sits($mapping), null, 'code');
 
             // Add additional properties to the $mapping object.
             $mapping->markscount = 0;
             $mapping->nonsubmittedcount = 0;
             $mapping->source = $assessment;
             $mapping->students = [];
+            $mapping->errorgettingstudents = 0;
+
+            try {
+                $studentsfromsits[$mabkey] = array_column($this->get_students_from_sits($mapping), null, 'code');
+            } catch (\moodle_exception $e) {
+                $studentsfromsits[$mabkey] = [];
+                $mapping->errorgettingstudents = 1;
+            }
 
             // Students here is all the participants in that assessment.
             foreach ($students as $key => $student) {
@@ -1670,6 +1694,50 @@ class manager {
 
         // Add failed transfer log.
         $this->save_transfer_log($requestidentifier, $assessmentmappingid, $userid, null, $response, $taskid, intval($errorlogid));
+    }
+
+    /**
+     * Get unmapped local component grades (MABs).
+     *
+     * @param \stdClass $occ
+     * @return array
+     */
+    public function get_unmapped_local_mabs(\stdClass $occ): array {
+        global $DB;
+        $sql = "SELECT mab.*
+                FROM {" . self::TABLE_COMPONENT_GRADE . "} mab
+                LEFT JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} amap ON amap.componentgradeid = mab.id
+                WHERE mab.modcode = :modcode AND mab.modocc = :modocc AND
+                mab.academicyear = :academicyear AND mab.periodslotcode = :periodslotcode AND
+                amap.componentgradeid IS NULL";
+
+        return $DB->get_records_sql(
+            $sql,
+            [
+                'modcode' => $occ->mod_code,
+                'modocc' => $occ->mod_occ_mav,
+                'academicyear' => $occ->mod_occ_year_code,
+                'periodslotcode' => $occ->mod_occ_psl_code,
+            ]
+        );
+    }
+
+    /**
+     * Delete unmapped local component grades (MABs).
+     *
+     * @param \stdClass $occ
+     * @return void
+     */
+    private function delete_unmapped_local_mabs(\stdClass $occ): void {
+        global $DB;
+        // Get unmapped local MABs.
+        $mabs = $this->get_unmapped_local_mabs($occ);
+
+        if (empty($mabs)) {
+            return;
+        }
+
+        $DB->delete_records_list(self::TABLE_COMPONENT_GRADE, 'id', array_column($mabs, 'id'));
     }
 
     /**
