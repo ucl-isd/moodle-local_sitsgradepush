@@ -199,6 +199,14 @@ if ($hassiteconfig) {
             get_string('settings:new_feature_notification_template_html', 'local_sitsgradepush'),
             PARAM_RAW, 100, 8));
 
+        // Setting to enable/disable request error logging.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/request_error_logging',
+            get_string('settings:request_error_logging', 'local_sitsgradepush'),
+            '',
+            '0'
+        ));
+
         // Setting for AWS.
         $settings->add(new admin_setting_heading('local_sitsgradepush_aws_settings',
             get_string('settings:awssettings', 'local_sitsgradepush'),

@@ -110,6 +110,15 @@ class pushgrade extends request {
     }
 
     /**
+     * Log errors by default.
+     *
+     * @return bool
+     */
+    public function log_error_by_default(): bool {
+        return true;
+    }
+
+    /**
      * Set request body in JSON format.
      *
      * @param \stdClass $data

@@ -81,4 +81,12 @@ interface irequest {
      * @return string
      */
     public function get_source(): string;
+
+    /**
+     * Log errors by default.
+     *
+     * @package local_sitsgradepush
+     * @return bool
+     */
+    public function log_error_by_default(): bool;
 }
