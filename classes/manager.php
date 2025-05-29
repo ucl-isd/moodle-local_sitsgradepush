@@ -1574,6 +1574,8 @@ class manager {
 
         // Delete any SORA overrides for the deleted mapping.
         extensionmanager::delete_sora_overrides($mapping);
+
+        // TODO: Revert any changes made by ECs extension.
     }
 
     /**

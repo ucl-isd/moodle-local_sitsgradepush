@@ -60,7 +60,7 @@ class process_extensions_new_mapping extends adhoc_task {
             }
 
             // Process SORA extension.
-            extensionmanager::update_sora_for_mapping($mapping, manager::get_manager()->get_students_from_sits($mapping, true));
+            extensionmanager::update_sora_for_mapping($mapping, manager::get_manager()->get_students_from_sits($mapping, true, 2));
 
             // Process EC extension.
             extensionmanager::update_ec_for_mapping($mapping, manager::get_manager()->get_students_from_sits($mapping, true, 2));

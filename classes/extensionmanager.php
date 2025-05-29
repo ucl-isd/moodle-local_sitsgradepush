@@ -61,7 +61,7 @@ class extensionmanager {
                 $sora->set_properties_from_get_students_api($student);
                 $sora->process_extension([$mapping]);
             } catch (\Exception $e) {
-                $studentcode = $student["code"] ?? '';
+                $studentcode = $student['association']['supplementary']['student_code'] ?? '';
                 logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, Student Idnumber: $studentcode");
             }
         }

@@ -18,6 +18,7 @@ namespace local_sitsgradepush\task;
 
 use core\task\adhoc_task;
 use core\task\manager as coretaskmanager;
+use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
@@ -78,7 +79,7 @@ class process_extensions_new_enrolment extends adhoc_task {
         foreach ($mappings as $mapping) {
             $studentsbycode = [];
             // Get fresh students data from SITS for the mapping.
-            $students = $manager->get_students_from_sits($mapping, true);
+            $students = $manager->get_students_from_sits($mapping, true, 2);
 
             // Create a map of students by student code.
             foreach ($students as $student) {
@@ -97,6 +98,11 @@ class process_extensions_new_enrolment extends adhoc_task {
                         $sora = new sora();
                         $sora->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
                         $sora->process_extension([$mapping]);
+
+                        // Process EC extension.
+                        $ec = new ec();
+                        $ec->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
+                        $ec->process_extension([$mapping]);
 
                         // Delete the student from the list to avoid duplicate processing.
                         unset($studentsbycode[$studentidnumber]);
