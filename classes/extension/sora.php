@@ -182,6 +182,9 @@ class sora extends extension {
         if (!empty($studentcode)) {
             $this->studentcode = $studentcode;
             $this->set_userid($studentcode);
+            $this->extraduration = (int) $messagedata->entity->person_sora->extra_duration ?? 0;
+            $this->restduration = (int) $messagedata->entity->person_sora->rest_duration ?? 0;
+            $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
         } else {
             throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
         }
@@ -196,20 +199,15 @@ class sora extends extension {
      * @return void
      */
     public function set_properties_from_get_students_api(array $student): void {
-        // Set student code.
-        $this->studentcode = $student['code'];
-
-        // Set the user ID.
-        if (!isset($this->userid)) {
-            $this->set_userid($student['code']);
-        }
+        // Set the user ID of the student.
+        parent::set_properties_from_get_students_api($student);
 
         // Set datasource.
         $this->datasource = self::DATASOURCE_API;
 
         // Set properties.
-        $this->extraduration = (int) $student['assessment']['sora_assessment_duration'];
-        $this->restduration = (int) $student['assessment']['sora_rest_duration'];
+        $this->extraduration = (int) $student['student_assessment']['sora']['extra_duration'] ?? 0;
+        $this->restduration = (int) $student['student_assessment']['sora']['rest_duration'] ?? 0;
 
         // Calculate and set the time extension in seconds.
         $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
@@ -237,11 +235,6 @@ class sora extends extension {
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
                 if (!$assessment->is_user_a_participant($this->get_userid())) {
                     continue;
-                }
-
-                // Update the SORA information from the API if the datasource is AWS.
-                if ($this->get_data_source() === self::DATASOURCE_AWS) {
-                    $this->update_sora_info_from_api($mapping);
                 }
 
                 // Apply the extension to the assessment.
@@ -281,6 +274,23 @@ class sora extends extension {
     }
 
     /**
+     * Pre-process extension checks.
+     *
+     * @param array $mappings
+     * @return bool
+     */
+    protected function pre_process_extension_checks(array $mappings): bool {
+        // API is only use to set the initial SoRA extension via new mapping or new student enrollment.
+        // If the SoRA extension is not set, do not process the extension.
+        if ($this->get_data_source() === self::DATASOURCE_API && $this->get_time_extension() === 0) {
+            return false;
+        }
+
+        // Common pre-process extension checks.
+        return parent::pre_process_extension_checks($mappings);
+    }
+
+    /**
      * Calculate the time extension in seconds.
      *
      * @param int $extraduration Extra duration in minutes.
@@ -289,22 +299,5 @@ class sora extends extension {
      */
     private function calculate_time_extension(int $extraduration, int $restduration): int {
         return ($extraduration + $restduration) * MINSECS;
-    }
-
-    /**
-     * Update SORA information from the assessment API.
-     * Used when there is a SORA update message from AWS.
-     *
-     * @param \stdClass $mapping SITS assessment mapping
-     */
-    private function update_sora_info_from_api(\stdClass $mapping): void {
-        // Call the assessment API to get the SORA data.
-        $students = manager::get_manager()->get_students_from_sits($mapping, true);
-        foreach ($students as $student) {
-            if ($student['code'] == $this->studentcode) {
-                $this->set_properties_from_get_students_api($student);
-                break;
-            }
-        }
     }
 }

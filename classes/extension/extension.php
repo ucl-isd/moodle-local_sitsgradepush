@@ -42,8 +42,8 @@ abstract class extension implements iextension {
     /** @var int User ID */
     protected int $userid;
 
-    /** @var int Student code / ID number */
-    protected int $studentcode;
+    /** @var string Student code / ID number */
+    protected string $studentcode;
 
     /** @var bool Used to check if the extension data is set. */
     protected bool $dataisset = false;
@@ -61,14 +61,6 @@ abstract class extension implements iextension {
      * @return void
      */
     abstract public function set_properties_from_aws_message(string $messagebody): void;
-
-    /**
-     * Set properties from get students API.
-     *
-     * @param array $student
-     * @return void
-     */
-    abstract public function set_properties_from_get_students_api(array $student): void;
 
     /**
      * Constructor.
@@ -188,6 +180,22 @@ abstract class extension implements iextension {
     }
 
     /**
+     * Set properties from get students API.
+     *
+     * @param array $student
+     * @return void
+     */
+    public function set_properties_from_get_students_api(array $student): void {
+        // Set the student code.
+        $this->studentcode = $student['association']['supplementary']['student_code'] ?? '';
+
+        // Set the user ID.
+        if (!isset($this->userid)) {
+            $this->set_userid($this->studentcode);
+        }
+    }
+
+    /**
      * Parse the message JSON.
      *
      * @param string $message
@@ -214,6 +222,11 @@ abstract class extension implements iextension {
      */
     protected function set_userid(string $studentcode): void {
         global $DB;
+
+        if (empty($studentcode)) {
+            $this->userid = 0;
+            return;
+        }
 
         // Find and set the user ID of the student.
         $user = $DB->get_record('user', ['idnumber' => $studentcode], 'id');

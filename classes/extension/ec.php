@@ -107,7 +107,7 @@ class ec extends extension {
      */
     public function set_properties_from_get_students_api(array $student): void {
         // Set the user ID of the student.
-        $this->set_userid($student['association']['supplementary']['student_code']);
+        parent::set_properties_from_get_students_api($student);
 
         // Set new deadline.
         // $student['extenuating_circumstance'] is an array.

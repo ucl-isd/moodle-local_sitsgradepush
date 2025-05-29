@@ -81,7 +81,7 @@ final class sora_test extends extension_common {
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Verify overrides were created correctly.
-        $this->assert_overrides_exist($sora, 25);
+        $this->assert_overrides_exist($sora, 35);
     }
 
     /**
@@ -195,7 +195,7 @@ final class sora_test extends extension_common {
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Verify override was created for the assignment.
-        $this->assert_assignment_override_exists($sora, $assign, 25);
+        $this->assert_assignment_override_exists($sora, $assign, 35);
     }
 
     /**
