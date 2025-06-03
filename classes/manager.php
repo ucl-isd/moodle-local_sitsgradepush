@@ -481,7 +481,7 @@ class manager {
      * @throws \moodle_exception
      */
     public function save_assessment_mapping(\stdClass $data): int|bool {
-        global $DB;
+        global $DB, $USER;
 
         // Validate component grade.
         $assessment = $this->validate_component_grade(
@@ -512,6 +512,7 @@ class manager {
         $record->componentgradeid = $data->componentgradeid;
         $record->reassessment = $data->reassessment;
         $record->enableextension = !empty($data->extensionsselection) ? 1 : 0;
+        $record->userid = $USER->id;
         $record->timecreated = time();
         $record->timemodified = time();
 

@@ -607,5 +607,28 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025021003, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2025060300) {
+
+        // Define field userid to be added to local_sitsgradepush_mapping.
+        $table = new xmldb_table('local_sitsgradepush_mapping');
+        $field = new xmldb_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'enableextension');
+
+        // Conditionally launch add field userid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index idx_userid (not unique) to be added to local_sitsgradepush_mapping.
+        $index = new xmldb_index('idx_userid', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+
+        // Conditionally launch add index idx_userid.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2025060300, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
