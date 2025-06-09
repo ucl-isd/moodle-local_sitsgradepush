@@ -194,7 +194,7 @@ class renderer extends plugin_renderer_base {
                         ]
                     );
                     $componentgrade->selectsourceurl = $selectsourceurl->out(false);
-                    $componentgrade->extensioneligiblemessage =
+                    $componentgrade->extensioneligiblemessage = $reassess == 1 ? '' :
                         $this->get_extensions_eligible_message($componentgrade);
 
                     // No need to render mapping information if the component grade is not mapped
@@ -234,7 +234,7 @@ class renderer extends plugin_renderer_base {
                         !empty($taskrunning) || $this->manager->has_grades_pushed($mapping->id);
 
                     $removeextensionwarning = get_string('dashboard:remove_btn_content_extension', 'local_sitsgradepush');
-                    $extensioneligiblemessage =
+                    $extensioneligiblemessage = $reassess == 1 ? '' :
                         $this->get_extensions_eligible_message($componentgrade, $assessmentdata->source, $mapping);
                     $assessmentmapping->removeextensionwarning = !empty($extensioneligiblemessage) ||
                     $assessmentdata->source->has_sora_override_groups() ? $removeextensionwarning : '';
@@ -319,7 +319,8 @@ class renderer extends plugin_renderer_base {
             $formattedassessment->enddate =
                 !empty($assessment->get_end_date()) ? date('d/m/Y H:i:s', $assessment->get_end_date()) : '-';
             $formattedassessment->reassess = $reassess;
-            $formattedassessment->extensioneligible = extensionmanager::is_source_extension_eligible($assessment);
+            $formattedassessment->extensioneligible = $reassess != 1 &&
+                extensionmanager::is_source_extension_eligible($assessment, false);
             $validassessments[] = $formattedassessment;
         }
 

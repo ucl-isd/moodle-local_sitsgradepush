@@ -224,7 +224,7 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_key',
             get_string('settings:awskey', 'local_sitsgradepush'),
             get_string('settings:awskey:desc', 'local_sitsgradepush'),
-            'AKIAX3UE2A7B2VLXHL2O'
+            'CHANGEME'
         ));
 
         // AWS secret.
@@ -238,7 +238,14 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_sora_sqs_queue_url',
             get_string('settings:awssoraqueueurl', 'local_sitsgradepush'),
             get_string('settings:awssoraqueueurl:desc', 'local_sitsgradepush'),
-            'https://sqs.eu-west-2.amazonaws.com/540370667459/person-sora-dev'
+            'CHANGEME'
+        ));
+
+        // AWS EC queue URL.
+        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_ec_sqs_queue_url',
+            get_string('settings:awsecqueueurl', 'local_sitsgradepush'),
+            get_string('settings:awsecqueueurl:desc', 'local_sitsgradepush'),
+            'CHANGEME'
         ));
 
         // AWS delay process time.

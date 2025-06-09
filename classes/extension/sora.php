@@ -48,9 +48,6 @@ class sora extends extension {
     /** @var string|null SORA message type */
     protected ?string $soramessagetype;
 
-    /** @var array|null SORA changes */
-    protected ?array $sorachanges;
-
     /**
      * Return the whole time extension in seconds, including extra and rest duration.
      *
@@ -175,7 +172,7 @@ class sora extends extension {
         $this->soramessagetype = $messagedata->entity->person_sora->type->code ?? null;
 
         // Set SORA changes.
-        $this->sorachanges = $messagedata->changes ?? null;
+        $this->extensionchanges = $messagedata->changes ?? null;
 
         // Check the message is valid and set student code.
         $studentcode = $messagedata->entity->person_sora->person->student_code ?? null;
@@ -246,31 +243,12 @@ class sora extends extension {
     }
 
     /**
-     * Get the data source.
-     * To distinguish where the SORA data come from AWS or API.
-     *
-     * @return string
-     */
-    public function get_data_source(): string {
-        return $this->datasource;
-    }
-
-    /**
      * Get the SORA message type.
      *
      * @return string|null
      */
     public function get_sora_message_type(): ?string {
         return $this->soramessagetype;
-    }
-
-    /**
-     * Get the SORA changes.
-     *
-     * @return array|null
-     */
-    public function get_sora_changes(): ?array {
-        return $this->sorachanges;
     }
 
     /**

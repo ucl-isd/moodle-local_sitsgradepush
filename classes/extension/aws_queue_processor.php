@@ -250,7 +250,7 @@ abstract class aws_queue_processor {
      * Save message processing details to database
      *
      * @param array $message SQS message data
-     * @param string $type Queue type
+     * @param string $queuename Queue name
      * @param string $status Processing status
      * @param string|null $error Error message if any
      * @return bool|int Returns record ID on success, false on failure
@@ -258,7 +258,7 @@ abstract class aws_queue_processor {
      */
     protected function save_message_record(
         array $message,
-        string $type,
+        string $queuename,
         string $status = self::STATUS_PROCESSED,
         ?string $error = null
     ): bool|int {
@@ -274,7 +274,7 @@ abstract class aws_queue_processor {
                 'status' => $status,
                 'error_message' => $error,
                 'timemodified' => time(),
-                'type' => $type,
+                'queuename' => $queuename,
                 'payload' => $message['Body'],
                 'attempts' => $record ? $record->attempts + 1 : 1,
             ];

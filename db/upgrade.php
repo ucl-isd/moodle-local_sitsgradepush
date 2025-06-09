@@ -25,6 +25,7 @@
  */
 
 use local_sitsgradepush\assesstype;
+use local_sitsgradepush\extension\sora_queue_processor;
 
 /**
  * Execute local_sitsgradepush upgrade from the given old version.
@@ -628,6 +629,34 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
 
         // Sitsgradepush savepoint reached.
         upgrade_plugin_savepoint(true, 2025060300, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2025060500) {
+
+        // Define field queuename to be added to local_sitsgradepush_aws_log.
+        $table = new xmldb_table('local_sitsgradepush_aws_log');
+        $field = new xmldb_field('queuename', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'id');
+
+        // Conditionally launch add field queuename.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index idx_queuename (not unique) to be added to local_sitsgradepush_aws_log.
+        $index = new xmldb_index('idx_queuename', XMLDB_INDEX_NOTUNIQUE, ['queuename']);
+
+        // Conditionally launch add index idx_queuename.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Patch AWS log.
+        $DB->execute("
+            UPDATE {local_sitsgradepush_aws_log} l
+            SET l.queuename = '" . sora_queue_processor::QUEUE_NAME . "'");
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2025060500, 'local', 'sitsgradepush');
     }
 
     return true;

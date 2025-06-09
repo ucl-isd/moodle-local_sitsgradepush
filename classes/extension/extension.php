@@ -54,6 +54,12 @@ abstract class extension implements iextension {
     /** @var clock Clock instance. */
     protected readonly clock $clock;
 
+    /** @var array|null extension changes */
+    protected ?array $extensionchanges = null;
+
+    /** @var \stdClass|null event data */
+    protected ?\stdClass $eventdata;
+
     /**
      * Set properties from JSON message like SORA / EC update message from AWS.
      *
@@ -85,6 +91,15 @@ abstract class extension implements iextension {
      */
     public function get_mab_identifier(): string {
         return $this->mabidentifier;
+    }
+
+    /**
+     * Get the student code.
+     *
+     * @return string
+     */
+    public function get_student_code(): string {
+        return $this->studentcode;
     }
 
     /**
@@ -193,6 +208,34 @@ abstract class extension implements iextension {
         if (!isset($this->userid)) {
             $this->set_userid($this->studentcode);
         }
+    }
+
+    /**
+     * Get the extension changes.
+     *
+     * @return array|null
+     */
+    public function get_extension_changes(): ?array {
+        return $this->extensionchanges;
+    }
+
+    /**
+     * Get the data source.
+     * To distinguish where the extension data come from, such as AWS or API.
+     *
+     * @return string
+     */
+    public function get_data_source(): string {
+        return $this->datasource;
+    }
+
+    /**
+     * Get the event data.
+     *
+     * @return \stdClass|null
+     */
+    public function get_event_data(): ?\stdClass {
+        return $this->eventdata;
     }
 
     /**

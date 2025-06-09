@@ -633,12 +633,18 @@ class manager {
      * @param \stdClass $componentgrade
      * @param bool $refresh Refresh data from SITS.
      * @param int $apiversion API version.
+     * @param string $studentcode Filter by student code.
      * @return \cache_application|\cache_session|\cache_store|mixed
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_students_from_sits(\stdClass $componentgrade, bool $refresh = false, int $apiversion = 1): mixed {
+    public function get_students_from_sits(
+        \stdClass $componentgrade,
+        bool $refresh = false,
+        int $apiversion = 1,
+        string $studentcode = ''
+    ): mixed {
         $requestname = $apiversion === 2 ? self::GET_STUDENTS_V2 : self::GET_STUDENTS;
 
         // Stutalk Direct is not supported currently.
@@ -672,6 +678,7 @@ class manager {
         $data = new \stdClass();
         $data->mapcode = $componentgrade->mapcode;
         $data->mabseq = $componentgrade->mabseq;
+        $data->studentcode = $studentcode;
 
         // Build and send request.
         $request = $this->apiclient->build_request($requestname, $data);

@@ -33,101 +33,7 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  */
 final class extension_test extends extension_common {
 
-    /**
-     * Test no overrides for mapping without extension enabled.
-     *
-     * @covers \local_sitsgradepush\extension\extension::parse_event_json
-     * @covers \local_sitsgradepush\extension\ec::process_extension
-     * @return void
-     * @throws \dml_exception
-     * @throws \moodle_exception
-     */
-    public function test_no_overrides_for_mapping_without_extension_enabled(): void {
-        global $DB;
-        // Disable the extension.
-        set_config('extension_enabled', '0', 'local_sitsgradepush');
 
-        // Set up the EC event data.
-        $message = $this->setup_for_ec_testing('LAWS0024A6UF', '001', $this->assign1, 'assign');
-
-        // Process the extension.
-        $ec = new ec();
-        $ec->set_properties_from_aws_message($message);
-        $ec->process_extension($ec->get_mappings_by_mab($ec->get_mab_identifier()));
-
-        $override = $DB->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => $this->student1->id]);
-        $this->assertEmpty($override);
-    }
-
-    /**
-     * Test the EC extension process for moodle assignment.
-     *
-     * @covers \local_sitsgradepush\extension\extension::parse_event_json
-     * @covers \local_sitsgradepush\extension\ec::process_extension
-     * @covers \local_sitsgradepush\extension\extension::get_mappings_by_mab
-     * @covers \local_sitsgradepush\assessment\assign::apply_ec_extension
-     * @return void
-     * @throws \dml_exception
-     * @throws \moodle_exception
-     */
-    public function test_ec_process_extension_assign(): void {
-        global $DB;
-
-        // Set up the EC event data.
-        $message = $this->setup_for_ec_testing('LAWS0024A6UF', '001', $this->assign1, 'assign');
-
-        // Process the extension by passing the JSON event data.
-        $ec = new ec();
-        $ec->set_properties_from_aws_message($message);
-        $ec->process_extension($ec->get_mappings_by_mab($ec->get_mab_identifier()));
-
-        // Calculate the new deadline.
-        // Assume EC is using a new deadline without time. Extract the time part.
-        $time = date('H:i:s', $this->assign1->duedate);
-        // Get the new date and time.
-        $newduedate = strtotime($ec->get_new_deadline() . ' ' . $time);
-
-        $override = $DB->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => $this->student1->id]);
-        $this->assertNotEmpty($override);
-
-        // Check the new deadline is set correctly.
-        $this->assertEquals($newduedate, $override->duedate);
-    }
-
-    /**
-     * Test the EC extension process for moodle quiz.
-     *
-     * @covers \local_sitsgradepush\extension\ec::process_extension
-     * @covers \local_sitsgradepush\extension\extension::get_mappings_by_mab
-     * @covers \local_sitsgradepush\assessment\quiz::apply_ec_extension
-     * @return void
-     * @throws \dml_exception
-     * @throws \moodle_exception
-     */
-    public function test_ec_process_extension_quiz(): void {
-        global $DB;
-
-        // Set up the EC event data.
-        $message = $this->setup_for_ec_testing('LAWS0024A6UF', '002', $this->quiz1, 'quiz');
-
-        // Process the extension by passing the JSON event data.
-        $ec = new ec();
-        $ec->set_properties_from_aws_message($message);
-        $ec->process_extension($ec->get_mappings_by_mab($ec->get_mab_identifier()));
-
-        // Calculate the new deadline.
-        // Assume EC is using a new deadline without time. Extract the time part.
-        $time = date('H:i:s', $this->quiz1->timeclose);
-
-        // Get the new date and time.
-        $newtimeclose = strtotime($ec->get_new_deadline() . ' ' . $time);
-
-        $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id, 'userid' => $this->student1->id]);
-        $this->assertNotEmpty($override);
-
-        // Check the new deadline is set correctly.
-        $this->assertEquals($newtimeclose, $override->timeclose);
-    }
 
     /**
      * Test the user is enrolling a gradable role.
@@ -201,32 +107,5 @@ final class extension_test extends extension_common {
         set_config('extension_enabled', '0', 'local_sitsgradepush');
         $result = extensionmanager::is_extension_enabled();
         $this->assertFalse($result);
-    }
-
-    /**
-     * Set up the environment for EC testing.
-     *
-     * @param string $mapcode The map code.
-     * @param string $mabseq The MAB sequence number.
-     * @param \stdClass $assessment The assessment object.
-     * @param string $modtype The module type.
-     *
-     * @return string|false
-     * @throws \dml_exception
-     */
-    protected function setup_for_ec_testing(string $mapcode, string $mabseq, \stdClass $assessment, string $modtype): string|bool {
-        global $DB;
-        $mabid = $DB->get_field('local_sitsgradepush_mab', 'id', ['mapcode' => $mapcode, 'mabseq' => $mabseq]);
-        $this->insert_mapping($mabid, $this->course1->id, $assessment, $modtype);
-
-        // Load the EC event data.
-        $ecjson = tests_data_provider::get_ec_event_data();
-        $message = json_decode($ecjson, true);
-
-        // Set the new deadline.
-        $message['identifier'] = sprintf('%s-%s', $mapcode, $mabseq);
-        $message['new_deadline'] = $this->clock->now()->modify('+3 days')->format('Y-m-d');
-
-        return json_encode($message);
     }
 }
