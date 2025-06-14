@@ -21,6 +21,7 @@ use core\di;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\sora;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 
 /**
@@ -50,6 +51,9 @@ abstract class assessment implements iassessment {
 
     /** @var clock Clock instance. */
     protected readonly clock $clock;
+
+    /** @var int SITS mapping id */
+    protected int $sitsmappingid = 0;
 
     /**
      * Constructor.
@@ -311,6 +315,99 @@ abstract class assessment implements iassessment {
     }
 
     /**
+     * Save EC override.
+     *
+     * @param int $mapid
+     * @param int $userid
+     * @param int|null $groupid
+     * @param \stdClass $override
+     * @param mixed $preexistsoverride
+     * @return void
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function save_override(int $mapid, int $userid, ?int $groupid, \stdClass $override, mixed $preexistsoverride): void {
+        global $DB, $USER;
+        if (!$this->is_extension_supported()) {
+            throw new \moodle_exception('error:extension_not_supported', 'local_sitsgradepush');
+        }
+
+        // Common data for both insert and update operations.
+        $data = [
+            'overrideid' => $override->id,
+            'override_data' => json_encode($override),
+            'created_by' => $USER->id,
+        ];
+
+        // Check if an override record already exists MT's overrides table.
+        $overridesaved = $DB->get_record(extensionmanager::TABLE_OVERRIDES, [
+            'mapid' => $mapid,
+            'cmid' => $this->get_id(),
+            'userid' => $userid,
+            'groupid' => $groupid,
+        ]);
+
+        if ($overridesaved) {
+            // Update existing record.
+            $data['timemodified'] = $this->clock->time();
+            $DB->update_record(extensionmanager::TABLE_OVERRIDES, (object)array_merge((array)$overridesaved, $data));
+        } else {
+            // Prepare data for new record.
+            $data = array_merge($data, [
+                'mapid' => $mapid,
+                'cmid' => $this->get_id(),
+                'moduletype' => $this->get_module_name(),
+                'moduleinstanceid' => $this->get_source_instance()->id,
+                'userid' => $userid,
+                'groupid' => $groupid,
+                'extensiontype' => ($groupid) ? extensionmanager::EXTENSION_SORA : extensionmanager::EXTENSION_EC,
+                'timecreated' => $this->clock->time(),
+            ]);
+
+            // Add original override data if we have pre-existing override data.
+            if (!empty($preexistsoverride)) {
+                $data['ori_override_data'] = json_encode($preexistsoverride);
+            }
+            $DB->insert_record(extensionmanager::TABLE_OVERRIDES, (object)$data);
+        }
+    }
+
+    /**
+     * Delete EC override.
+     *
+     * @param \stdClass $mtsavedoverride - Override record saved in marks transfer overrides table.
+     * @return void
+     */
+    public function delete_ec_override(\stdClass $mtsavedoverride): void {
+        // Default not supported. Override in child class if needed.
+    }
+
+    /**
+     * Set the SITS mapping id.
+     *
+     * @param int $mappingid
+     * @return void
+     */
+    public function set_sits_mapping_id(int $mappingid): void {
+        $this->sitsmappingid = $mappingid;
+    }
+
+    /**
+     * Mark the saved override record in local_sitsgradepush_override table as restored.
+     *
+     * @return void
+     */
+    protected function mark_override_restored(int $overrideid): void {
+        global $DB, $USER;
+        $DB->update_record(extensionmanager::TABLE_OVERRIDES,
+            [
+                'id' => $overrideid,
+                'restored_by' => $USER->id,
+                'timerestored' => $this->clock->time()
+            ]);
+    }
+
+    /**
      * Check if there is an extension record added by the exam guard plugin.
      *
      * @return bool
@@ -382,6 +479,17 @@ abstract class assessment implements iassessment {
     protected function apply_sora_extension(sora $sora): void {
         // Default not supported. Override in child class if needed.
         throw new \moodle_exception('error:soraextensionnotsupported', 'local_sitsgradepush');
+    }
+
+    /**
+     * Get the override record.
+     *
+     * @param int $userid
+     * @param int|null $groupid
+     * @return mixed
+     */
+    protected function get_override_record(int $userid, ?int $groupid = null): mixed {
+        return false;
     }
 
     /**

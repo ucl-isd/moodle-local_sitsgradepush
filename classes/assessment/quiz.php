@@ -77,6 +77,65 @@ class quiz extends activity {
     }
 
     /**
+     * Get the override record.
+     *
+     * @param int $userid
+     * @param int|null $groupid
+     * @return mixed
+     * @throws \dml_exception
+     */
+    public function get_override_record(int $userid, ?int $groupid = null): mixed {
+        global $DB;
+        if ($groupid) {
+            $sql = 'SELECT * FROM {quiz_overrides} WHERE quiz = :quiz AND groupid = :groupid AND userid IS NULL';
+            $params = [
+                'quiz' => $this->get_source_instance()->id,
+                'groupid' => $groupid,
+            ];
+        } else {
+            $sql = 'SELECT * FROM {quiz_overrides} WHERE quiz = :quiz AND userid = :userid';
+            $params = [
+                'quiz' => $this->get_source_instance()->id,
+                'userid' => $userid,
+            ];
+        }
+
+        return $DB->get_record_sql($sql, $params);
+    }
+
+    /**
+     * Delete the EC override.
+     *
+     * @param \stdClass $mtsavedoverride
+     *
+     * @return void
+     */
+    public function delete_ec_override(\stdClass $mtsavedoverride): void {
+        global $DB;
+
+        // Check if the MT applied override exists.
+        $override = $DB->get_record('quiz_overrides', ['id' => $mtsavedoverride->overrideid]);
+
+        // Skip if the override does not exist, it might have been deleted by user.
+        if (!$override) {
+            return;
+        }
+
+        // Restore the original override settings if there was pre-existing override.
+        if (!empty($mtsavedoverride->ori_override_data)) {
+            $ori_override_data = json_decode($mtsavedoverride->ori_override_data, true);
+            $ori_override_data['id'] = $override->id;
+            $this->get_override_manager()->save_override($ori_override_data);
+        } else {
+            // Delete the override if there is no pre-existing override.
+            $this->get_override_manager()->delete_overrides([$override]);
+        }
+
+        // Mark the override as restored.
+        $this->mark_override_restored($mtsavedoverride->id);
+    }
+
+    /**
      * Apply EC extension to the quiz.
      *
      * @param ec $ec EC extension object.
@@ -89,8 +148,29 @@ class quiz extends activity {
         // Get the new date and time.
         $newduedate = strtotime($ec->get_new_deadline() . ' ' . $time);
 
-        // Save the override.
-        $this->get_override_manager()->save_override(['userid' => $ec->get_userid(), 'timeclose' => $newduedate]);
+        // Pre-existing override.
+        $preexistingoverride = $this->get_override_record($ec->get_userid());
+
+        // If there is a pre-existing override, update it.
+        if (!empty($preexistingoverride)) {
+            $newoverride = clone $preexistingoverride;
+            $newoverride = (array)$newoverride;
+            $newoverride['timeclose'] = $newduedate;
+        } else {
+            $newoverride = [
+                'userid' => $ec->get_userid(),
+                'timeclose' => $newduedate,
+            ];
+        }
+
+        // Save the quiz's override.
+        $this->get_override_manager()->save_override($newoverride);
+
+        // Get the updated quiz's override record.
+        $quizoverride = $this->get_override_record($ec->get_userid());
+
+        // Save override record in marks transfer overrides table.
+        $this->save_override($this->sitsmappingid, $ec->get_userid(), null, $quizoverride, $preexistingoverride);
     }
 
     /**
