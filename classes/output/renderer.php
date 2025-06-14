@@ -236,8 +236,7 @@ class renderer extends plugin_renderer_base {
                     $removeextensionwarning = get_string('dashboard:remove_btn_content_extension', 'local_sitsgradepush');
                     $extensioneligiblemessage = $reassess == 1 ? '' :
                         $this->get_extensions_eligible_message($componentgrade, $assessmentdata->source, $mapping);
-                    $assessmentmapping->removeextensionwarning = !empty($extensioneligiblemessage) ||
-                    $assessmentdata->source->has_sora_override_groups() ? $removeextensionwarning : '';
+                    $assessmentmapping->removeextensionwarning = $mapping->enableextension ? $removeextensionwarning : '';
                     $componentgrade->assessmentmapping = $assessmentmapping;
                     $componentgrade->extensioneligiblemessage = $extensioneligiblemessage;
                 }

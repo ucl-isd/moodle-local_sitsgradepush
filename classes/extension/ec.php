@@ -18,6 +18,7 @@ namespace local_sitsgradepush\extension;
 
 use DateTime;
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
 
 /**
@@ -56,11 +57,6 @@ class ec extends extension {
             return;
         }
 
-        // Skip if the new deadline is empty.
-        if (empty($this->get_new_deadline())) {
-            return;
-        }
-
         foreach ($mappings as $mapping) {
             try {
                 // Skip reassessments for EC.
@@ -70,6 +66,23 @@ class ec extends extension {
 
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
                 if ($assessment->is_user_a_participant($this->userid)) {
+                    $assessment->set_sits_mapping_id($mapping->id);
+                    if (empty($this->get_new_deadline())) {
+                        // Check if student has an active EC override.
+                        $mtoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
+                            $mapping->id,
+                            $mapping->sourceid,
+                            extensionmanager::EXTENSION_EC,
+                            $this->get_userid()
+                        );
+                        // Delete previous EC override if exists when the new deadline is empty,
+                        // i.e. EC is removed for the student on SITS.
+                        if (!empty($mtoverride)) {
+                            $assessment->delete_ec_override($mtoverride);
+                        }
+                        // Skip as the new deadline is empty.
+                        return;
+                    }
                     $assessment->apply_extension($this);
                 }
             } catch (\Exception $e) {
