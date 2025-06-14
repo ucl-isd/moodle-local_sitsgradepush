@@ -83,7 +83,7 @@ class process_extensions_new_enrolment extends adhoc_task {
 
             // Create a map of students by student code.
             foreach ($students as $student) {
-                $studentsbycode[$student['code']] = $student;
+                $studentsbycode[$student['association']['supplementary']['student_code']] = $student;
             }
 
             // Process SORA extension for each user enrolment event.

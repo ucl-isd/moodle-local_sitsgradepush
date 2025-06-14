@@ -175,6 +175,7 @@ final class sora_test extends extension_common {
 
     /**
      * Test SORA extension for reassessment.
+     * Reassessment for extension is not supported currently, keeping the test for future use.
      *
      * @covers \local_sitsgradepush\extension\extension::get_mappings_by_userid
      * @return void
@@ -214,8 +215,8 @@ final class sora_test extends extension_common {
         $manager = manager::get_manager();
         $apiclient = $this->get_apiclient_for_testing(false, [tests_data_provider::get_sora_testing_student_data()]);
         tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
-        $manager->get_students_from_sits($mab1);
-        $manager->get_students_from_sits($mab2);
+        $manager->get_students_from_sits($mab1, true, 2);
+        $manager->get_students_from_sits($mab2, true, 2);
     }
 
     /**

@@ -659,5 +659,53 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025060500, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2025061200) {
+
+        // Define table local_sitsgradepush_overrides to be created.
+        $table = new xmldb_table('local_sitsgradepush_overrides');
+
+        // Adding fields to table local_sitsgradepush_overrides.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('mapid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('moduletype', XMLDB_TYPE_CHAR, '30', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('moduleinstanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('extensiontype', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('groupid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('ori_override_data', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('overrideid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('override_data', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('created_by', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('restored_by', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('timerestored', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+
+        // Adding keys to table local_sitsgradepush_overrides.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_sitsgradepush_overrides.
+        $table->add_index('idx_cmid', XMLDB_INDEX_NOTUNIQUE, ['cmid']);
+        $table->add_index('idx_userid', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+        $table->add_index('idx_timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated']);
+        $table->add_index('idx_moduletype', XMLDB_INDEX_NOTUNIQUE, ['moduletype']);
+        $table->add_index('idx_module', XMLDB_INDEX_NOTUNIQUE, ['moduletype', 'moduleinstanceid']);
+        $table->add_index('idx_overrideid', XMLDB_INDEX_NOTUNIQUE, ['overrideid']);
+        $table->add_index('idx_cmid_overrideid', XMLDB_INDEX_NOTUNIQUE, ['cmid', 'overrideid']);
+        $table->add_index('idx_mapid', XMLDB_INDEX_NOTUNIQUE, ['mapid']);
+        $table->add_index('idx_timemodified', XMLDB_INDEX_NOTUNIQUE, ['timemodified']);
+        $table->add_index('idx_extensiontype', XMLDB_INDEX_NOTUNIQUE, ['extensiontype']);
+        $table->add_index('idx_groupid', XMLDB_INDEX_NOTUNIQUE, ['groupid']);
+
+        // Conditionally launch create table for local_sitsgradepush_overrides.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2025061200, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

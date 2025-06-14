@@ -64,7 +64,7 @@ class extension_common extends base_test_class {
         $dg = $this->getDataGenerator();
 
         // Mock the clock.
-        $this->clock = $this->mock_clock_with_frozen(1739149200); // Current time 2025-02-10 09:00:00.
+        $this->clock = $this->mock_clock_with_frozen(strtotime('2025-02-10 09:00:00')); // Current time 2025-02-10 09:00:00.
 
         // Set Easikit API client.
         set_config('apiclient', 'easikit', 'local_sitsgradepush');
@@ -87,8 +87,8 @@ class extension_common extends base_test_class {
         $this->student1 = $dg->create_user(['idnumber' => '12345678']);
         $dg->enrol_user($this->student1->id, $this->course1->id, 'student');
 
-        $assessmentstartdate = 1739754000; // Start date: 2025-02-17 09:00:00.
-        $assessmentenddate = 1739764800; // End date: 2025-02-17 12:00:00.
+        $assessmentstartdate = strtotime('2025-02-17 09:00:00'); // Start date: 2025-02-17 09:00:00.
+        $assessmentenddate = strtotime('2025-02-17 12:00:00'); // End date: 2025-02-17 12:00:00.
 
         // Create test assignment 1.
         $this->assign1 = $dg->create_module('assign',
