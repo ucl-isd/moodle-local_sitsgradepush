@@ -499,6 +499,9 @@ class manager {
 
             // Delete any SORA overrides for the deleted mapping.
             extensionmanager::delete_sora_overrides($existingmapping);
+
+            // Delete EC overrides for the deleted mapping.
+            extensionmanager::delete_ec_overrides($existingmapping->id);
         }
 
         // Insert new mapping.
@@ -1583,7 +1586,8 @@ class manager {
         // Delete any SORA overrides for the deleted mapping.
         extensionmanager::delete_sora_overrides($mapping);
 
-        // TODO: Revert any changes made by ECs extension.
+        // Delete any EC overrides for the deleted mapping.
+        extensionmanager::delete_ec_overrides($mapping->id);
     }
 
     /**

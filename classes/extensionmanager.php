@@ -35,6 +35,15 @@ use local_sitsgradepush\task\process_extensions_new_enrolment;
  */
 class extensionmanager {
 
+    /** @var string DB table for storing overrides */
+    const TABLE_OVERRIDES = 'local_sitsgradepush_overrides';
+
+    /** @var string Extension name for SORA */
+    const EXTENSION_SORA = 'SORA';
+
+    /** @var string Extension name for EC */
+    const EXTENSION_EC = 'EC';
+
     /**
      * Update SORA extension for students in a mapping using the SITS get students API as the data source.
      *
@@ -208,5 +217,49 @@ class extensionmanager {
             $assessment->is_valid_for_extension()->valid;
 
         return $duedatecheck ? $primarycheck && $assessment->get_end_date() > di::get(clock::class)->time() : $primarycheck;
+    }
+
+    /**
+     * Delete EC overrides for a mapped Moodle assessment.
+     *
+     * @param int $mapid SITS mapping ID.
+     *
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function delete_ec_overrides(int $mapid): void {
+        // Get EC overrides by SITS mapping ID.
+        $backups = self::get_overrides_by_mapid($mapid, self::EXTENSION_EC);
+
+        // Nothing to do if there are no EC overrides.
+        if (empty($backups)) {
+            return;
+        }
+
+        try {
+            // Get Moodle assessment.
+            $assessment = [];
+            foreach ($backups as $backup) {
+                if (!$assessment[$backup->cmid]) {
+                    $assessment[$backup->cmid] =
+                        assessmentfactory::get_assessment(assessmentfactory::SOURCETYPE_MOD, $backup->cmid);
+                }
+                $assessment[$backup->cmid]->delete_ec_override($backup);
+            }
+        } catch (\Exception $e) {
+            logger::log($e->getMessage(), null, "delete_ec_overrides: mapping ID: $mapid");
+        }
+    }
+
+    /**
+     * Get EC override backup.
+     *
+     * @param int $mapid
+     * @return mixed
+     * @throws \dml_exception
+     */
+    public static function get_overrides_by_mapid(int $mapid, string $extensiontype): array {
+        global $DB;
+        return $DB->get_records(self::TABLE_OVERRIDES, ['mapid' => $mapid, 'extensiontype' => $extensiontype]);
     }
 }

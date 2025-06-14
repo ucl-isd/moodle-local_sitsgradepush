@@ -109,6 +109,7 @@ $string['error:ecextensionnotsupported'] = 'EC extension is not supported for th
 $string['error:empty_json_data'] = 'Empty JSON data';
 $string['error:emptyresponse'] = 'Empty response received when calling {$a}.';
 $string['error:extension_not_enabled_for_mapping'] = 'Extension is not enabled for this mapping. Mapping ID: {$a}';
+$string['error:extension_not_supported'] = 'Extension is not supported for this assessment.';
 $string['error:extensiondataisnotset'] = 'Extension data is not set.';
 $string['error:failtogetstudentsfromsits'] = 'Failed to get students data from SITS.';
 $string['error:failtomapassessment'] = 'Failed to map assessment component to source.';

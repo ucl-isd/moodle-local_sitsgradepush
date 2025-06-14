@@ -70,6 +70,7 @@ class ec extends extension {
 
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
                 if ($assessment->is_user_a_participant($this->userid)) {
+                    $assessment->set_sits_mapping_id($mapping->id);
                     $assessment->apply_extension($this);
                 }
             } catch (\Exception $e) {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/sitsgradepush/db" VERSION="20250605" COMMENT="XMLDB file for Moodle local/sits_grade_push"
+<XMLDB PATH="local/sitsgradepush/db" VERSION="20250612" COMMENT="XMLDB file for Moodle local/sits_grade_push"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -147,6 +147,42 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="idx_course_attempts" UNIQUE="false" FIELDS="courseid, attempts"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_sitsgradepush_overrides" COMMENT="Backup pre-existing overrides">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="mapid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Marks transfer mapping ID"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="moduletype" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="moduleinstanceid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="extensiontype" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Moodle user ID"/>
+        <FIELD NAME="groupid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="ori_override_data" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Original override data"/>
+        <FIELD NAME="overrideid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="override_data" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="created_by" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="User who created this extension backup"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Timestamp when this record created"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="restored_by" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="User who restored the original extension"/>
+        <FIELD NAME="timerestored" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Timestamp when the extension is restored"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_cmid" UNIQUE="false" FIELDS="cmid"/>
+        <INDEX NAME="idx_userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+        <INDEX NAME="idx_moduletype" UNIQUE="false" FIELDS="moduletype"/>
+        <INDEX NAME="idx_module" UNIQUE="false" FIELDS="moduletype, moduleinstanceid"/>
+        <INDEX NAME="idx_overrideid" UNIQUE="false" FIELDS="overrideid"/>
+        <INDEX NAME="idx_cmid_overrideid" UNIQUE="false" FIELDS="cmid, overrideid"/>
+        <INDEX NAME="idx_mapid" UNIQUE="false" FIELDS="mapid"/>
+        <INDEX NAME="idx_timemodified" UNIQUE="false" FIELDS="timemodified"/>
+        <INDEX NAME="idx_extensiontype" UNIQUE="false" FIELDS="extensiontype"/>
+        <INDEX NAME="idx_groupid" UNIQUE="false" FIELDS="groupid"/>
       </INDEXES>
     </TABLE>
   </TABLES>
