@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\extension;
 
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
 use local_sitsgradepush\manager;
 
@@ -231,6 +232,12 @@ class sora extends extension {
             try {
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
                 if (!$assessment->is_user_a_participant($this->get_userid())) {
+                    continue;
+                }
+
+                // Skip if the SITS assessment type is not SORA eligible.
+                $mab = manager::get_manager()->get_mab_and_map_info_by_mapping_id($mapping->id);
+                if (!extensionmanager::is_sits_assessment_sora_extension_eligible($mab)) {
                     continue;
                 }
 

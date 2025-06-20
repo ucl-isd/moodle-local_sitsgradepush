@@ -199,7 +199,7 @@ class extensionmanager {
      * @return bool
      * @throws \dml_exception
      */
-    public static function is_sits_assessment_extension_eligible(\stdClass $componentgrade): bool {
+    public static function is_sits_assessment_sora_extension_eligible(\stdClass $componentgrade): bool {
         return self::is_extension_enabled() && // Extension is enabled.
             self::is_assessment_types_sora_supported($componentgrade->astcode); // Assessment type is supported for API V1.
     }

@@ -158,10 +158,10 @@ if ($hassiteconfig) {
             '0'
         ));
 
-        // Set SITS moodle AST codes that have SORA data returned by the assessment component API V1.
+        // Set SITS moodle AST codes that would apply SORA.
         $settings->add(new admin_setting_configtext('local_sitsgradepush/ast_codes_sora_api_v1',
-            get_string('settings:astcodessoraapiv1', 'local_sitsgradepush'),
-            get_string('settings:astcodessoraapiv1:desc', 'local_sitsgradepush'),
+            get_string('settings:astcodessora', 'local_sitsgradepush'),
+            get_string('settings:astcodessora:desc', 'local_sitsgradepush'),
             'BC02, HC01, EC03, EC04, ED03, ED04'
         ));
 

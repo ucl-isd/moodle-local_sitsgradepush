@@ -194,8 +194,8 @@ class renderer extends plugin_renderer_base {
                         ]
                     );
                     $componentgrade->selectsourceurl = $selectsourceurl->out(false);
-                    $componentgrade->extensioneligiblemessage = $reassess == 1 ? '' :
-                        $this->get_extensions_eligible_message($componentgrade);
+                    $componentgrade->extensioneligiblemessage =
+                        $reassess == 1 ? '' : $this->get_sora_extensions_eligible_message($componentgrade);
 
                     // No need to render mapping information if the component grade is not mapped
                     // for the given marks transfer type.
@@ -235,7 +235,7 @@ class renderer extends plugin_renderer_base {
 
                     $removeextensionwarning = get_string('dashboard:remove_btn_content_extension', 'local_sitsgradepush');
                     $extensioneligiblemessage = $reassess == 1 ? '' :
-                        $this->get_extensions_eligible_message($componentgrade, $assessmentdata->source, $mapping);
+                        $this->get_sora_extensions_eligible_message($componentgrade, $assessmentdata->source, $mapping);
                     $assessmentmapping->removeextensionwarning = $mapping->enableextension ? $removeextensionwarning : '';
                     $componentgrade->assessmentmapping = $assessmentmapping;
                     $componentgrade->extensioneligiblemessage = $extensioneligiblemessage;
@@ -508,7 +508,7 @@ class renderer extends plugin_renderer_base {
      *
      * @return string
      */
-    private function get_extensions_eligible_message(
+    private function get_sora_extensions_eligible_message(
         \stdClass $componentgrade,
         ?assessment $assessment = null,
         ?\stdClass $mapping = null
@@ -524,15 +524,15 @@ class renderer extends plugin_renderer_base {
             return '';
         }
 
-        // Check if the component grade is eligible for extensions.
-        $componentgradeeligible = extensionmanager::is_sits_assessment_extension_eligible($componentgrade);
+        // Check if the component grade is eligible for SORA extensions.
+        $soraeligible = extensionmanager::is_sits_assessment_sora_extension_eligible($componentgrade);
 
         // Check if the moodle source is eligible for extensions.
         // Ignore the due date check as the warning message should be shown after the source's due date
         // if the source is eligible for extensions at the time when it is mapped.
         $assessmenteligible = $assessment && extensionmanager::is_source_extension_eligible($assessment, false);
 
-        if ($componentgradeeligible) {
+        if ($soraeligible) {
             // Currently not mapped.
             if (!$assessment) {
                 // Return component grade extension eligibility message.

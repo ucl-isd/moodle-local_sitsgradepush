@@ -947,7 +947,8 @@ class manager {
                     am.enableextension,
                     cg.id as mabid,
                     cg.mapcode,
-                    cg.mabseq
+                    cg.mabseq,
+                    cg.astcode
                 FROM {" . self::TABLE_COMPONENT_GRADE . "} cg
                 INNER JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                     ON cg.id = am.componentgradeid

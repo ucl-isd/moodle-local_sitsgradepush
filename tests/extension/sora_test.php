@@ -32,6 +32,14 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class sora_test extends extension_common {
+
+    public function setUp(): void {
+        parent::setUp();
+
+        // Add 'CN01' to SORA supported assessment types, so that Sora can be applied for this assessment type.
+        set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
+    }
+
     /**
      * Test no SORA override for past assessments.
      *
@@ -72,6 +80,10 @@ final class sora_test extends extension_common {
      * @throws \moodle_exception
      */
     public function test_sora_process_extension_from_aws(): void {
+        global $DB;
+        // Remove 'CN01' from SORA supported assessment types so that Sora cannot be applied for this assessment type.
+        set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04', 'local_sitsgradepush');
+
         // Set up the SORA overrides.
         $this->setup_for_sora_testing();
 
@@ -80,8 +92,19 @@ final class sora_test extends extension_common {
         $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
-        // Verify overrides were created correctly.
-        $this->assert_overrides_exist($sora, 35);
+        // Verify override was created for the assignment.
+        $this->assert_assignment_override_exists($sora, $this->assign1, 35);
+
+        // Verify no override was created for the quiz, since the SITS assessment mapped to it has the type 'CN01',
+        // which is not supported by SORA.
+        $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id]);
+        $this->assertFalse($override);
+
+        // Add 'CN01' to SORA supported assessment types.
+        // Verify override was created for the quiz now.
+        set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
+        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
+        $this->assert_quiz_override_exists($sora, $this->quiz1, 35);
     }
 
     /**
