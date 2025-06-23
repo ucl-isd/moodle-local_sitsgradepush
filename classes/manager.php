@@ -502,6 +502,9 @@ class manager {
 
             // Delete EC overrides for the deleted mapping.
             extensionmanager::delete_ec_overrides($existingmapping->id);
+
+            // Clear mapping MAB info cache.
+            $this->clear_mapping_mab_info_cache($existingmapping->id);
         }
 
         // Insert new mapping.
@@ -930,7 +933,7 @@ class manager {
         global $DB;
 
         // Try to get the cache first.
-        $key = 'map_mab_info_' . $id;
+        $key = sprintf('%s_%d', cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $id);
         $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $key);
         if (!empty($cache)) {
             return $cache;
@@ -962,7 +965,7 @@ class manager {
                 cachemanager::CACHE_AREA_MAPPING_MAB_INFO,
                 $key,
                 $mapmabinfo,
-                DAYSECS * 30
+                HOURSECS
             );
         }
         return $mapmabinfo;
@@ -1589,6 +1592,22 @@ class manager {
 
         // Delete any EC overrides for the deleted mapping.
         extensionmanager::delete_ec_overrides($mapping->id);
+
+        // Clear mapping MAB info cache.
+        $this->clear_mapping_mab_info_cache($mappingid);
+    }
+
+    /**
+     * Clear mapping MAB info cache.
+     *
+     * @param int $mappingid
+     * @return void
+     */
+    public function clear_mapping_mab_info_cache(int $mappingid): void {
+        cachemanager::purge_cache(
+            cachemanager::CACHE_AREA_MAPPING_MAB_INFO,
+            sprintf('%s_%d', cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $mappingid)
+        );
     }
 
     /**
