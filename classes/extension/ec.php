@@ -18,6 +18,7 @@ namespace local_sitsgradepush\extension;
 
 use DateTime;
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
 
 /**
@@ -56,15 +57,32 @@ class ec extends extension {
             return;
         }
 
-        // Skip if the new deadline is empty.
-        if (empty($this->get_new_deadline()) || strtotime($this->get_new_deadline()) < $this->clock->time()) {
-            return;
-        }
-
         foreach ($mappings as $mapping) {
             try {
+                // Skip reassessments for EC.
+                if ($mapping->reassessment == 1) {
+                    continue;
+                }
+
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
                 if ($assessment->is_user_a_participant($this->userid)) {
+                    $assessment->set_sits_mapping_id($mapping->id);
+                    if (empty($this->get_new_deadline())) {
+                        // Check if student has an active EC override.
+                        $mtoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
+                            $mapping->id,
+                            $mapping->sourceid,
+                            extensionmanager::EXTENSION_EC,
+                            $this->get_userid()
+                        );
+                        // Delete previous EC override if exists when the new deadline is empty,
+                        // i.e. EC is removed for the student on SITS.
+                        if (!empty($mtoverride)) {
+                            $assessment->delete_ec_override($mtoverride);
+                        }
+                        // Skip as the new deadline is empty.
+                        return;
+                    }
                     $assessment->apply_extension($this);
                 }
             } catch (\Exception $e) {
@@ -82,17 +100,20 @@ class ec extends extension {
      * @throws \dml_exception|\moodle_exception
      */
     public function set_properties_from_aws_message(string $messagebody): void {
-        // Decode the JSON message.
         $messagedata = $this->parse_event_json($messagebody);
 
-        // Set the user ID of the student.
-        $this->set_userid($messagedata->student_code);
+        $this->extensionchanges = $messagedata->changes ?? null;
+        $studentec = $messagedata->entity->student_extenuating_circumstances ?? null;
 
-        // Set the MAB identifier.
-        $this->mabidentifier = $messagedata->identifier;
+        if (empty($studentec)) {
+            throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
+        }
 
-        // Set new deadline.
-        $this->newdeadline = $messagedata->new_deadline;
+        // Set event data.
+        $this->eventdata = $studentec;
+        $this->mabidentifier = $studentec->assessment_component->identifier;
+        $this->studentcode = $studentec->student->student_code;
+        $this->set_userid($this->studentcode);
 
         // Set data source.
         $this->datasource = self::DATASOURCE_AWS;
@@ -107,7 +128,7 @@ class ec extends extension {
      */
     public function set_properties_from_get_students_api(array $student): void {
         // Set the user ID of the student.
-        $this->set_userid($student['association']['supplementary']['student_code']);
+        parent::set_properties_from_get_students_api($student);
 
         // Set new deadline.
         // $student['extenuating_circumstance'] is an array.
@@ -121,6 +142,16 @@ class ec extends extension {
     }
 
     /**
+     * Set the MAB identifier.
+     *
+     * @param string $mabidentifier Map code and MAB sequence number, e.g. CCME0158A6UF-001.
+     * @return void
+     */
+    public function set_mabidentifier(string $mabidentifier): void {
+        $this->mabidentifier = $mabidentifier;
+    }
+
+    /**
      * Get the latest deadline.
      *
      * @param array $extensions An array of extenuating circumstances.
@@ -130,7 +161,6 @@ class ec extends extension {
         $latest = null;
 
         // Use the latest deadline from the extenuating circumstances.
-        // TODO: Update the logic when we worked out the ec & dap logic.
         foreach ($extensions as $extension) {
             if (empty($extension['new_due_date'])) {
                 continue;
@@ -144,15 +174,5 @@ class ec extends extension {
         }
 
         return $latest ? $latest->format('Y-m-d') : '';
-    }
-
-    /**
-     * Set the MAB identifier.
-     *
-     * @param string $mabidentifier Map code and MAB sequence number, e.g. CCME0158A6UF-001.
-     * @return void
-     */
-    public function set_mabidentifier(string $mabidentifier): void {
-        $this->mabidentifier = $mabidentifier;
     }
 }

@@ -47,10 +47,19 @@ $tasks = [
     [
       'classname' => 'local_sitsgradepush\task\process_aws_sora_updates',
       'blocking' => 0,
-      'minute' => '0',
-      'hour' => '*', // Runs every hour.
+      'minute' => '*/5', // Runs every 5 minutes.
+      'hour' => '*',
       'day' => '*',
       'month' => '*',
       'dayofweek' => '*',
+    ],
+    [
+        'classname' => 'local_sitsgradepush\task\process_aws_ec_updates',
+        'blocking' => 0,
+        'minute' => '*/5', // Runs every 5 minutes.
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
     ],
 ];

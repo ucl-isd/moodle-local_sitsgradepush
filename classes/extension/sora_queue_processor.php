@@ -25,6 +25,10 @@ namespace local_sitsgradepush\extension;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class sora_queue_processor extends aws_queue_processor {
+
+    /** @var string QUEUE_NAME */
+    const QUEUE_NAME = 'SORA';
+
     /**
      * Get the queue URL.
      *
@@ -73,7 +77,7 @@ class sora_queue_processor extends aws_queue_processor {
         }
 
         // If there are no changes, we should ignore the message.
-        if (empty($sora->get_sora_changes())) {
+        if (empty($sora->get_extension_changes())) {
             return true;
         }
 
@@ -86,6 +90,6 @@ class sora_queue_processor extends aws_queue_processor {
      * @return string
      */
     protected function get_queue_name(): string {
-        return 'sora';
+        return self::QUEUE_NAME;
     }
 }

@@ -1,0 +1,70 @@
+{
+  "identifier": "ABCDE07",
+  "forename": "Tony",
+  "display_name": null,
+  "surname": "Stark",
+  "userid": "ABCDERF",
+  "ucl_email": null,
+  "association": {
+    "identifier": "12345678/1",
+    "type": {
+      "name": "P",
+      "code": "Postgraduate"
+    },
+    "supplementary": {
+      "student_code": "12345678",
+      "student_programme_route_code": "12345678/1",
+      "candidate_number": "JJSNS7",
+      "exam_centre_code": "MAIN"
+    },
+    "organisation_unit": {
+      "code": "HEINF_PHS",
+      "name": "Institute Of Health Informatics",
+      "type": "Department",
+      "link": {
+        "code": "PHS",
+        "name": "Faculty Of Population Health Sciences",
+        "type": "Faculty"
+      }
+    }
+  },
+  "student_assessment": {
+    "identifier ": null,
+    "resit_number": "0",
+    "start_datetime": null,
+    "end_datetime": null,
+    "duration": null,
+    "submission_datetime": null,
+    "marker": null,
+    "actual_mark": null,
+    "actual_grade": null,
+    "agreed_mark": null,
+    "agreed_grade": null,
+    "sora": {
+      "extra_duration": null,
+      "rest_duration": null
+    }
+  },
+  "extenuating_circumstance": [
+    {
+      "identifier": "DAP-ABCDE07-001",
+      "module_code": "LAWS0024",
+      "record_type": "A",
+      "sequence_number": "1",
+      "cor_due_dt": null,
+      "new_due_date": "2025-02-22",
+      "original_due_date": "2025-02-17",
+      "approved_mitigation": "298"
+    },
+    {
+      "identifier": "EC-ABCDE07-009",
+      "module_code": "LAWS0024",
+      "record_type": "A",
+      "sequence_number": "1",
+      "cor_due_dt": "2025-02-22",
+      "new_due_date": "2025-02-27",
+      "original_due_date": "2025-02-22",
+      "approved_mitigation": "128"
+    }
+  ]
+}

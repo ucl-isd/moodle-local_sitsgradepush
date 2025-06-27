@@ -481,7 +481,7 @@ class manager {
      * @throws \moodle_exception
      */
     public function save_assessment_mapping(\stdClass $data): int|bool {
-        global $DB;
+        global $DB, $USER;
 
         // Validate component grade.
         $assessment = $this->validate_component_grade(
@@ -499,6 +499,12 @@ class manager {
 
             // Delete any SORA overrides for the deleted mapping.
             extensionmanager::delete_sora_overrides($existingmapping);
+
+            // Delete EC overrides for the deleted mapping.
+            extensionmanager::delete_ec_overrides($existingmapping->id);
+
+            // Clear mapping MAB info cache.
+            $this->clear_mapping_mab_info_cache($existingmapping->id);
         }
 
         // Insert new mapping.
@@ -512,6 +518,7 @@ class manager {
         $record->componentgradeid = $data->componentgradeid;
         $record->reassessment = $data->reassessment;
         $record->enableextension = !empty($data->extensionsselection) ? 1 : 0;
+        $record->userid = $USER->id;
         $record->timecreated = time();
         $record->timemodified = time();
 
@@ -632,12 +639,18 @@ class manager {
      * @param \stdClass $componentgrade
      * @param bool $refresh Refresh data from SITS.
      * @param int $apiversion API version.
+     * @param string $studentcode Filter by student code.
      * @return \cache_application|\cache_session|\cache_store|mixed
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_students_from_sits(\stdClass $componentgrade, bool $refresh = false, int $apiversion = 1): mixed {
+    public function get_students_from_sits(
+        \stdClass $componentgrade,
+        bool $refresh = false,
+        int $apiversion = 1,
+        string $studentcode = ''
+    ): mixed {
         $requestname = $apiversion === 2 ? self::GET_STUDENTS_V2 : self::GET_STUDENTS;
 
         // Stutalk Direct is not supported currently.
@@ -671,6 +684,7 @@ class manager {
         $data = new \stdClass();
         $data->mapcode = $componentgrade->mapcode;
         $data->mabseq = $componentgrade->mabseq;
+        $data->studentcode = $studentcode;
 
         // Build and send request.
         $request = $this->apiclient->build_request($requestname, $data);
@@ -919,7 +933,7 @@ class manager {
         global $DB;
 
         // Try to get the cache first.
-        $key = 'map_mab_info_' . $id;
+        $key = sprintf('%s_%d', cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $id);
         $cache = cachemanager::get_cache(cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $key);
         if (!empty($cache)) {
             return $cache;
@@ -936,7 +950,8 @@ class manager {
                     am.enableextension,
                     cg.id as mabid,
                     cg.mapcode,
-                    cg.mabseq
+                    cg.mabseq,
+                    cg.astcode
                 FROM {" . self::TABLE_COMPONENT_GRADE . "} cg
                 INNER JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                     ON cg.id = am.componentgradeid
@@ -950,7 +965,7 @@ class manager {
                 cachemanager::CACHE_AREA_MAPPING_MAB_INFO,
                 $key,
                 $mapmabinfo,
-                DAYSECS * 30
+                HOURSECS
             );
         }
         return $mapmabinfo;
@@ -1574,6 +1589,25 @@ class manager {
 
         // Delete any SORA overrides for the deleted mapping.
         extensionmanager::delete_sora_overrides($mapping);
+
+        // Delete any EC overrides for the deleted mapping.
+        extensionmanager::delete_ec_overrides($mapping->id);
+
+        // Clear mapping MAB info cache.
+        $this->clear_mapping_mab_info_cache($mappingid);
+    }
+
+    /**
+     * Clear mapping MAB info cache.
+     *
+     * @param int $mappingid
+     * @return void
+     */
+    public function clear_mapping_mab_info_cache(int $mappingid): void {
+        cachemanager::purge_cache(
+            cachemanager::CACHE_AREA_MAPPING_MAB_INFO,
+            sprintf('%s_%d', cachemanager::CACHE_AREA_MAPPING_MAB_INFO, $mappingid)
+        );
     }
 
     /**

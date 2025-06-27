@@ -42,8 +42,8 @@ abstract class extension implements iextension {
     /** @var int User ID */
     protected int $userid;
 
-    /** @var int Student code / ID number */
-    protected int $studentcode;
+    /** @var string Student code / ID number */
+    protected string $studentcode;
 
     /** @var bool Used to check if the extension data is set. */
     protected bool $dataisset = false;
@@ -54,6 +54,12 @@ abstract class extension implements iextension {
     /** @var clock Clock instance. */
     protected readonly clock $clock;
 
+    /** @var array|null extension changes */
+    protected ?array $extensionchanges = null;
+
+    /** @var \stdClass|null event data */
+    protected ?\stdClass $eventdata;
+
     /**
      * Set properties from JSON message like SORA / EC update message from AWS.
      *
@@ -61,14 +67,6 @@ abstract class extension implements iextension {
      * @return void
      */
     abstract public function set_properties_from_aws_message(string $messagebody): void;
-
-    /**
-     * Set properties from get students API.
-     *
-     * @param array $student
-     * @return void
-     */
-    abstract public function set_properties_from_get_students_api(array $student): void;
 
     /**
      * Constructor.
@@ -93,6 +91,15 @@ abstract class extension implements iextension {
      */
     public function get_mab_identifier(): string {
         return $this->mabidentifier;
+    }
+
+    /**
+     * Get the student code.
+     *
+     * @return string
+     */
+    public function get_student_code(): string {
+        return $this->studentcode;
     }
 
     /**
@@ -188,6 +195,50 @@ abstract class extension implements iextension {
     }
 
     /**
+     * Set properties from get students API.
+     *
+     * @param array $student
+     * @return void
+     */
+    public function set_properties_from_get_students_api(array $student): void {
+        // Set the student code.
+        $this->studentcode = $student['association']['supplementary']['student_code'] ?? '';
+
+        // Set the user ID.
+        if (!isset($this->userid)) {
+            $this->set_userid($this->studentcode);
+        }
+    }
+
+    /**
+     * Get the extension changes.
+     *
+     * @return array|null
+     */
+    public function get_extension_changes(): ?array {
+        return $this->extensionchanges;
+    }
+
+    /**
+     * Get the data source.
+     * To distinguish where the extension data come from, such as AWS or API.
+     *
+     * @return string
+     */
+    public function get_data_source(): string {
+        return $this->datasource;
+    }
+
+    /**
+     * Get the event data.
+     *
+     * @return \stdClass|null
+     */
+    public function get_event_data(): ?\stdClass {
+        return $this->eventdata;
+    }
+
+    /**
      * Parse the message JSON.
      *
      * @param string $message
@@ -214,6 +265,11 @@ abstract class extension implements iextension {
      */
     protected function set_userid(string $studentcode): void {
         global $DB;
+
+        if (empty($studentcode)) {
+            $this->userid = 0;
+            return;
+        }
 
         // Find and set the user ID of the student.
         $user = $DB->get_record('user', ['idnumber' => $studentcode], 'id');

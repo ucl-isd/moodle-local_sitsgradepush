@@ -84,12 +84,12 @@ class getstudentsv2 extends request {
      * @return string
      */
     public function get_endpoint_url_with_params(): string {
-        // Return endpoint url with params.
         return sprintf(
-            '%s/%s-%s/student?limit=%d',
+            '%s/%s-%s/student%s?limit=%d',
             $this->endpointurl,
             $this->paramsdata['MAP_CODE'],
             $this->paramsdata['MAB_SEQ'],
+            !empty($this->data->studentcode) ? '/' . $this->data->studentcode : '',
             self::LIMIT
         );
     }

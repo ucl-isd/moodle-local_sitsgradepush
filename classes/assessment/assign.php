@@ -19,6 +19,7 @@ namespace local_sitsgradepush\assessment;
 use cache;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\sora;
+use local_sitsgradepush\extensionmanager;
 
 /**
  * Class for assignment assessment.
@@ -68,6 +69,74 @@ class assign extends activity {
     }
 
     /**
+     * Delete applied EC override and restore original override if any.
+     *
+     * @param \stdClass $mtsavedoverride - Override record saved in marks transfer overrides table.
+     *
+     * @return void
+     */
+    public function delete_ec_override(\stdClass $mtsavedoverride): void {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/assign/locallib.php');
+
+        // Check if the override record saved in marks transfer overrides table exists.
+        $override = $DB->get_record('assign_overrides', ['id' => $mtsavedoverride->overrideid]);
+
+        // Skip if the override does not exist, it might have been deleted by user.
+        if (!$override) {
+            return;
+        }
+
+        // Restore the original override settings if there was pre-existing override stored.
+        if (!empty($mtsavedoverride->ori_override_data)) {
+            $orioverridedata = json_decode($mtsavedoverride->ori_override_data);
+            $orioverridedata->id = $override->id;
+            $DB->update_record('assign_overrides', $orioverridedata);
+            $this->clear_override_cache($orioverridedata);
+            $this->trigger_override_event($orioverridedata, false);
+        } else {
+            // Delete the override if there is no pre-existing override.
+            $assign = new \assign(
+                $this->get_module_context(),
+                $this->get_course_module(),
+                get_course($this->get_course_module()->course)
+            );
+            $assign->delete_override($override->id);
+        }
+
+        // Mark the override as restored.
+        $this->mark_override_restored($mtsavedoverride->id);
+    }
+
+    /**
+     * Get the assignment's override record by user ID and group ID.
+     *
+     * @param int $userid Moodle user ID
+     * @param int|null $groupid Moodle group ID
+     *
+     * @return mixed
+     * @throws \dml_exception
+     */
+    public function get_override_record(int $userid, ?int $groupid = null): mixed {
+        global $DB;
+        if ($groupid) {
+            $sql = 'SELECT * FROM {assign_overrides} WHERE assignid = :assignid AND groupid = :groupid AND userid IS NULL';
+            $params = [
+                'assignid' => $this->get_source_instance()->id,
+                'groupid' => $groupid,
+            ];
+        } else {
+            $sql = 'SELECT * FROM {assign_overrides} WHERE assignid = :assignid AND userid = :userid';
+            $params = [
+                'assignid' => $this->get_source_instance()->id,
+                'userid' => $userid,
+            ];
+        }
+
+        return $DB->get_record_sql($sql, $params);
+    }
+
+    /**
      * Apply EC extension to the assessment.
      *
      * @param ec $ec The EC extension.
@@ -84,8 +153,25 @@ class assign extends activity {
         // Get the new date and time.
         $newduedate = strtotime($ec->get_new_deadline() . ' ' . $time);
 
+        // Pre-existing override.
+        $preexistingoverride = $this->get_override_record($ec->get_userid());
+
         // Override the assignment settings for user.
         $this->overrides_due_date($newduedate, $ec->get_userid());
+
+        // Get the assignment override record.
+        $assignoverride = $this->get_override_record($ec->get_userid());
+
+        // Get active EC override for the student if any.
+        $mtoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
+            $this->sitsmappingid,
+            $this->get_id(),
+            extensionmanager::EXTENSION_EC,
+            $ec->get_userid()
+        );
+
+        // Save override record in marks transfer overrides table.
+        $this->save_override($this->sitsmappingid, $ec->get_userid(), $mtoverride, $assignoverride, $preexistingoverride);
     }
 
     /**
@@ -157,24 +243,8 @@ class assign extends activity {
         require_once($CFG->dirroot . '/mod/assign/locallib.php');
         require_once($CFG->dirroot . '/mod/assign/lib.php');
 
-        // It is a group override.
-        if ($groupid) {
-            $sql = 'SELECT * FROM {assign_overrides} WHERE assignid = :assignid AND groupid = :groupid AND userid IS NULL';
-            $params = [
-                'assignid' => $this->get_source_instance()->id,
-                'groupid' => $groupid,
-            ];
-        } else {
-            // It is a user override.
-            $sql = 'SELECT * FROM {assign_overrides} WHERE assignid = :assignid AND userid = :userid AND groupid IS NULL';
-            $params = [
-                'assignid' => $this->get_source_instance()->id,
-                'userid' => $userid,
-            ];
-        }
-
         // Check if the override already exists.
-        $override = $DB->get_record_sql($sql, $params);
+        $override = $this->get_override_record($userid, $groupid);
         if ($override) {
             // No need to update if the due date is the same.
             if ($override->duedate == $newduedate) {
@@ -207,7 +277,14 @@ class assign extends activity {
         $this->trigger_override_event($override, $newrecord);
 
         // Update the assign events.
-        assign_update_events(new \assign($this->context, $this->get_course_module(), null), $override);
+        assign_update_events(
+            new \assign(
+                $this->get_module_context(),
+                $this->get_course_module(),
+                get_course($this->get_course_module()->course)
+            ),
+            $override
+        );
     }
 
     /**

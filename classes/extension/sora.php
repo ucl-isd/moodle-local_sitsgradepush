@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\extension;
 
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
 use local_sitsgradepush\manager;
 
@@ -47,9 +48,6 @@ class sora extends extension {
 
     /** @var string|null SORA message type */
     protected ?string $soramessagetype;
-
-    /** @var array|null SORA changes */
-    protected ?array $sorachanges;
 
     /**
      * Return the whole time extension in seconds, including extra and rest duration.
@@ -175,13 +173,16 @@ class sora extends extension {
         $this->soramessagetype = $messagedata->entity->person_sora->type->code ?? null;
 
         // Set SORA changes.
-        $this->sorachanges = $messagedata->changes ?? null;
+        $this->extensionchanges = $messagedata->changes ?? null;
 
         // Check the message is valid and set student code.
         $studentcode = $messagedata->entity->person_sora->person->student_code ?? null;
         if (!empty($studentcode)) {
             $this->studentcode = $studentcode;
             $this->set_userid($studentcode);
+            $this->extraduration = (int) $messagedata->entity->person_sora->extra_duration ?? 0;
+            $this->restduration = (int) $messagedata->entity->person_sora->rest_duration ?? 0;
+            $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
         } else {
             throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
         }
@@ -196,20 +197,15 @@ class sora extends extension {
      * @return void
      */
     public function set_properties_from_get_students_api(array $student): void {
-        // Set student code.
-        $this->studentcode = $student['code'];
-
-        // Set the user ID.
-        if (!isset($this->userid)) {
-            $this->set_userid($student['code']);
-        }
+        // Set the user ID of the student.
+        parent::set_properties_from_get_students_api($student);
 
         // Set datasource.
         $this->datasource = self::DATASOURCE_API;
 
         // Set properties.
-        $this->extraduration = (int) $student['assessment']['sora_assessment_duration'];
-        $this->restduration = (int) $student['assessment']['sora_rest_duration'];
+        $this->extraduration = (int) $student['student_assessment']['sora']['extra_duration'] ?? 0;
+        $this->restduration = (int) $student['student_assessment']['sora']['rest_duration'] ?? 0;
 
         // Calculate and set the time extension in seconds.
         $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
@@ -239,9 +235,10 @@ class sora extends extension {
                     continue;
                 }
 
-                // Update the SORA information from the API if the datasource is AWS.
-                if ($this->get_data_source() === self::DATASOURCE_AWS) {
-                    $this->update_sora_info_from_api($mapping);
+                // Skip if the SITS assessment type is not SORA eligible.
+                $mab = manager::get_manager()->get_mab_and_map_info_by_mapping_id($mapping->id);
+                if (!extensionmanager::is_sits_assessment_sora_extension_eligible($mab)) {
+                    continue;
                 }
 
                 // Apply the extension to the assessment.
@@ -250,16 +247,6 @@ class sora extends extension {
                 logger::log($e->getMessage());
             }
         }
-    }
-
-    /**
-     * Get the data source.
-     * To distinguish where the SORA data come from AWS or API.
-     *
-     * @return string
-     */
-    public function get_data_source(): string {
-        return $this->datasource;
     }
 
     /**
@@ -272,12 +259,20 @@ class sora extends extension {
     }
 
     /**
-     * Get the SORA changes.
+     * Pre-process extension checks.
      *
-     * @return array|null
+     * @param array $mappings
+     * @return bool
      */
-    public function get_sora_changes(): ?array {
-        return $this->sorachanges;
+    protected function pre_process_extension_checks(array $mappings): bool {
+        // API is only use to set the initial SoRA extension via new mapping or new student enrollment.
+        // If the SoRA extension is not set, do not process the extension.
+        if ($this->get_data_source() === self::DATASOURCE_API && $this->get_time_extension() === 0) {
+            return false;
+        }
+
+        // Common pre-process extension checks.
+        return parent::pre_process_extension_checks($mappings);
     }
 
     /**
@@ -289,22 +284,5 @@ class sora extends extension {
      */
     private function calculate_time_extension(int $extraduration, int $restduration): int {
         return ($extraduration + $restduration) * MINSECS;
-    }
-
-    /**
-     * Update SORA information from the assessment API.
-     * Used when there is a SORA update message from AWS.
-     *
-     * @param \stdClass $mapping SITS assessment mapping
-     */
-    private function update_sora_info_from_api(\stdClass $mapping): void {
-        // Call the assessment API to get the SORA data.
-        $students = manager::get_manager()->get_students_from_sits($mapping, true);
-        foreach ($students as $student) {
-            if ($student['code'] == $this->studentcode) {
-                $this->set_properties_from_get_students_api($student);
-                break;
-            }
-        }
     }
 }

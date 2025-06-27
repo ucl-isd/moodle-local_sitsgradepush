@@ -198,6 +198,15 @@ class tests_data_provider {
     }
 
     /**
+     * Get the EC testing student data.
+     *
+     * @return array
+     */
+    public static function get_ec_testing_student_data(): array {
+        return json_decode(file_get_contents(__DIR__ . "/ec_test_students.json"), true);
+    }
+
+    /**
      * Set a protected property.
      *
      * @param  object|string  $obj

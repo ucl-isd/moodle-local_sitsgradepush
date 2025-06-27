@@ -35,6 +35,15 @@ use local_sitsgradepush\task\process_extensions_new_enrolment;
  */
 class extensionmanager {
 
+    /** @var string DB table for storing overrides */
+    const TABLE_OVERRIDES = 'local_sitsgradepush_overrides';
+
+    /** @var string Extension name for SORA */
+    const EXTENSION_SORA = 'SORA';
+
+    /** @var string Extension name for EC */
+    const EXTENSION_EC = 'EC';
+
     /**
      * Update SORA extension for students in a mapping using the SITS get students API as the data source.
      *
@@ -61,7 +70,7 @@ class extensionmanager {
                 $sora->set_properties_from_get_students_api($student);
                 $sora->process_extension([$mapping]);
             } catch (\Exception $e) {
-                $studentcode = $student["code"] ?? '';
+                $studentcode = $student['association']['supplementary']['student_code'] ?? '';
                 logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, Student Idnumber: $studentcode");
             }
         }
@@ -190,7 +199,7 @@ class extensionmanager {
      * @return bool
      * @throws \dml_exception
      */
-    public static function is_sits_assessment_extension_eligible(\stdClass $componentgrade): bool {
+    public static function is_sits_assessment_sora_extension_eligible(\stdClass $componentgrade): bool {
         return self::is_extension_enabled() && // Extension is enabled.
             self::is_assessment_types_sora_supported($componentgrade->astcode); // Assessment type is supported for API V1.
     }
@@ -208,5 +217,83 @@ class extensionmanager {
             $assessment->is_valid_for_extension()->valid;
 
         return $duedatecheck ? $primarycheck && $assessment->get_end_date() > di::get(clock::class)->time() : $primarycheck;
+    }
+
+    /**
+     * Delete EC overrides for a mapped Moodle assessment.
+     *
+     * @param int $mapid SITS mapping ID.
+     *
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function delete_ec_overrides(int $mapid): void {
+        // Get EC overrides by SITS mapping ID.
+        $backups = self::get_mt_overrides(['mapid' => $mapid, 'extensiontype' => self::EXTENSION_EC, 'restored_by' => null]);
+
+        // Nothing to do if there are no EC overrides.
+        if (empty($backups)) {
+            return;
+        }
+
+        try {
+            // Get Moodle assessment.
+            $assessment = [];
+            foreach ($backups as $backup) {
+                if (empty($assessment[$backup->cmid])) {
+                    $assessment[$backup->cmid] =
+                        assessmentfactory::get_assessment(assessmentfactory::SOURCETYPE_MOD, $backup->cmid);
+                }
+                $assessment[$backup->cmid]->delete_ec_override($backup);
+            }
+        } catch (\Exception $e) {
+            logger::log($e->getMessage(), null, "delete_ec_overrides: mapping ID: $mapid");
+        }
+    }
+
+    /**
+     * Get records in marks transfer overrides table.
+     *
+     * @param array $conditions
+     * @return mixed
+     * @throws \dml_exception
+     */
+    public static function get_mt_overrides(array $conditions): array {
+        global $DB;
+        return $DB->get_records(self::TABLE_OVERRIDES, $conditions);
+    }
+
+    /**
+     * Get active user marks transfer overrides by mapid.
+     *
+     * @param int $mapid
+     * @param int $cmid
+     * @param string $extensiontype
+     * @param int $userid
+     * @return \stdClass|false
+     * @throws \dml_exception
+     */
+    public static function get_active_user_mt_overrides_by_mapid(
+        int    $mapid,
+        int    $cmid,
+        string $extensiontype,
+        int    $userid,
+    ): \stdClass|false {
+        global $DB;
+        $sql = "SELECT *
+                FROM {" . self::TABLE_OVERRIDES . "}
+                WHERE mapid = :mapid
+                  AND cmid = :cmid
+                  AND extensiontype = :extensiontype
+                  AND userid = :userid
+                  AND restored_by IS NULL";
+
+        $params = [
+            'mapid' => $mapid,
+            'cmid' => $cmid,
+            'userid' => $userid,
+            'extensiontype' => $extensiontype,
+        ];
+        return $DB->get_record_sql($sql, $params);
     }
 }
