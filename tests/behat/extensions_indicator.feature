@@ -42,6 +42,7 @@ Feature: Extensions message is displayed to indicate extensions eligibility
     And I select "SITS Marks Transfer" from secondary navigation
     And I click on the "Select source" button for "72hr take-home examination (3000 words)"
     And I click on the "Select" button for "Assign 1"
+    And I set the field "import-sora" to "1"
     And I press "Confirm"
     Then I should see "SoRA extensions are automatically applied to this assessment. A scheduled task will run to check for any updates on SITS every hour." in the table row containing "72hr take-home examination (3000 words)"
 
