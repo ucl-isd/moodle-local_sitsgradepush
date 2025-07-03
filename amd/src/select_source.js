@@ -145,7 +145,7 @@ async function getModalBody(type, name, endDate, mapcode, mabseq, mabname, exten
     const extensionContent = extensioneligible === '1' ? `
         <td>
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="import-sora" checked>
+                <input class="form-check-input" type="checkbox" id="import-sora">
                 <label class="form-check-label" for="import-sora">${titleImportSoraExtension}</label>
             </div>
             <p>
