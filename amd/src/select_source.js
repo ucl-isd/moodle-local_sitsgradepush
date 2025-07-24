@@ -77,9 +77,9 @@ async function selectAssessment(button) {
     const modalRoot = modal.getRoot();
 
     modal.getRoot().on(ModalEvents.save, () => {
-        // Get the current value of the import SoRA extensions checkbox directly from the modal DOM.
-        const soraCheckbox = modalRoot.find('#import-sora')[0];
-        const extensions = soraCheckbox ? soraCheckbox.checked : false;
+        // Get the current value of the import extensions checkbox directly from the modal DOM.
+        const extensionsCheckbox = modalRoot.find('#import-extensions')[0];
+        const extensions = extensionsCheckbox ? extensionsCheckbox.checked : false;
         mapAssessment(courseid, sourcetype, sourceid, mabid, reassess, extensions, partid).then(
             (result) => {
                 if (result.success) {
@@ -145,8 +145,8 @@ async function getModalBody(type, name, endDate, mapcode, mabseq, mabname, exten
     const extensionContent = extensioneligible === '1' ? `
         <td>
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="import-sora" checked>
-                <label class="form-check-label" for="import-sora">${titleImportSoraExtension}</label>
+                <input class="form-check-input" type="checkbox" id="import-extensions">
+                <label class="form-check-label" for="import-extensions">${titleImportSoraExtension}</label>
             </div>
             <p>
                 <a href="${extensionInfoPageUrl}" target="_blank">
