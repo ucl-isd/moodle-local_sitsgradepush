@@ -17,9 +17,12 @@
 namespace local_sitsgradepush;
 
 use context_user;
+use core\clock;
+use core\di;
 use core\task\manager as coretaskmanager;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extension\extension;
+use local_sitsgradepush\task\fetch_candidate_numbers_task;
 use local_sitsgradepush\task\process_extensions_new_mapping;
 
 /**
@@ -453,6 +456,40 @@ class taskmanager {
                 coretaskmanager::queue_adhoc_task($task);
         } catch (\moodle_exception $e) {
             logger::log($e->getMessage());
+        }
+    }
+
+    /**
+     * Add an adhoc task to fetch candidate numbers from SITS for a given course.
+     *
+     * @param int $courseid The course ID to fetch candidate numbers for.
+     * @return void
+     */
+    public static function add_fetch_candidate_numbers_task(int $courseid): void {
+        try {
+            $scnmanager = scnmanager::get_instance();
+            if (!$scnmanager->is_fetch_candidate_numbers_enabled() || $scnmanager->get_course_sync_cache($courseid)) {
+                // Do not add task if fetching candidate numbers is disabled.
+                // or if a sync cache already exists for the course.
+                return;
+            }
+
+            // Create the adhoc task.
+            $task = new fetch_candidate_numbers_task();
+
+            // Set the custom data with courseid parameter.
+            $customdata = new \stdClass();
+            $customdata->courseid = $courseid;
+            $task->set_custom_data($customdata);
+
+            // Queue the task.
+            coretaskmanager::queue_adhoc_task($task);
+
+            // Set the course sync cache to prevent multiple tasks being queued in a short period of time.
+            $scnmanager->set_course_sync_cache($courseid, di::get(clock::class)->time());
+        } catch (\Exception $e) {
+            // Log error if task queuing fails.
+            logger::log(get_string('error:failed_to_queue_fetch_scn_task', 'local_sitsgradepush', $e->getMessage()));
         }
     }
 }

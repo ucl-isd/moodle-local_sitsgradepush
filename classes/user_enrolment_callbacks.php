@@ -66,4 +66,18 @@ class user_enrolment_callbacks {
             coretaskmanager::queue_adhoc_task($task);
         }
     }
+
+    /**
+     * Runs the callbacks for after user enrolled.
+     *
+     * @param after_user_enrolled $hook
+     * @throws \dml_exception|\coding_exception
+     */
+    public static function runs_callbacks(after_user_enrolled $hook): void {
+        // Process extensions for new user enrolment.
+        self::process_extensions($hook);
+
+        // Add fetch candidate number ad-hoc task.
+        taskmanager::add_fetch_candidate_numbers_task($hook->get_enrolinstance()->courseid);
+    }
 }

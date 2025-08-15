@@ -68,14 +68,29 @@ class getstudentsv2 extends request {
      * @return array
      */
     public function process_response($response): array {
-        $result = [];
-        if (!empty($response)) {
-            // Convert response to suitable format.
-            $response = json_decode($response, true);
-            $result = $response['response']['student_collection']['student'] ?? [];
+        if (empty($response)) {
+            // If no response, return empty array.
+            return [];
         }
 
-        return $result;
+        // Convert response to suitable format.
+        $response = json_decode($response, true);
+
+        // No students found.
+        if (empty($response['response']['student_collection']['student'])) {
+            return [];
+        }
+
+        // Attach academic year to each student.
+        $students = $response['response']['student_collection']['student'];
+        foreach ($students as &$student) {
+            if (isset($response['response']['assessment_component']['academic_year']['code'])) {
+                $student['association']['supplementary']['academic_year'] =
+                    $response['response']['assessment_component']['academic_year']['code'];
+            }
+        }
+
+        return $students;
     }
 
     /**

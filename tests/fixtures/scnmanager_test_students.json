@@ -1,0 +1,46 @@
+[
+  {
+    "identifier": "JGHDH45",
+    "forename": "Peter",
+    "display_name": "Peter Pan",
+    "surname": "Pan",
+    "userid": "JGHDHJF",
+    "ucl_email": null,
+    "association": {
+      "identifier": "12345678/1",
+      "type": {
+        "name": "U",
+        "code": "Undergraduate"
+      },
+      "supplementary": {
+        "student_code": "12345678",
+        "student_programme_route_code": "12345678/1",
+        "candidate_number": "JJSNS7",
+        "academic_year": "2025",
+        "exam_centre_code": "EXAMSRM"
+      }
+    }
+  },
+  {
+    "identifier": "JGHDH46",
+    "forename": "John",
+    "display_name": "John Doe",
+    "surname": "Doe",
+    "userid": "JGHDHJK",
+    "ucl_email": null,
+    "association": {
+      "identifier": "12345679/1",
+      "type": {
+        "name": "U",
+        "code": "Undergraduate"
+      },
+      "supplementary": {
+        "student_code": "12345679",
+        "student_programme_route_code": "12345679/1",
+        "candidate_number": "JJSNS8",
+        "academic_year": "2025",
+        "exam_centre_code": null
+      }
+    }
+  }
+]
