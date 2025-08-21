@@ -166,6 +166,14 @@ class pushrecord {
         if (!array_key_exists($this->idnumber, $students)) {
             return false;
         }
+
+        // Check the student's identifier in case the student has a different term.
+        $identifierarray = explode('-', $students[$this->idnumber]['assessment']['identifier']);
+        $studentterm = $identifierarray[2] ?? '';
+        if (str_replace('/', '_', $mapping->periodslotcode) != $studentterm) {
+            return false;
+        }
+
         if ($mapping->reassessment == 1) {
             return $students[$this->idnumber]['assessment']['resit_number'] > 0;
         } else {
@@ -260,11 +268,11 @@ class pushrecord {
         }
 
         // The Easikit Get Student API will remove the students whose marks had been transferred successfully.
-        // Find the assessment component <MAP CODE>-<MAB SEQ> for that transfer log,
+        // Find the assessment component <MAP CODE>-<MAB SEQ>-<TERM> for that transfer log,
         // so that we can display the transfer status of mark transfer in the corresponding assessment component mapping.
         $mab = $this->manager->get_mab_and_map_info_by_mapping_id($assessmentmappingid);
         if (!empty($mab)) {
-            $this->componentgrade = $mab->mapcode . '-' . $mab->mabseq;
+            $this->componentgrade = $mab->mapcode . '-' . $mab->mabseq . '-' . str_replace('/', '_', $mab->periodslotcode);
         }
 
         foreach ($transferlogs as $log) {

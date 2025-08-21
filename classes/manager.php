@@ -951,7 +951,8 @@ class manager {
                     cg.id as mabid,
                     cg.mapcode,
                     cg.mabseq,
-                    cg.astcode
+                    cg.astcode,
+                    cg.periodslotcode
                 FROM {" . self::TABLE_COMPONENT_GRADE . "} cg
                 INNER JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                     ON cg.id = am.componentgradeid
@@ -1014,7 +1015,7 @@ class manager {
 
         // Fetch students from SITS.
         foreach ($mappings as $mapping) {
-            $mabkey = $mapping->mapcode . '-' . $mapping->mabseq;
+            $mabkey = $mapping->mapcode . '-' . $mapping->mabseq . '-' . str_replace('/', '_', $mapping->periodslotcode);
 
             // Add additional properties to the $mapping object.
             $mapping->markscount = 0;
@@ -1315,10 +1316,11 @@ class manager {
 
         // Get existing mappings for this activity.
         if ($existingmappings = $this->get_assessment_mappings($assessment)) {
-            // Make sure it does not map to another component grade with same map code.
+            // Make sure it does not map to another component grade with same map code and term.
             foreach ($existingmappings as $existingmapping) {
-                if ($existingmapping->mapcode == $componentgrade->mapcode) {
-                    throw new \moodle_exception('error:same_map_code_for_same_activity', 'local_sitsgradepush');
+                if ($existingmapping->mapcode == $componentgrade->mapcode &&
+                    $existingmapping->periodslotcode == $componentgrade->periodslotcode) {
+                    throw new \moodle_exception('error:same_map_code_and_term_for_same_activity', 'local_sitsgradepush');
                 }
             }
         }
