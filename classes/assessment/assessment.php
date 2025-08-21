@@ -179,8 +179,8 @@ abstract class assessment implements iassessment {
                 if ($mapping->componentgradeid == $mab->id) {
                     return false;
                 }
-                // Check this assessment does not map to a mab that has the same map code.
-                if ($mapping->mapcode == $mab->mapcode) {
+                // Check this assessment does not map to a mab that has the same map code and period slot code (Term).
+                if ($mapping->mapcode == $mab->mapcode && $mapping->periodslotcode == $mab->periodslotcode) {
                     return false;
                 }
             }

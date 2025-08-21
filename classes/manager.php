@@ -1315,10 +1315,11 @@ class manager {
 
         // Get existing mappings for this activity.
         if ($existingmappings = $this->get_assessment_mappings($assessment)) {
-            // Make sure it does not map to another component grade with same map code.
+            // Make sure it does not map to another component grade with same map code and term.
             foreach ($existingmappings as $existingmapping) {
-                if ($existingmapping->mapcode == $componentgrade->mapcode) {
-                    throw new \moodle_exception('error:same_map_code_for_same_activity', 'local_sitsgradepush');
+                if ($existingmapping->mapcode == $componentgrade->mapcode &&
+                    $existingmapping->periodslotcode == $componentgrade->periodslotcode) {
+                    throw new \moodle_exception('error:same_map_code_and_term_for_same_activity', 'local_sitsgradepush');
                 }
             }
         }

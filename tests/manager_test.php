@@ -1055,13 +1055,13 @@ final class manager_test extends base_test_class {
                 );
             }
 
-            // Test exception is thrown if try to map another component grade with same map code.
+            // Test exception is thrown if try to map another component grade with same map code and term for the same activity.
             try {
                 $mab2 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
                 $this->manager->validate_component_grade($mab2->id, 'mod', $assignmod->cmid, $type);
             } catch (\moodle_exception $e) {
                 $this->assertStringContainsString(
-                  get_string('error:same_map_code_for_same_activity', 'local_sitsgradepush'),
+                  get_string('error:same_map_code_and_term_for_same_activity', 'local_sitsgradepush'),
                   $e->getMessage()
                 );
             }
