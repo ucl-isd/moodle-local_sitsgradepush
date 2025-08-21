@@ -194,8 +194,6 @@ class renderer extends plugin_renderer_base {
                         ]
                     );
                     $componentgrade->selectsourceurl = $selectsourceurl->out(false);
-                    $componentgrade->extensioneligiblemessage =
-                        $reassess == 1 ? '' : $this->get_sora_extensions_eligible_message($componentgrade);
 
                     // No need to render mapping information if the component grade is not mapped
                     // for the given marks transfer type.
@@ -235,7 +233,7 @@ class renderer extends plugin_renderer_base {
 
                     $removeextensionwarning = get_string('dashboard:remove_btn_content_extension', 'local_sitsgradepush');
                     $extensioneligiblemessage = $reassess == 1 ? '' :
-                        $this->get_sora_extensions_eligible_message($componentgrade, $assessmentdata->source, $mapping);
+                        $this->get_extensions_eligible_message($assessmentdata->source, $mapping);
                     $assessmentmapping->removeextensionwarning = $mapping->enableextension ? $removeextensionwarning : '';
                     $componentgrade->assessmentmapping = $assessmentmapping;
                     $componentgrade->extensioneligiblemessage = $extensioneligiblemessage;
@@ -502,53 +500,25 @@ class renderer extends plugin_renderer_base {
     /**
      * Get the extensions eligible message.
      *
-     * @param \stdClass $componentgrade
      * @param assessment|null $assessment
      * @param \stdClass|null $mapping
      *
      * @return string
      */
-    private function get_sora_extensions_eligible_message(
-        \stdClass $componentgrade,
+    private function get_extensions_eligible_message(
         ?assessment $assessment = null,
         ?\stdClass $mapping = null
     ): string {
-        // Check if extension is enabled for mapping.
-        if (!empty($mapping) && $mapping->enableextension != '1') {
+        if (empty($mapping)) {
             return '';
         }
 
-        [$valid] = manager::get_manager()->is_component_grade_valid_for_mapping($componentgrade);
-        // Do not show the message if the SITS assessment is not valid for mapping if it is not already mapped.
-        if (!$valid && empty($mapping)) {
+        if (!extensionmanager::is_extension_enabled() || $mapping->enableextension != '1') {
             return '';
         }
 
-        // Check if the component grade is eligible for SORA extensions.
-        $soraeligible = extensionmanager::is_sits_assessment_sora_extension_eligible($componentgrade);
-
-        // Check if the moodle source is eligible for extensions.
-        // Ignore the due date check as the warning message should be shown after the source's due date
-        // if the source is eligible for extensions at the time when it is mapped.
-        $assessmenteligible = $assessment && extensionmanager::is_source_extension_eligible($assessment, false);
-
-        if ($soraeligible) {
-            // Currently not mapped.
-            if (!$assessment) {
-                // Return component grade extension eligibility message.
-                return $this->output->render_from_template('local_sitsgradepush/extensions_eligible_message', []);
-            }
-            // Mapped and both SITS assessment and moodle source are eligible for extensions.
-            if ($assessmenteligible) {
-                // Return mapped assessment extension eligibility message.
-                return $this->output->render_from_template('local_sitsgradepush/extensions_mapped_eligible_message',
-                    ['overrideurl' => $assessment->get_overrides_page_url('group', false)]
-                );
-            } else {
-                // SITS assessment is eligible for extension but moodle source is not.
-                return '';
-            }
-        }
-        return '';
+        return $this->output->render_from_template('local_sitsgradepush/extensions_mapped_eligible_message',
+            ['overrideurl' => $assessment->get_overrides_page_url('user', false)]
+        );
     }
 }

@@ -29,21 +29,15 @@ Feature: Extensions message is displayed to indicate extensions eligibility
       | extension_enabled         | 1  | local_sitsgradepush |
 
   @javascript
-  Scenario: Extensions message is displayed to indicate extensions eligibility for a SITS assessment component
-    Given I am on the "Course 1" course page logged in as teacher1
-    And I click on "More" "link" in the ".secondary-navigation" "css_element"
-    And I select "SITS Marks Transfer" from secondary navigation
-    Then I should see "SoRA extensions can be automatically applied to this assessment once mapped. A scheduled task will run to check for any updates on SITS every hour." in the table row containing "72hr take-home examination (3000 words)"
-
-  @javascript
   Scenario: Extensions message is displayed to indicate extensions are applied to the mapped moodle source
     Given I am on the "Course 1" course page logged in as teacher1
     And I click on "More" "link" in the ".secondary-navigation" "css_element"
     And I select "SITS Marks Transfer" from secondary navigation
     And I click on the "Select source" button for "72hr take-home examination (3000 words)"
     And I click on the "Select" button for "Assign 1"
+    And I set the field "import-extensions" to "1"
     And I press "Confirm"
-    Then I should see "SoRA extensions are automatically applied to this assessment. A scheduled task will run to check for any updates on SITS every hour." in the table row containing "72hr take-home examination (3000 words)"
+    Then I should see "Extensions are automatically applied to this assessment. A scheduled task will run to check for any updates on SITS." in the table row containing "72hr take-home examination (3000 words)"
 
   @javascript
   Scenario: User chose to disable the extensions
@@ -52,6 +46,6 @@ Feature: Extensions message is displayed to indicate extensions eligibility
     And I select "SITS Marks Transfer" from secondary navigation
     And I click on the "Select source" button for "72hr take-home examination (3000 words)"
     And I click on the "Select" button for "Assign 1"
-    And I set the field "import-sora" to "0"
+    And I set the field "import-extensions" to "0"
     And I press "Confirm"
-    Then I should not see "SoRA extensions are automatically applied to this assessment. A scheduled task will run to check for any updates on SITS every hour." in the table row containing "72hr take-home examination (3000 words)"
+    Then I should not see "Extensions are automatically applied to this assessment. A scheduled task will run to check for any updates on SITS." in the table row containing "72hr take-home examination (3000 words)"
