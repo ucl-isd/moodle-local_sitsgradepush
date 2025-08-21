@@ -28,6 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 $callbacks = [
     [
         'hook' => core_enrol\hook\after_user_enrolled::class,
-        'callback' => 'local_sitsgradepush\user_enrolment_callbacks::process_extensions',
+        'callback' => 'local_sitsgradepush\user_enrolment_callbacks::runs_callbacks',
     ],
 ];

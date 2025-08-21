@@ -20,6 +20,8 @@ use cache;
 use cache_application;
 use cache_session;
 use cache_store;
+use core\clock;
+use core\di;
 
 /**
  * Cache manager class for handling caches.
@@ -42,12 +44,15 @@ class cachemanager {
     /** @var string Cache area for storing mapping and mab information.*/
     const CACHE_AREA_MAPPING_MAB_INFO = 'mappingmabinfo';
 
+    /** @var string Cache area for storing student candidate numbers.*/
+    const CACHE_AREA_CANDIDATE_NUMBERS = 'candidatenumbers';
+
     /**
      * Get cache.
      *
      * @param string $area
      * @param string $key
-     * @return cache_application|cache_session|cache_store|null
+     * @return mixed
      * @throws \coding_exception
      */
     public static function get_cache(string $area, string $key) {
@@ -56,8 +61,11 @@ class cachemanager {
         $cachevalue = $cache->get($key);
         $expires = $cache->get('expires_' . $key);
 
-        if (empty($cachevalue) || empty($expires) || time() >= $expires) {
-            if ($expires && time() >= $expires) {
+        $clock = di::get(clock::class);
+        $currenttime = $clock->time();
+
+        if (empty($cachevalue) || empty($expires) || $currenttime >= $expires) {
+            if ($expires && $currenttime >= $expires) {
                 // Cache expired, delete it.
                 self::purge_cache($area, $key);
             }
@@ -79,7 +87,9 @@ class cachemanager {
     public static function set_cache(string $area, string $key, mixed $value, int $expiresafter): void {
         $cache = cache::make('local_sitsgradepush', $area);
         $cache->set($key, $value);
-        $cache->set('expires_' . $key, time() + $expiresafter);
+
+        $clock = di::get(clock::class);
+        $cache->set('expires_' . $key, $clock->time() + $expiresafter);
     }
 
     /**

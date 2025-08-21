@@ -113,8 +113,9 @@ class map_assessment extends external_api {
             $event = \local_sitsgradepush\event\assessment_mapped::create([
               'context' => context_course::instance($data->courseid),
               'other' => [
-                'mappingid' => $mappingid,
-                'mabid' => $data->componentgradeid,
+                  'mappingid' => $mappingid,
+                  'mabid' => $data->componentgradeid,
+                  'courseid' => $data->courseid,
               ],
             ]);
             $event->trigger();

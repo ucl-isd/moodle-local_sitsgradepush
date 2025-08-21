@@ -91,4 +91,37 @@ class logger {
 
         return $DB->insert_record('local_sitsgradepush_err_log', $error);
     }
+
+    /**
+     * Log debug error.
+     *
+     * @param string $message
+     * @param string|null $requesturl
+     * @param string|null $data
+     * @param string|null $response
+     * @return bool|int
+     * @throws \dml_exception
+     */
+    public static function log_debug_error(
+        string $message,
+        ?string $requesturl = null,
+        ?string $data = null,
+        ?string $response = null
+    ): bool|int {
+        if (!self::is_debug_error_logging_enabled()) {
+            return false;
+        }
+
+        return self::log($message, $requesturl, $data, $response);
+    }
+
+    /**
+     * Check if debug error logging is enabled.
+     *
+     * @return bool
+     */
+    public static function is_debug_error_logging_enabled(): bool {
+        // Check if debug error logging is enabled.
+        return get_config('local_sitsgradepush', 'debug_error_logging') == '1';
+    }
 }

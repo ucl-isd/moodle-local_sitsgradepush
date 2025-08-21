@@ -1757,6 +1757,43 @@ class manager {
     }
 
     /**
+     * Get user id from student code.
+     *
+     * @param string $studentcode
+     * @return int|false
+     * @throws \dml_exception
+     */
+    public function get_userid_from_student_code(string $studentcode): int|false {
+        global $DB;
+        return $DB->get_field('user', 'id', ['idnumber' => $studentcode]);
+    }
+
+    /**
+     * Get course academic year.
+     *
+     * @param int $courseid
+     * @return string|null
+     * @throws \dml_exception
+     */
+    public function get_course_academic_year(int $courseid): ?string {
+        // Get course custom fields.
+        $customfields = [];
+        $handler = course_handler::create();
+        $data = $handler->get_instance_data($courseid, true);
+
+        foreach ($data as $dta) {
+            $customfields[$dta->get_field()->get('shortname')] = $dta->get_value();
+        }
+
+        // Course academic year not set.
+        if (empty($customfields['course_year'])) {
+            return null;
+        }
+
+        return $customfields['course_year'];
+    }
+
+    /**
      * Delete unmapped local component grades (MABs).
      *
      * @param \stdClass $occ

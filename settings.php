@@ -199,10 +199,26 @@ if ($hassiteconfig) {
             get_string('settings:new_feature_notification_template_html', 'local_sitsgradepush'),
             PARAM_RAW, 100, 8));
 
+        // Setting to enable/disable fetching student candidate numbers from SITS.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/fetch_scn_enabled',
+            get_string('settings:fetch_scn_enabled', 'local_sitsgradepush'),
+            get_string('settings:fetch_scn_enabled:desc', 'local_sitsgradepush'),
+            '0'
+        ));
+
         // Setting to enable/disable request error logging.
         $settings->add(new admin_setting_configcheckbox(
             'local_sitsgradepush/request_error_logging',
             get_string('settings:request_error_logging', 'local_sitsgradepush'),
+            '',
+            '0'
+        ));
+
+        // Setting to enable/disable debug error logging.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/debug_error_logging',
+            get_string('settings:debug_error_logging', 'local_sitsgradepush'),
             '',
             '0'
         ));

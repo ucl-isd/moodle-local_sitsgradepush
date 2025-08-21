@@ -707,5 +707,36 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025061200, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2025081500) {
+
+        // Define table local_sitsgradepush_scn to be created.
+        $table = new xmldb_table('local_sitsgradepush_scn');
+
+        // Adding fields to table local_sitsgradepush_scn.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('student_code', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('academic_year', XMLDB_TYPE_INTEGER, '12', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('candidate_number', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table local_sitsgradepush_scn.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('idx_userid_academic_year', XMLDB_KEY_UNIQUE, ['userid', 'academic_year']);
+
+        // Adding indexes to table local_sitsgradepush_scn.
+        $table->add_index('idx_student', XMLDB_INDEX_NOTUNIQUE, ['student_code']);
+        $table->add_index('idx_academic_year', XMLDB_INDEX_NOTUNIQUE, ['academic_year']);
+
+        // Conditionally launch create table for local_sitsgradepush_scn.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2025081500, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

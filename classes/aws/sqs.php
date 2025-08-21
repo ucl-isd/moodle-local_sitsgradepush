@@ -17,7 +17,6 @@
 namespace local_sitsgradepush\aws;
 
 use Aws\Sqs\SqsClient;
-use core\aws\client_factory;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -46,7 +45,8 @@ class sqs {
         // Check required configs are set.
         $configs = $this->check_required_configs_are_set();
 
-        $this->client = client_factory::get_client('\Aws\Sqs\SqsClient', [
+        // Create the SQS client.
+        $this->client = new SqsClient([
             'region' => $configs->aws_region,
             'version' => 'latest',
             'credentials' => [
