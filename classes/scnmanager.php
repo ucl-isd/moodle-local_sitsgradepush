@@ -266,6 +266,9 @@ class scnmanager {
 
                 if ($existingrecord) {
                     if ($existingrecord->candidate_number === $candidatenumber) {
+                        // SITS candidate number is the same as existing one, set cache and skip update.
+                        $this->set_cache($academicyear, $userid, $candidatenumber);
+
                         // No need to update if the candidate number is the same.
                         continue;
                     }
