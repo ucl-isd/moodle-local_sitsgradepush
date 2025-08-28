@@ -38,6 +38,12 @@ class ec_queue_processor extends aws_queue_processor {
     /** @var string DECISION_TYPE_DECISION  */
     const DECISION_TYPE_DECISION = 'DECISION';
 
+    /** @var string PROCESS_STATUS_PROCESSED */
+    const PROCESS_STATUS_PROCESSED = 'P';
+
+    /** @var string PROCESS_STATUS_DELETED */
+    const PROCESS_STATUS_DELETED = 'D';
+
     /**
      * Get the queue URL.
      *
@@ -69,7 +75,20 @@ class ec_queue_processor extends aws_queue_processor {
         // Get the EC/DAP data from API. We cannot guarantee that the EC/DAP data updated has the latest new due date.
         // For example, a student may have multiple ECs, we need to know the latest new due date among all ECs / DAPs.
         if ($ec->get_data_source() === extension::DATASOURCE_AWS) {
-            $mab = explode('-', $ec->get_mab_identifier());
+            $mabidentifier = $ec->get_mab_identifier();
+
+            // Check if MAB identifier matches expected pattern (e.g., AMER0038A4UG-001).
+            if (empty($mabidentifier) || !preg_match('/^[A-Z0-9]+-\d{3}$/', $mabidentifier)) {
+                // Empty MAB identifier or doesn't match expected pattern.
+                throw new moodle_exception(
+                    'error:invalid_mab_identifier',
+                    'local_sitsgradepush',
+                    '',
+                    ['mabidentifier' => $ec->get_mab_identifier(), 'studentcode' => $ec->get_student_code()]
+                );
+            }
+
+            $mab = explode('-', $mabidentifier);
 
             // Set EC data from API.
             $students = manager::get_manager()->get_students_from_sits(
@@ -104,9 +123,15 @@ class ec_queue_processor extends aws_queue_processor {
      */
     protected function should_ignore_message(ec $ec): bool {
         $eventdata = $ec->get_event_data();
-        // Ignore if the EC request status is not COMPLETE or decision type is not DECISION.
-        if (!($eventdata->extenuating_circumstances->request->status === self::EVENT_STATUS_COMPLETE &&
-            $eventdata->extenuating_circumstances->request->decision_type === self::DECISION_TYPE_DECISION)) {
+        $ecs = $eventdata->extenuating_circumstances;
+
+        // Ignore EC event for the following conditions:
+        // 1. The request status is not COMPLETE.
+        // 2. The decision type is not DECISION.
+        // 3. The process status is not 'D' (deleted) or 'P' (processed).
+        if ($ecs->request->status !== self::EVENT_STATUS_COMPLETE ||
+            $ecs->request->decision_type !== self::DECISION_TYPE_DECISION ||
+            !($ecs->process_status === self::PROCESS_STATUS_DELETED || $ecs->process_status === self::PROCESS_STATUS_PROCESSED)) {
             return true;
         }
 
