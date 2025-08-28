@@ -31,11 +31,11 @@ use local_sitsgradepush\manager;
  */
 class sora extends extension {
 
-    /** @var string Prefix used to create SORA groups */
-    const SORA_GROUP_PREFIX = 'SORA-Activity-';
+    /** @var string Prefix used to create RAA groups */
+    const SORA_GROUP_PREFIX = 'RAA-Activity-';
 
-    /** @var string SORA message type - EXAM */
-    const SORA_MESSAGE_TYPE_EXAM = 'EXAM';
+    /** @var string SORA message type - New code to replace the old EXAM type code */
+    const SORA_MESSAGE_TYPE_RAPXR = 'RAPXR';
 
     /** @var int Extra duration in minutes per hour */
     protected int $extraduration;

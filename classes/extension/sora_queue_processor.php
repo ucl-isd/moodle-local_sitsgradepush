@@ -72,7 +72,8 @@ class sora_queue_processor extends aws_queue_processor {
      */
     protected function should_ignore_message(sora $sora): bool {
         // As the assessment api only returns exam type SORA, we only process exam type SORA update from AWS.
-        if ($sora->get_sora_message_type() !== sora::SORA_MESSAGE_TYPE_EXAM) {
+        // RAPXR type is the new exam type code to replace EXAM type.
+        if ($sora->get_sora_message_type() !== sora::SORA_MESSAGE_TYPE_RAPXR) {
             return true;
         }
 

@@ -17,8 +17,8 @@
     "person_sora": {
       "identifier": "AAAHM03-000001",
       "type": {
-        "code": "EXAM",
-        "name": "Examinations"
+        "code": "RAPXR",
+        "name": "Reasonable Adjustments - Examinations"
       },
       "arrangement_record_sequence_number": "000001",
       "accessibility_assessment_arrangement_sequence_number": "000001",

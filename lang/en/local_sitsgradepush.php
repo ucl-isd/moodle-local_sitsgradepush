@@ -128,6 +128,7 @@ $string['error:gradesneedregrading'] = 'Marks transfer is not available while gr
 $string['error:gradetype_not_supported'] = 'The grade type of this assessment is not supported for marks transfer.';
 $string['error:inserttask'] = 'Failed to insert task.';
 $string['error:invalid_json_data'] = 'Invalid JSON data: {$a}';
+$string['error:invalid_mab_identifier'] = 'Invalid MAB identifier: {$a->mabidentifier}, Student Code: {$a->studentcode}';
 $string['error:invalid_message'] = 'Invalid message received.';
 $string['error:invalid_sora_datasource'] = 'Invalid SORA data source.';
 $string['error:invalid_source_type'] = 'Invalid source type. {$a}';
