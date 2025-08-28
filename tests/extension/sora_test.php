@@ -197,6 +197,38 @@ final class sora_test extends extension_common {
     }
 
     /**
+     * Test SORA override using RAPXR message type from AWS message.
+     *
+     * @covers \local_sitsgradepush\extension\sora::process_extension
+     * @covers \local_sitsgradepush\extension\sora::set_properties_from_aws_message
+     * @covers \local_sitsgradepush\extension\sora::get_sora_message_type
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function test_sora_process_extension_from_aws_with_rapxr_message_type(): void {
+        // Set up the SORA overrides.
+        $this->setup_for_sora_testing();
+
+        // Create test data with RAPXR message type.
+        $rapxreventdata = $this->create_rapxr_event_data();
+
+        // Process the extension by passing the JSON event data.
+        $sora = new sora();
+        $sora->set_properties_from_aws_message($rapxreventdata);
+        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
+
+        // Verify the message type is RAPXR.
+        $this->assertEquals('RAPXR', $sora->get_sora_message_type());
+
+        // Verify override was created for the assignment.
+        $this->assert_assignment_override_exists($sora, $this->assign1, 35);
+
+        // Verify override was created for the quiz.
+        $this->assert_quiz_override_exists($sora, $this->quiz1, 35);
+    }
+
+    /**
      * Test SORA extension for reassessment.
      * Reassessment for extension is not supported currently, keeping the test for future use.
      *
@@ -408,5 +440,17 @@ final class sora_test extends extension_common {
         $manager->get_students_from_sits($mab);
 
         return $mapping;
+    }
+
+    /**
+     * Create RAPXR event data for testing.
+     *
+     * @return string JSON string with RAPXR message type
+     */
+    protected function create_rapxr_event_data(): string {
+        $eventdata = json_decode(tests_data_provider::get_sora_event_data(), true);
+        $eventdata['entity']['person_sora']['type']['code'] = 'RAPXR';
+        $eventdata['entity']['person_sora']['type']['name'] = 'Reasonable Adjustments - Examinations';
+        return json_encode($eventdata);
     }
 }
