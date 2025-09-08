@@ -86,13 +86,22 @@ class scnmanager {
             // Fetch student candidate numbers from SITS for each module occurrence.
             $scns = [];
             foreach ($modoccs as $modocc) {
+                // Skip module occurrences without component grades.
+                if (empty($modocc->componentgrades)) {
+                    continue;
+                }
+
                 // Use the first mab to fetch students.
                 $firstmab = reset($modocc->componentgrades);
-                $students = $manager->get_students_from_sits($firstmab, true, 2);
+
+                // Try to get students from SITS.
+                $students = $this->get_students_from_sits($manager, $firstmab, $courseid);
+
                 foreach ($students as $student) {
                     $studentv2 = new studentv2($student);
                     $scns[$studentv2->get_studentcode()] = $studentv2;
                 }
+
                 // Break the loop if student code provided is found.
                 if ($studentcode && isset($scns[$studentcode])) {
                     break;
@@ -266,6 +275,9 @@ class scnmanager {
 
                 if ($existingrecord) {
                     if ($existingrecord->candidate_number === $candidatenumber) {
+                        // SITS candidate number is the same as existing one, set cache and skip update.
+                        $this->set_cache($academicyear, $userid, $candidatenumber);
+
                         // No need to update if the candidate number is the same.
                         continue;
                     }
@@ -384,6 +396,41 @@ class scnmanager {
             $candidatenumber,
             self::SCN_EXPIRY
         );
+    }
+
+    /**
+     * Get students from SITS with weekly caching to prevent repeated API calls.
+     *
+     * @param manager $manager The manager instance.
+     * @param object $mab The component grade object.
+     * @param int $courseid The course ID.
+     * @return array Array of students.
+     */
+    private function get_students_from_sits(manager $manager, object $mab, int $courseid): array {
+        $cachekey = 'sits_students_fetch_' . $courseid . '_' . $mab->mapcode;
+
+        $lastfetch = cachemanager::get_cache(
+            cachemanager::CACHE_AREA_CANDIDATE_NUMBERS,
+            $cachekey
+        );
+
+        // Cache exists, return empty array to avoid repeated API calls within a week.
+        if ($lastfetch !== null) {
+            return [];
+        }
+
+        // Fetch students from SITS API.
+        $students = $manager->get_students_from_sits($mab, true, 2);
+
+        // Set cache to expire in one week.
+        cachemanager::set_cache(
+            cachemanager::CACHE_AREA_CANDIDATE_NUMBERS,
+            $cachekey,
+            $this->clock->time(),
+            WEEKSECS
+        );
+
+        return $students;
     }
 
     /**
