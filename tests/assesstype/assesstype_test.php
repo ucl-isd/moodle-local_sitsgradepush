@@ -46,6 +46,9 @@ final class assesstype_test extends \advanced_testcase {
     /** @var \stdClass Test quiz */
     private \stdClass $quiz;
 
+    /** @var \stdClass Test coursework */
+    private \stdClass $coursework;
+
     /** @var \grade_category Course root grade category */
     private \grade_category $coursegradecategory;
 
@@ -107,6 +110,11 @@ final class assesstype_test extends \advanced_testcase {
         $this->assign = $this->getDataGenerator()->create_module('assign', ['course' => $this->course->id]);
         $this->quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $this->course->id]);
 
+        $courseworkpluginexists = \core_component::get_component_directory('mod_coursework');
+        $this->coursework = $courseworkpluginexists
+            ? $this->getDataGenerator()->create_module('coursework', ['course' => $this->course->id])
+            : null;
+
         // Get course root category.
         $this->coursegradecategory = \grade_category::fetch(['courseid' => $this->course->id, 'parent' => null, 'depth' => 1]);
 
@@ -114,6 +122,9 @@ final class assesstype_test extends \advanced_testcase {
         $this->add_item_to_category($this->gradeitem->id, $this->gradecategory->id);
         $this->add_module_to_category('assign', $this->assign->id, $this->gradecategory->id);
         $this->add_module_to_category('quiz', $this->quiz->id, $this->gradecategory->id);
+        if ($courseworkpluginexists) {
+            $this->add_module_to_category('coursework', $this->coursework->id, $this->gradecategory->id);
+        }
 
         // Create assessment mapping.
         $mab = reset($this->mabs);
@@ -389,6 +400,9 @@ final class assesstype_test extends \advanced_testcase {
         $this->add_item_to_category($this->gradeitem->id, $this->coursegradecategory->id);
         $this->add_module_to_category('assign', $this->assign->id, $this->coursegradecategory->id);
         $this->add_module_to_category('quiz', $this->quiz->id, $this->coursegradecategory->id);
+        if ($this->coursework) {
+            $this->add_module_to_category('coursework', $this->coursework->id, $this->coursegradecategory->id);
+        }
 
         // Verify all items are unlocked.
         $this->assert_lock_status($this->gradeitem->id, 0, false);
