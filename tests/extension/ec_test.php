@@ -139,7 +139,7 @@ final class ec_test extends extension_common {
     /**
      * Setup common test data including mock manager and mapping
      *
-     * @param string $type Activity type (assign/quiz)
+     * @param string $type Activity type (assign/quiz/coursework)
      * @return object The activity object
      */
     private function setup_common_test_data(string $type = 'assign'): object {
@@ -147,7 +147,19 @@ final class ec_test extends extension_common {
         $this->setup_mock_manager();
 
         $mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
-        $activity = $type === 'assign' ? $this->assign1 : $this->quiz1;
+        switch ($type) {
+            case 'assign':
+                $activity = $this->assign1;
+                break;
+            case 'quiz':
+                $activity = $this->quiz1;
+                break;
+            case 'coursework':
+                $activity = $this->coursework1;
+                break;
+            default:
+                throw new \Exception("Unexpected activity type $type");
+        }
         $this->mappingid = $this->insert_mapping($mab1->id, $this->course1->id, $activity, $type);
 
         return $activity;
@@ -156,13 +168,35 @@ final class ec_test extends extension_common {
     /**
      * Get override table details for a given activity type
      *
-     * @param string $type Activity type (assign/quiz)
+     * @param string $type Activity type (assign/quiz/coursework)
      * @return array Table details containing table name, date field, and activity field
      */
     private static function get_override_table_details(string $type): array {
-        return $type === 'assign' ?
-            ['table' => 'assign_overrides', 'datefield' => 'duedate', 'activityfield' => 'assignid'] :
-            ['table' => 'quiz_overrides', 'datefield' => 'timeclose', 'activityfield' => 'quiz'];
+        switch ($type) {
+            case 'assign':
+                return  [
+                    'table' => 'assign_overrides',
+                    'datefield' => 'duedate',
+                    'activityfield' => 'assignid',
+                    'useridfield' => 'userid',
+                ];
+            case 'quiz':
+                return [
+                    'table' => 'quiz_overrides',
+                    'datefield' => 'timeclose',
+                    'activityfield' => 'quiz',
+                    'useridfield' => 'userid',
+                ];
+            case 'coursework':
+                return [
+                    'table' => \local_sitsgradepush\assessment\coursework::TABLE_OVERRIDES,
+                    'datefield' => 'personal_deadline',
+                    'activityfield' => 'courseworkid',
+                    'useridfield' => 'allocatableid',
+                ];
+            default:
+                throw new \Exception("Unexpected activity type $type");
+        }
     }
 
     /**
@@ -176,7 +210,13 @@ final class ec_test extends extension_common {
     private function verify_override(object $activity, string $type, ?int $expecteddate): void {
         global $DB;
         $details = $this->get_override_table_details($type);
-        $conditions = [$details['activityfield'] => $activity->id, 'userid' => $this->student1->id];
+        $conditions = [
+            $details['activityfield'] => $activity->id,
+            $details['useridfield'] => $this->student1->id,
+        ];
+        if ($type === 'coursework') {
+            $conditions['allocatabletype'] = 'user';
+        }
         $override = $DB->get_record($details['table'], $conditions);
 
         if ($expecteddate === null) {
@@ -192,10 +232,14 @@ final class ec_test extends extension_common {
      * @return array[]
      */
     public static function new_student_enrollment_provider(): array {
-        return [
-            'assignment' => ['assign'],
-            'quiz' => ['quiz'],
+        $data = [
+            'assignment' => ['assign', 'userid'],
+            'quiz' => ['quiz', 'userid'],
         ];
+        if (\core_component::get_component_directory('mod_coursework')) {
+            $data['coursework'] = ['coursework', 'allocatableid'];
+        }
+        return $data;
     }
 
     /**
@@ -203,7 +247,7 @@ final class ec_test extends extension_common {
      *
      * @covers \local_sitsgradepush\task\process_extensions_new_enrolment::execute
      * @dataProvider new_student_enrollment_provider
-     * @param string $type Activity type (assign/quiz)
+     * @param string $type Activity type (assign/quiz/coursework)
      */
     public function test_process_extensions_new_enrolment(string $type): void {
         $activity = $this->setup_common_test_data($type);
@@ -230,10 +274,20 @@ final class ec_test extends extension_common {
      * @return array[]
      */
     public static function override_restoration_provider(): array {
-        return [
-            'assignment' => ['assign', 'assign_overrides', 'duedate', 'assignid'],
-            'quiz' => ['quiz', 'quiz_overrides', 'timeclose', 'quiz'],
+        $data = [
+            'assignment' => ['assign', 'assign_overrides', 'duedate', 'assignid', 'userid'],
+            'quiz' => ['quiz', 'quiz_overrides', 'timeclose', 'quiz', 'userid'],
         ];
+        if (\core_component::get_component_directory('mod_coursework')) {
+            $data['coursework'] = [
+                'coursework',
+                \local_sitsgradepush\assessment\coursework::TABLE_OVERRIDES,
+                'personal_deadline',
+                'courseworkid',
+                'allocatableid',
+            ];
+        }
+        return $data;
     }
 
     /**
@@ -247,12 +301,14 @@ final class ec_test extends extension_common {
      * @param string $table Override table name
      * @param string $datefield Name of the date field
      * @param string $activityfield Name of the activity ID field
+     * @param string $useridfield Name of the user ID field
      */
     public function test_process_extensions_new_sits_mapping(
         string $type,
         string $table,
         string $datefield,
-        string $activityfield
+        string $activityfield,
+        string $useridfield,
     ): void {
         global $DB;
         $this->setAdminUser();
@@ -262,9 +318,14 @@ final class ec_test extends extension_common {
         // Add user override with original due date.
         $override = [
             $activityfield => $activity->id,
-            'userid' => $this->student1->id,
+            $useridfield => $this->student1->id,
             $datefield => strtotime('2025-02-20 12:00'),
         ];
+        if ($type === 'coursework') {
+            $override['allocatabletype'] = 'user';
+            $override['createdbyid'] = 0;
+            $override['timecreated'] = time();
+        }
         $DB->insert_record($table, $override);
 
         // Execute extension new mapping task.
