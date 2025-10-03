@@ -124,7 +124,7 @@ class extension_common extends base_test_class {
                     'course' => $this->course1->id,
                     'startdate' => $assessmentstartdate,
                     'deadline' => $assessmentenddate,
-                    'personaldeadlineenabled' => 1,
+                    'extensionsenabled' => 1,
                 ]
             )
             : null;
