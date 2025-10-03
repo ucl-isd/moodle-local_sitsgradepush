@@ -142,7 +142,7 @@ function local_sitsgradepush_coursemodule_edit_post_actions(stdClass $data, stdC
     if (get_config('local_sitsgradepush', 'enabled') && extensionmanager::is_extension_enabled()) {
         try {
             // Check if the course module is one of the supported activities for extensions.
-            if (!in_array($data->modulename, extension::SUPPORTED_MODULE_TYPES)) {
+            if (!extension::is_module_supported($data->modulename)) {
                 return $data;
             }
 

@@ -20,8 +20,21 @@
     "MAP_CODE": "LAWS0024A6UF",
     "MAB_SEQ": "002",
     "AST_CODE": "CN01",
-    "MAB_PERC": "30",
+    "MAB_PERC": "20",
     "MAB_NAME": "2000 word essay",
+    "MKS_CODE": "UNA01",
+    "APA_ROMC": null
+  },
+  {
+    "MOD_CODE": "LAWS0024",
+    "MAV_OCCUR": "A6U",
+    "AYR_CODE": "2023",
+    "PSL_CODE": "T1/2",
+    "MAP_CODE": "LAWS0024A6UF",
+    "MAB_SEQ": "003",
+    "AST_CODE": "HC02",
+    "MAB_PERC": "10",
+    "MAB_NAME": "Coursework",
     "MKS_CODE": "UNA01",
     "APA_ROMC": null
   }

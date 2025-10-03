@@ -37,7 +37,7 @@ final class sora_test extends extension_common {
         parent::setUp();
 
         // Add 'CN01' to SORA supported assessment types, so that Sora can be applied for this assessment type.
-        set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
+        set_config('ast_codes_sora_api_v1', 'BC02, HC01, HC02, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
     }
 
     /**
@@ -75,13 +75,14 @@ final class sora_test extends extension_common {
      * @covers \local_sitsgradepush\extension\sora::set_properties_from_aws_message
      * @covers \local_sitsgradepush\assessment\assign::apply_sora_extension
      * @covers \local_sitsgradepush\assessment\quiz::apply_sora_extension
+     * @covers \local_sitsgradepush\assessment\coursework::apply_sora_extension
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
     public function test_sora_process_extension_from_aws(): void {
         global $DB;
-        // Remove 'CN01' from SORA supported assessment types so that Sora cannot be applied for this assessment type.
+        // Remove 'CN01' and 'HC02' from SORA supported assessment types so that Sora cannot be applied for this assessment type.
         set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04', 'local_sitsgradepush');
 
         // Set up the SORA overrides.
@@ -95,16 +96,32 @@ final class sora_test extends extension_common {
         // Verify override was created for the assignment.
         $this->assert_assignment_override_exists($sora, $this->assign1, 35);
 
-        // Verify no override was created for the quiz, since the SITS assessment mapped to it has the type 'CN01',
-        // which is not supported by SORA.
+        // Verify no override was created for the quiz.
+        // Reason is that the SITS assessment mapped to it has the type 'CN01', which was removed from supported list above.
+        // See local/sitsgradepush/tests/fixtures/sits_component_grades.json.
         $override = $DB->get_record('quiz_overrides', ['quiz' => $this->quiz1->id]);
         $this->assertFalse($override);
 
-        // Add 'CN01' to SORA supported assessment types.
-        // Verify override was created for the quiz now.
-        set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
+        // Now do something similar for coursework (if installed).
+        if ($this->coursework1) {
+            $override = $DB->get_record(
+                \local_sitsgradepush\assessment\coursework::TABLE_OVERRIDES,
+                ['courseworkid' => $this->coursework1->id],
+            );
+            $this->assertFalse($override);
+        }
+
+        // Add 'CN01' and 'HC02' back to SORA supported assessment types.
+        // Verify override was created for the quiz and then coursework.
+        set_config('ast_codes_sora_api_v1', 'BC02, HC01, HC02, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
         $this->assert_quiz_override_exists($sora, $this->quiz1, 35);
+
+        // Verify override was created for the coursework.
+        if ($this->coursework1) {
+            $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
+            $this->assert_coursework_override_exists($sora, $this->coursework1, 35);
+        }
     }
 
     /**
@@ -235,11 +252,19 @@ final class sora_test extends extension_common {
         $mab2 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
         $this->insert_mapping($mab2->id, $this->course1->id, $this->quiz1, 'quiz');
 
+        if ($this->coursework1) {
+            $mab3 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '003']);
+            $this->insert_mapping($mab3->id, $this->course1->id, $this->coursework1, 'coursework');
+        }
+
         $manager = manager::get_manager();
         $apiclient = $this->get_apiclient_for_testing(false, [tests_data_provider::get_sora_testing_student_data()]);
         tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
         $manager->get_students_from_sits($mab1, true, 2);
         $manager->get_students_from_sits($mab2, true, 2);
+        if ($this->coursework1) {
+            $manager->get_students_from_sits($mab3, true, 2);
+        }
     }
 
     /**
@@ -261,6 +286,15 @@ final class sora_test extends extension_common {
             'timeopen' => $this->clock->now()->modify('-3 days')->getTimestamp(),
             'timeclose' => $this->clock->now()->modify('-2 days')->getTimestamp(),
         ]);
+
+        // Make the coursework a past assessment.
+        if ($this->coursework1) {
+            $DB->update_record('coursework', (object) [
+                'id' => $this->coursework1->id,
+                'startdate' => $this->clock->now()->modify('-3 days')->getTimestamp(),
+                'deadline' => $this->clock->now()->modify('-2 days')->getTimestamp(),
+            ]);
+        }
     }
 
     /**
@@ -296,10 +330,19 @@ final class sora_test extends extension_common {
         // Test no SORA override for the quiz.
         $override = $DB->record_exists('quiz_overrides', ['quiz' => $this->quiz1->id]);
         $this->assertFalse($override);
+
+        if ($this->coursework1) {
+            // Test no SORA override for the coursework.
+            $override = $DB->record_exists(
+                \local_sitsgradepush\assessment\coursework::TABLE_OVERRIDES,
+                ['courseworkid' => $this->coursework1->id]
+            );
+            $this->assertFalse($override);
+        }
     }
 
     /**
-     * Assert that overrides exist for both assignment and quiz
+     * Assert that overrides exist for the assignment, quiz and coursework if installed.
      *
      * @param sora $sora The SORA extension object
      * @param int $minutes The number of minutes for the extension
@@ -307,6 +350,9 @@ final class sora_test extends extension_common {
     protected function assert_overrides_exist(sora $sora, int $minutes): void {
         $this->assert_assignment_override_exists($sora, $this->assign1, $minutes);
         $this->assert_quiz_override_exists($sora, $this->quiz1, $minutes);
+        if ($this->coursework1) {
+            $this->assert_coursework_override_exists($sora, $this->coursework1, $minutes);
+        }
     }
 
     /**
@@ -353,6 +399,32 @@ final class sora_test extends extension_common {
         // Test group override set in the quiz.
         $override = $DB->get_record('quiz_overrides', ['quiz' => $quiz->id, 'userid' => null, 'groupid' => $groupid]);
         $this->assertEquals($override->groupid, $groupid);
+    }
+
+    /**
+     * Assert that a coursework override exists
+     *
+     * @param sora $sora The SORA extension object
+     * @param object $coursework The coursework object
+     * @param int $minutes The number of minutes for the extension
+     */
+    protected function assert_coursework_override_exists(sora $sora, object $coursework, int $minutes): void {
+        global $DB;
+
+        // Test SORA override group exists.
+        $groupid = $DB->get_field('groups', 'id', ['name' => $sora->get_extension_group_name($coursework->cmid, $minutes)]);
+        $this->assertNotEmpty($groupid);
+
+        // Test user is added to the SORA group.
+        $groupmember = $DB->get_record('groups_members', ['groupid' => $groupid, 'userid' => $this->student1->id]);
+        $this->assertNotEmpty($groupmember);
+
+        // Test group override set in the coursework.
+        $overrideexists = $DB->record_exists(
+            \local_sitsgradepush\assessment\coursework::TABLE_OVERRIDES,
+            ['courseworkid' => $coursework->id, 'allocatableid' => $groupid, 'allocatabletype' => 'group']
+        );
+        $this->assertTrue($overrideexists);
     }
 
     /**
