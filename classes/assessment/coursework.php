@@ -19,7 +19,7 @@ namespace local_sitsgradepush\assessment;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
-use mod_coursework\models\personal_deadline;
+use mod_coursework\models\deadline_extension;
 
 /**
  * Class for coursework plugin (mod_coursework) assessment.
@@ -33,9 +33,9 @@ class coursework extends activity {
 
     /**
      * The table where coursework "overrides" are stored.
-     * (The coursework plugin calls them personal deadlines).
+     * (The coursework plugin calls them extensions and does not have the concept of overrides like assign/quiz).
      */
-    const TABLE_OVERRIDES = 'coursework_person_deadlines';
+    const TABLE_OVERRIDES = 'coursework_extensions';
 
     /**
      * Is the user a participant in the coursework.
@@ -216,7 +216,7 @@ class coursework extends activity {
         // Find all the group overrides for the coursework.
         // We change some of the field names in the query to align with this plugin's expectations.
         $sqllike = $DB->sql_like('g.name', ':name');
-        $sql = "SELECT ov.id, ov.allocatableid as groupid, ov.personal_deadline as duedate
+        $sql = "SELECT ov.id, ov.allocatableid as groupid, ov.extended_deadline as duedate
                 FROM {" . self::TABLE_OVERRIDES . "} ov
                 JOIN {groups} g ON ov.allocatableid = g.id AND ov.allocatabletype = 'group'
                 WHERE ov.courseworkid = :courseworkid AND $sqllike";
@@ -245,10 +245,10 @@ class coursework extends activity {
         $override = $this->get_override_record($userid, $groupid);
         if ($override) {
             // No need to update if the due date is the same.
-            if ($override->personal_deadline == $newduedate) {
+            if ($override->extended_deadline == $newduedate) {
                 return;
             }
-            $override->personal_deadline = $newduedate;
+            $override->extended_deadline = $newduedate;
             $override->timemodified = time();
             $override->lastmodifiedbyid = $USER->id ?? 0;
             $DB->update_record(self::TABLE_OVERRIDES, $override);
@@ -259,7 +259,7 @@ class coursework extends activity {
             $override->allocatableid = $groupid ?: $userid;
             $override->allocatabletype = $groupid ? 'group' : 'user';
             $override->courseworkid = $this->get_source_instance()->id;
-            $override->personal_deadline = $newduedate;
+            $override->extended_deadline = $newduedate;
             $override->createdbyid = $USER->id ?? 0;
             $override->timecreated = time();
             $override->id = $DB->insert_record(self::TABLE_OVERRIDES, $override);
@@ -281,7 +281,7 @@ class coursework extends activity {
             $modinstance->update_user_calendar_event(
                 $override->allocatableid,
                 $override->allocatabletype,
-                max($override->personal_deadline, $existingextension->extended_deadline ?? 0)
+                max($override->extended_deadline, $existingextension->extended_deadline ?? 0)
             );
         }
     }
@@ -304,17 +304,17 @@ class coursework extends activity {
                 'allocatabletype' => $overridedata->allocatabletype,
                 'courseworkid' => $overridedata->courseworkid,
                 'groupid' => $overridedata->allocatabletype == 'group' ? $overridedata->allocatableid : null,
-                'deadline' => $overridedata->personal_deadline,
+                'deadline' => $overridedata->extended_deadline,
             ],
         ];
         if ($newrecord) {
             // Classes may not exist if https://github.com/ucl-isd/moodle-mod_coursework/pull/83 is not yet merged.
-            $event = class_exists('mod_coursework\event\personal_deadline_created')
-                ? \mod_coursework\event\personal_deadline_created::create($eventparams)
+            $event = class_exists('mod_coursework\event\extension_created')
+                ? \mod_coursework\event\extension_created::create($eventparams)
                 : null;
         } else {
-            $event = class_exists('mod_coursework\event\personal_deadline_updated')
-                ? \mod_coursework\event\personal_deadline_updated::create($eventparams)
+            $event = class_exists('mod_coursework\event\extension_updated')
+                ? \mod_coursework\event\extension_updated::create($eventparams)
                 : null;
         }
         if ($event) {
@@ -331,7 +331,7 @@ class coursework extends activity {
      * @throws \coding_exception
      */
     private function clear_override_cache(\stdClass $override): void {
-        personal_deadline::remove_cache($override->courseworkid);
+        deadline_extension::remove_cache($override->courseworkid);
     }
 
 

@@ -190,7 +190,7 @@ final class ec_test extends extension_common {
             case 'coursework':
                 return [
                     'table' => \local_sitsgradepush\assessment\coursework::TABLE_OVERRIDES,
-                    'datefield' => 'personal_deadline',
+                    'datefield' => 'extended_deadline',
                     'activityfield' => 'courseworkid',
                     'useridfield' => 'allocatableid',
                 ];
@@ -282,7 +282,7 @@ final class ec_test extends extension_common {
             $data['coursework'] = [
                 'coursework',
                 \local_sitsgradepush\assessment\coursework::TABLE_OVERRIDES,
-                'personal_deadline',
+                'extended_deadline',
                 'courseworkid',
                 'allocatableid',
             ];
