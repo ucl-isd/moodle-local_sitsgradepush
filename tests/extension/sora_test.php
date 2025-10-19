@@ -93,7 +93,8 @@ final class sora_test extends extension_common {
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Verify override was created for the assignment.
-        $this->assert_assignment_override_exists($sora, $this->assign1, 35);
+        // 3 hours duration assignment, so 35 minutes extension per hour from SITS results in 105 minutes total extension.
+        $this->assert_assignment_override_exists($sora, $this->assign1, 105);
 
         // Verify no override was created for the quiz, since the SITS assessment mapped to it has the type 'CN01',
         // which is not supported by SORA.
@@ -104,7 +105,9 @@ final class sora_test extends extension_common {
         // Verify override was created for the quiz now.
         set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
-        $this->assert_quiz_override_exists($sora, $this->quiz1, 35);
+
+        // 3 hours duration quiz, so 35 minutes extension per hour from SITS results in 105 minutes total extension.
+        $this->assert_quiz_override_exists($sora, $this->quiz1, 105);
     }
 
     /**
@@ -148,7 +151,7 @@ final class sora_test extends extension_common {
 
         // Verify overrides were created correctly.
         $sora = new sora();
-        $this->assert_overrides_exist($sora, 25);
+        $this->assert_overrides_exist($sora, 75);
 
         // Delete all mappings.
         $this->delete_all_mappings();
@@ -185,10 +188,15 @@ final class sora_test extends extension_common {
 
             // When the time limit is 60 minutes, the time close should not be overridden
             // as the new time limit is less than the quiz's duration.
-            // When the time limit is 180 minutes, the time close should be 25 minutes after the original time close
+            // When the time limit is 180 minutes, the time close should be 75 minutes after the original time close
             // as the new time limit is more than the quiz's duration.
-            $expectedtimelimit = ($timelimit + 25) * MINSECS;
-            $expectedtimeclose = $timelimit === 180 ? $this->quiz1->timeclose + 25 * MINSECS : null;
+            if ($timelimit === 60) {
+                $expectedtimelimit = ($timelimit + 25) * MINSECS;
+                $expectedtimeclose = null;
+            } else {
+                $expectedtimelimit = ($timelimit + 75) * MINSECS;
+                $expectedtimeclose = $this->quiz1->timeclose + 75 * MINSECS;
+            }
 
             // Assertions.
             $this->assertEquals($expectedtimelimit, $override->timelimit);
@@ -215,11 +223,11 @@ final class sora_test extends extension_common {
 
         // Test update SORA from aws can handle reassessment.
         $sora = new sora();
-        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
+        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data()); // 35 minutes extension per hour.
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Verify override was created for the assignment.
-        $this->assert_assignment_override_exists($sora, $assign, 35);
+        $this->assert_assignment_override_exists($sora, $assign, 105);
     }
 
     /**
@@ -378,7 +386,7 @@ final class sora_test extends extension_common {
             'course' => $courseid,
             'name' => 'Reassessment Assignment',
             'allowsubmissionsfromdate' => $this->clock->now()->modify('+1 days')->getTimestamp(),
-            'duedate' => $this->clock->now()->modify('+2 days')->getTimestamp(),
+            'duedate' => $this->clock->now()->modify('+1 days')->getTimestamp() + 3 * HOURSECS,
         ]);
 
         // Enrol the student to the course.
