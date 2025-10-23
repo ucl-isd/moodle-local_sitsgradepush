@@ -48,38 +48,109 @@ class sora_queue_processor extends aws_queue_processor {
      * @throws \moodle_exception
      * @throws \dml_exception
      */
-    protected function process_message(array $messagebody): string {
+    protected function process_message(array $messagebody): array {
         $sora = new sora();
         $sora->set_properties_from_aws_message($messagebody['Message']);
 
+        // Extract event timestamp from AWS message.
+        $eventtimestamp = isset($messagebody['Timestamp'])
+            ? $this->clock->now()->modify($messagebody['Timestamp'])->getTimestamp()
+            : null;
+
         // Check if we should ignore the message.
-        if ($this->should_ignore_message($sora)) {
-            return self::STATUS_IGNORED;
+        $ignoreresult = $this->should_ignore_message($sora, $eventtimestamp);
+        if ($ignoreresult !== false) {
+            return [
+                'status' => self::STATUS_IGNORED,
+                'studentcode' => $sora->get_student_code(),
+                'eventtimestamp' => $eventtimestamp,
+                'ignore_reason' => $ignoreresult,
+            ];
         }
 
         // Get all mappings for the student.
         $mappings = $sora->get_mappings_by_userid($sora->get_userid());
         $sora->process_extension($mappings);
 
-        return self::STATUS_PROCESSED;
+        return [
+            'status' => self::STATUS_PROCESSED,
+            'studentcode' => $sora->get_student_code(),
+            'eventtimestamp' => $eventtimestamp,
+            'ignore_reason' => null,
+        ];
     }
 
     /**
      * Check if we should ignore the message.
      *
      * @param sora $sora
-     * @return bool
+     * @param int|null $eventtimestamp
+     * @return string|false Returns ignore reason string if should ignore, false otherwise
      */
-    protected function should_ignore_message(sora $sora): bool {
+    protected function should_ignore_message(sora $sora, ?int $eventtimestamp): string|false {
         // As the assessment api only returns exam type SORA, we only process exam type SORA update from AWS.
         // RAPXR type is the new exam type code to replace EXAM type.
         if ($sora->get_sora_message_type() !== sora::SORA_MESSAGE_TYPE_RAPXR) {
-            return true;
+            $messagetype = $sora->get_sora_message_type() ?? 'NULL';
+            return "SORA message type is not RAPXR (type: {$messagetype})";
         }
 
         // If there are no changes, we should ignore the message.
         if (empty($sora->get_extension_changes())) {
-            return true;
+            return 'No changes detected in the message';
+        }
+
+        // Check for out-of-order messages.
+        $outofordermessage = $this->is_message_out_of_order($sora->get_student_code(), $eventtimestamp);
+        if ($outofordermessage !== false) {
+            return $outofordermessage;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if message is out of order by comparing with latest processed message timestamp.
+     *
+     * @param string $studentcode
+     * @param int|null $eventtimestamp
+     * @return string|false Returns ignore reason string if out of order, false otherwise
+     */
+    protected function is_message_out_of_order(string $studentcode, ?int $eventtimestamp): string|false {
+        global $DB;
+
+        // If no timestamp or student code, cannot determine order, process it.
+        if (empty($eventtimestamp) || empty($studentcode)) {
+            return false;
+        }
+
+        // Query for the latest processed/ignored message for this student in SORA queue.
+        $sql = "SELECT MAX(eventtimestamp) as latesttimestamp
+                FROM {local_sitsgradepush_aws_log}
+                WHERE queuename = :queuename
+                AND studentcode = :studentcode
+                AND (status = :processed OR status = :ignored)
+                AND eventtimestamp IS NOT NULL";
+
+        $params = [
+            'queuename' => self::QUEUE_NAME,
+            'studentcode' => $studentcode,
+            'processed' => self::STATUS_PROCESSED,
+            'ignored' => self::STATUS_IGNORED,
+        ];
+
+        $result = $DB->get_record_sql($sql, $params);
+
+        // If there is a later message already processed, ignore this one.
+        if ($result && $result->latesttimestamp > $eventtimestamp) {
+            $currentts = date('Y-m-d H:i:s', $eventtimestamp);
+            $latestts = date('Y-m-d H:i:s', $result->latesttimestamp);
+            return sprintf(
+                'Out-of-order message for student %s. Current timestamp: %s, Latest processed: %s',
+                $studentcode,
+                $currentts,
+                $latestts
+            );
         }
 
         return false;

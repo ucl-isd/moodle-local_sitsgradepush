@@ -738,5 +738,60 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025081500, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2025102200) {
+        // Define field studentcode to be added to local_sitsgradepush_aws_log.
+        $table = new xmldb_table('local_sitsgradepush_aws_log');
+        $field = new xmldb_field('studentcode', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'messageid');
+
+        // Conditionally launch add field studentcode.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field eventtimestamp to be added to local_sitsgradepush_aws_log.
+        $field = new xmldb_field('eventtimestamp', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'studentcode');
+
+        // Conditionally launch add field eventtimestamp.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field ignore_reason to be added to local_sitsgradepush_aws_log.
+        $field = new xmldb_field('ignore_reason', XMLDB_TYPE_TEXT, null, null, null, null, null, 'error_message');
+
+        // Conditionally launch add field ignore_reason.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index idx_studentcode (not unique) to be added to local_sitsgradepush_aws_log.
+        $index = new xmldb_index('idx_studentcode', XMLDB_INDEX_NOTUNIQUE, ['studentcode']);
+
+        // Conditionally launch add index idx_studentcode.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Define index idx_eventtimestamp (not unique) to be added to local_sitsgradepush_aws_log.
+        $index = new xmldb_index('idx_eventtimestamp', XMLDB_INDEX_NOTUNIQUE, ['eventtimestamp']);
+
+        // Conditionally launch add index idx_eventtimestamp.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Define composite index for efficient queries.
+        $index = new xmldb_index('idx_queue_student_ts', XMLDB_INDEX_NOTUNIQUE,
+            ['queuename', 'studentcode', 'eventtimestamp']);
+
+        // Conditionally launch add index idx_queue_student_ts.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2025102200, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

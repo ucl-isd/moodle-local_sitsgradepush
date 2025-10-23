@@ -61,6 +61,9 @@ abstract class aws_queue_processor {
     /** @var int Maximum number of attempts */
     const MAX_ATTEMPTS = 2;
 
+    /** @var clock $clock */
+    protected readonly clock $clock;
+
     /**
      * Get the queue URL.
      *
@@ -72,9 +75,9 @@ abstract class aws_queue_processor {
      * Process the message.
      *
      * @param array $messagebody AWS SQS message body
-     * @return string Message processing status
+     * @return array Array with status and metadata
      */
-    abstract protected function process_message(array $messagebody): string;
+    abstract protected function process_message(array $messagebody): array;
 
     /**
      * Get the queue name.
@@ -82,6 +85,13 @@ abstract class aws_queue_processor {
      * @return string
      */
     abstract protected function get_queue_name(): string;
+
+    /**
+     * Constructor.
+     */
+    public function __construct() {
+        $this->clock = di::get(clock::class);
+    }
 
     /**
      * Fetch messages from the queue.
@@ -209,13 +219,14 @@ abstract class aws_queue_processor {
                             continue;
                         }
 
-                        $status = $this->process_message($messagebody);
-                        $this->save_message_record($message, $this->get_queue_name(), $status);
+                        $result = $this->process_message($messagebody);
+                        $this->save_message_record($message, $this->get_queue_name(), $result);
                         $this->delete_message($message['ReceiptHandle']);
                         $processedcount++;
                     } catch (\Exception $e) {
                         logger::log($e->getMessage(), null, static::class . ' Processing Error');
-                        $this->save_message_record($message, $this->get_queue_name(), self::STATUS_FAILED, $e->getMessage());
+                        $this->save_message_record($message, $this->get_queue_name(), ['status' => self::STATUS_FAILED],
+                            $e->getMessage());
                     }
                 }
 
@@ -247,11 +258,11 @@ abstract class aws_queue_processor {
     }
 
     /**
-     * Save message processing details to database
+     * Save message processing details to database.
      *
      * @param array $message SQS message data
      * @param string $queuename Queue name
-     * @param string $status Processing status
+     * @param array $result Processing result with status and metadata
      * @param string|null $error Error message if any
      * @return bool|int Returns record ID on success, false on failure
      * @throws \dml_exception
@@ -259,7 +270,7 @@ abstract class aws_queue_processor {
     protected function save_message_record(
         array $message,
         string $queuename,
-        string $status = self::STATUS_PROCESSED,
+        array $result,
         ?string $error = null
     ): bool|int {
         global $DB;
@@ -271,12 +282,15 @@ abstract class aws_queue_processor {
             // Prepare data to save.
             $data = [
                 'messageid' => $message['MessageId'],
-                'status' => $status,
+                'status' => $result['status'],
                 'error_message' => $error,
                 'timemodified' => time(),
                 'queuename' => $queuename,
                 'payload' => $message['Body'],
                 'attempts' => $record ? $record->attempts + 1 : 1,
+                'studentcode' => $result['studentcode'] ?? null,
+                'eventtimestamp' => $result['eventtimestamp'] ?? null,
+                'ignore_reason' => $result['ignore_reason'] ?? null,
             ];
 
             // Update record if exists.
