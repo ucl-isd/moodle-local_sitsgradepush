@@ -28,7 +28,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class ec_queue_processor extends aws_queue_processor {
-
     /** @var string QUEUE_NAME */
     const QUEUE_NAME = 'EC';
 
@@ -145,9 +144,11 @@ class ec_queue_processor extends aws_queue_processor {
         // 1. The request status is not COMPLETE.
         // 2. The decision type is not DECISION.
         // 3. The process status is not 'D' (deleted) or 'P' (processed).
-        if ($ecs->request->status !== self::EVENT_STATUS_COMPLETE ||
+        if (
+            $ecs->request->status !== self::EVENT_STATUS_COMPLETE ||
             $ecs->request->decision_type !== self::DECISION_TYPE_DECISION ||
-            !($ecs->process_status === self::PROCESS_STATUS_DELETED || $ecs->process_status === self::PROCESS_STATUS_PROCESSED)) {
+            !($ecs->process_status === self::PROCESS_STATUS_DELETED || $ecs->process_status === self::PROCESS_STATUS_PROCESSED)
+        ) {
             return sprintf(
                 'EC does not meet processing criteria (status: %s, decision_type: %s, process_status: %s)',
                 $ecs->request->status ?? 'NULL',

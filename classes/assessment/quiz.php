@@ -30,7 +30,6 @@ use mod_quiz\local\override_manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class quiz extends activity {
-
     /**
      * Is the user a participant in the quiz.
      *
@@ -224,7 +223,8 @@ class quiz extends activity {
         // Extend the time limit if exists.
         $newtimelimit = $timelimit ? $timelimit + $actualextensioninsecs : null;
 
-        // Extend the time close if quiz has no time limit set or the new time limit exceeds the quiz duration, otherwise leave it null (no override).
+        // Extend the time close if quiz has no time limit set or the new time limit exceeds the quiz duration,
+        // otherwise leave it null (no override).
         $newtimeclose = (!$timelimit || $newtimelimit > $quizduration) ? $this->get_end_date() + $actualextensioninsecs : null;
 
         $overridedata = [

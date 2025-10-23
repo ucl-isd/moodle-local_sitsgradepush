@@ -52,15 +52,18 @@ class get_summative_grade_items extends external_api {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Result of request', VALUE_REQUIRED),
             'gradeitems' => new external_multiple_structure(
-              new external_single_structure([
-                'id' => new external_value(PARAM_INT, 'Grade item ID', VALUE_REQUIRED),
-                'categoryid' => new external_value(PARAM_INT, 'Grade item category ID', VALUE_REQUIRED),
-                'itemname' => new external_value(PARAM_TEXT, 'Grade item name', VALUE_REQUIRED),
-                'itemtype' => new external_value(PARAM_TEXT, 'Grade item type', VALUE_REQUIRED),
-                'itemmodule' => new external_value(PARAM_TEXT, 'Grade item module', VALUE_REQUIRED),
-                'iteminstance' => new external_value(PARAM_INT, 'Grade item instance', VALUE_REQUIRED),
-                'itemnumber' => new external_value(PARAM_INT, 'Grade item number', VALUE_REQUIRED),
-              ], 'Grade item', VALUE_REQUIRED), 'List of grade items', VALUE_REQUIRED),
+                new external_single_structure([
+                    'id' => new external_value(PARAM_INT, 'Grade item ID', VALUE_REQUIRED),
+                    'categoryid' => new external_value(PARAM_INT, 'Grade item category ID', VALUE_REQUIRED),
+                    'itemname' => new external_value(PARAM_TEXT, 'Grade item name', VALUE_REQUIRED),
+                    'itemtype' => new external_value(PARAM_TEXT, 'Grade item type', VALUE_REQUIRED),
+                    'itemmodule' => new external_value(PARAM_TEXT, 'Grade item module', VALUE_REQUIRED),
+                    'iteminstance' => new external_value(PARAM_INT, 'Grade item instance', VALUE_REQUIRED),
+                    'itemnumber' => new external_value(PARAM_INT, 'Grade item number', VALUE_REQUIRED),
+                ], 'Grade item', VALUE_REQUIRED),
+                'List of grade items',
+                VALUE_REQUIRED
+            ),
             'message' => new external_value(PARAM_TEXT, 'Error message', VALUE_OPTIONAL),
         ]);
     }

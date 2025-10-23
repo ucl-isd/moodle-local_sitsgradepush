@@ -30,7 +30,6 @@ use local_sitsgradepush\extensionmanager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class assign extends activity {
-
     /**
      * Is the user a participant in the assignment.
      *
@@ -225,7 +224,7 @@ class assign extends activity {
 
         $params = [
             'assignid' => $this->sourceinstance->id,
-            'name' => sora::SORA_GROUP_PREFIX . $this->get_id(). '%',
+            'name' => sora::SORA_GROUP_PREFIX . $this->get_id() . '%',
         ];
 
         // Get all sora group overrides.

@@ -25,7 +25,6 @@ namespace local_sitsgradepush\assessment;
  * @author     David Watson <david-watson@ucl.ac.uk>
  */
 class lti extends activity {
-
     /**
      * Get all participants.
      *
@@ -77,13 +76,17 @@ class lti extends activity {
 
         // Has this tool been configured to accept grades globally or not?
         $acceptgradestool = $DB->get_field(
-            'lti_types_config', 'value', ['typeid' => $typeid, 'name' => 'acceptgrades']
+            'lti_types_config',
+            'value',
+            ['typeid' => $typeid, 'name' => 'acceptgrades']
         );
         if ($acceptgradestool == LTI_SETTING_ALWAYS) {
             // At system level, LTI grades are set to be sent to gradebook.
             return parent::check_assessment_validity();
-        } else if ($acceptgradestool == LTI_SETTING_DELEGATE &&
-            $this->sourceinstance->instructorchoiceacceptgrades == LTI_SETTING_ALWAYS) {
+        } else if (
+            $acceptgradestool == LTI_SETTING_DELEGATE &&
+            $this->sourceinstance->instructorchoiceacceptgrades == LTI_SETTING_ALWAYS
+        ) {
                 // Whether or not grades are accepted is delegated to course level, which is set to yes.
                 return parent::check_assessment_validity();
         }

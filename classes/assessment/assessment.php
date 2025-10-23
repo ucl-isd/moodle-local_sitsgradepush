@@ -33,7 +33,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 abstract class assessment implements iassessment {
-
     /** @var string Grade failed */
     const GRADE_FAIL = 'F';
 
@@ -403,12 +402,14 @@ abstract class assessment implements iassessment {
      */
     protected function mark_override_restored(int $overrideid): void {
         global $DB, $USER;
-        $DB->update_record(extensionmanager::TABLE_OVERRIDES,
+        $DB->update_record(
+            extensionmanager::TABLE_OVERRIDES,
             [
                 'id' => $overrideid,
                 'restored_by' => $USER->id,
                 'timerestored' => $this->clock->time(),
-            ]);
+            ]
+        );
     }
 
     /**
@@ -418,9 +419,11 @@ abstract class assessment implements iassessment {
      */
     protected function has_exam_guard_extension(): bool {
         // Check if local_examguard plugin is installed and the moodle activity is an exam guard supported.
-        if (\core_plugin_manager::instance()->get_plugin_info('local_examguard') &&
+        if (
+            \core_plugin_manager::instance()->get_plugin_info('local_examguard') &&
             $this->get_type() === assessmentfactory::SOURCETYPE_MOD &&
-            \local_examguard\manager::is_exam_guard_supported_activity($this->get_module_name())) {
+            \local_examguard\manager::is_exam_guard_supported_activity($this->get_module_name())
+        ) {
             // Check if there is an existing extension record for this course module.
             $examactivity = \local_examguard\examactivity\examactivityfactory::get_exam_activity(
                 $this->get_id(),

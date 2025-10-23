@@ -78,8 +78,10 @@ class get_assessments_update extends external_api {
             );
 
             // Get updates.
-            if (empty($assessments = manager::get_manager()
-                ->get_data_for_page_update($params['courseid'], $params['sourcetype'], $params['sourceid']))) {
+            if (
+                empty($assessments = manager::get_manager()
+                ->get_data_for_page_update($params['courseid'], $params['sourcetype'], $params['sourceid']))
+            ) {
                 $assessments = [];
             }
 

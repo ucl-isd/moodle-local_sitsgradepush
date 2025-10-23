@@ -49,7 +49,10 @@ class coursework extends submission {
         global $DB;
         if (!$instance = $DB->get_record('coursework', ['id' => $this->coursemodule->instance])) {
             throw new \moodle_exception(
-                'error:coursemodulenotfound', 'local_sitsgradepush', '', null,
+                'error:coursemodulenotfound',
+                'local_sitsgradepush',
+                '',
+                null,
                 "Instance ID: " . $this->coursemodule->instance
             );
         }
@@ -76,7 +79,8 @@ class coursework extends submission {
                     FROM {coursework_submissions}
                     WHERE courseworkid = :courseworkid AND authorid = :gradeduserid",
             ['courseworkid' => $this->modinstance->id, 'gradeduserid' => $this->userid],
-            0, 2
+            0,
+            2
         );
         $countrecords = count($submissions);
         if ($countrecords > 1) {

@@ -27,7 +27,6 @@ use grade_category;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class gradecategory extends gradebook {
-
     /** @var string Type name to display */
     const DISPLAY_TYPE_NAME = 'Grade Category';
 

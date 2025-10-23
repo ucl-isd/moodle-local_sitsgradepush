@@ -74,7 +74,14 @@ class map_assessment extends external_api {
      * @return array
      */
     public static function execute(
-      int $courseid, string $sourcetype, int $sourceid, int $mabid, int $reassess, bool $extensions, ?int $partid = null) {
+        int $courseid,
+        string $sourcetype,
+        int $sourceid,
+        int $mabid,
+        int $reassess,
+        bool $extensions,
+        ?int $partid = null
+    ) {
         try {
             if (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($courseid))) {
                 throw new \moodle_exception('error:mapassessment', 'local_sitsgradepush');

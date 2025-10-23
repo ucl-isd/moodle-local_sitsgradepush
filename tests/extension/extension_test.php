@@ -32,9 +32,6 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class extension_test extends extension_common {
-
-
-
     /**
      * Test the user is enrolling a gradable role.
      *

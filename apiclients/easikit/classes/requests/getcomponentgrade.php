@@ -25,7 +25,6 @@ namespace sitsapiclient_easikit\requests;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class getcomponentgrade extends request {
-
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'mod_code' => 'MOD_CODE',

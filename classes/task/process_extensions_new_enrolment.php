@@ -33,7 +33,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class process_extensions_new_enrolment extends adhoc_task {
-
     /** @var int Number of students to process per batch. */
     const BATCH_LIMIT = 100;
 

@@ -25,7 +25,6 @@ namespace local_sitsgradepush\assessment;
  * @author     David Watson <david-watson@ucl.ac.uk>
  */
 class coursework extends activity {
-
     /**
      * Get all participants.
      * @see \mod_coursework\models\coursework::get_students() which we don't use as it returns objects.

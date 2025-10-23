@@ -27,7 +27,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 abstract class submission implements isubmission {
-
     /** @var string Submit status - Submitted */
     const STATUS_SUBMITTED = 'S';
 

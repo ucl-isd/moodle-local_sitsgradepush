@@ -40,7 +40,6 @@ require_once(__DIR__ . '/base_test_class.php');
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class manager_test extends base_test_class {
-
     /** @var \local_sitsgradepush\manager|null Manager object */
     private ?manager $manager;
 
@@ -302,15 +301,15 @@ final class manager_test extends base_test_class {
         $property->setValue($this->manager, $this->get_apiclient_for_testing(false, $markingschemedata));
 
         $this->assertEquals(
-          $markingschemedata,
-          $this->manager->fetch_marking_scheme_from_sits()
+            $markingschemedata,
+            $this->manager->fetch_marking_scheme_from_sits()
         );
 
         // Test cache is used if data is already cached.
         $property->setValue($this->manager, $this->get_apiclient_for_testing(true));
         $this->assertEquals(
-          $markingschemedata,
-          $this->manager->fetch_marking_scheme_from_sits()
+            $markingschemedata,
+            $this->manager->fetch_marking_scheme_from_sits()
         );
     }
 
@@ -435,24 +434,24 @@ final class manager_test extends base_test_class {
         $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'CCME0158A6UF', 'mabseq' => '001']);
         $this->assertFalse($this->manager->is_component_grade_valid_for_mapping($mab)[0]);
         $this->assertStringContainsString(
-          get_string('error:ast_code_exam_room_code_not_matched', 'local_sitsgradepush'),
-          $this->manager->is_component_grade_valid_for_mapping($mab)[1][0]
+            get_string('error:ast_code_exam_room_code_not_matched', 'local_sitsgradepush'),
+            $this->manager->is_component_grade_valid_for_mapping($mab)[1][0]
         );
 
         // Test component grade is not supported due to invalid assessment type.
         $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'COMP0206F4UF', 'mabseq' => '001']);
         $this->assertFalse($this->manager->is_component_grade_valid_for_mapping($mab)[0]);
         $this->assertStringContainsString(
-          get_string('error:ast_code_not_supported', 'local_sitsgradepush', $mab->astcode),
-          $this->manager->is_component_grade_valid_for_mapping($mab)[1][0]
+            get_string('error:ast_code_not_supported', 'local_sitsgradepush', $mab->astcode),
+            $this->manager->is_component_grade_valid_for_mapping($mab)[1][0]
         );
 
         // Test component grade is not supported due to invalid marking scheme.
         $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'BASC0059A4UF', 'mabseq' => '001']);
         $this->assertFalse($this->manager->is_component_grade_valid_for_mapping($mab)[0]);
         $this->assertStringContainsString(
-          get_string('error:mks_scheme_not_supported', 'local_sitsgradepush'),
-          $this->manager->is_component_grade_valid_for_mapping($mab)[1][0]
+            get_string('error:mks_scheme_not_supported', 'local_sitsgradepush'),
+            $this->manager->is_component_grade_valid_for_mapping($mab)[1][0]
         );
     }
 
@@ -496,7 +495,6 @@ final class manager_test extends base_test_class {
 
         // Verify 002 is deleted.
         $this->assertFalse($DB->record_exists('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']));
-
     }
 
     /**
@@ -593,7 +591,7 @@ final class manager_test extends base_test_class {
 
         // Test student is found.
         $student = $this->manager->get_student_from_sits($this->mab1, $this->student1->id);
-        $this->assertEquals('12345678/1', $student['spr_code'] );
+        $this->assertEquals('12345678/1', $student['spr_code']);
 
         // Get student cache.
         $key = implode('_', [cachemanager::CACHE_AREA_STUDENTSPR, $this->mab1->mapcode, $this->mab1->mabseq, 1]);
@@ -663,15 +661,21 @@ final class manager_test extends base_test_class {
 
         // Set API client to return success response.
         $apiclient = $this->get_apiclient_for_testing(
-          false,
-          ['code' => '0', 'message' => 'Grade successfully pushed to SITS via Easikit']
+            false,
+            ['code' => '0', 'message' => 'Grade successfully pushed to SITS via Easikit']
         );
         tests_data_provider::set_protected_property($this->manager, 'apiclient', $apiclient);
 
         // Test grade push is successful.
         $this->assertTrue($this->manager->push_grade_to_sits($mapping, $this->student1->id));
         $transfers = $DB->get_records(
-          'local_sitsgradepush_tfr_log', ['type' => 'pushgrade', 'assessmentmappingid' => $mapping->id], 'id DESC');
+            'local_sitsgradepush_tfr_log',
+            [
+                'type' => 'pushgrade',
+                'assessmentmappingid' => $mapping->id,
+            ],
+            'id DESC'
+        );
         $this->assertStringContainsString('Grade successfully pushed to SITS via Easikit', reset($transfers)->response);
 
         // Test last push is succeeded.
@@ -686,8 +690,12 @@ final class manager_test extends base_test_class {
             $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->assign1->cmid, $mapping->reassessment);
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString(
-              get_string('error:mab_has_push_records', 'local_sitsgradepush', $this->mab1->mapcode . '-' .$this->mab1->mabseq),
-              $e->getMessage()
+                get_string(
+                    'error:mab_has_push_records',
+                    'local_sitsgradepush',
+                    $this->mab1->mapcode . '-' . $this->mab1->mabseq
+                ),
+                $e->getMessage()
             );
         }
 
@@ -736,7 +744,9 @@ final class manager_test extends base_test_class {
         // Test submission log push fails.
         $this->assertFalse($this->manager->push_submission_log_to_sits($mapping, $this->student1->id));
         $transfer = $DB->get_record(
-          'local_sitsgradepush_tfr_log', ['type' => 'pushsubmissionlog', 'assessmentmappingid' => $mapping->id]);
+            'local_sitsgradepush_tfr_log',
+            ['type' => 'pushsubmissionlog', 'assessmentmappingid' => $mapping->id]
+        );
         $this->assertStringContainsString('Easikit web client error', $transfer->response);
 
         // Pause for a second to avoid same timestamp.
@@ -744,15 +754,18 @@ final class manager_test extends base_test_class {
 
         // Set API client to return success response.
         $apiclient = $this->get_apiclient_for_testing(
-          false,
-          ['code' => '0', 'message' => 'Submission log successfully pushed to SITS via Easikit']
+            false,
+            ['code' => '0', 'message' => 'Submission log successfully pushed to SITS via Easikit']
         );
         tests_data_provider::set_protected_property($this->manager, 'apiclient', $apiclient);
 
         // Test submission log push is successful.
         $this->assertTrue($this->manager->push_submission_log_to_sits($mapping, $this->student1->id));
         $transfers = $DB->get_records(
-          'local_sitsgradepush_tfr_log', ['type' => 'pushsubmissionlog', 'assessmentmappingid' => $mapping->id], 'id DESC');
+            'local_sitsgradepush_tfr_log',
+            ['type' => 'pushsubmissionlog', 'assessmentmappingid' => $mapping->id],
+            'id DESC'
+        );
         $this->assertStringContainsString('Submission log successfully pushed to SITS via Easikit', reset($transfers)->response);
 
         // Test the latest transfer log is returned.
@@ -822,8 +835,8 @@ final class manager_test extends base_test_class {
             $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student2->id);
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString(
-              get_string('error:nostudentfoundformapping', 'local_sitsgradepush'),
-              $e->getMessage()
+                get_string('error:nostudentfoundformapping', 'local_sitsgradepush'),
+                $e->getMessage()
             );
         }
 
@@ -835,8 +848,8 @@ final class manager_test extends base_test_class {
             $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id);
         } catch (\moodle_exception $e) {
             $this->assertStringContainsString(
-              get_string('error:resit_number_zero_for_reassessment', 'local_sitsgradepush'),
-              $e->getMessage()
+                get_string('error:resit_number_zero_for_reassessment', 'local_sitsgradepush'),
+                $e->getMessage()
             );
         }
 
@@ -851,20 +864,20 @@ final class manager_test extends base_test_class {
             $this->setup_testing_environment($assessment, $type, true);
 
             $expected = (object)[
-              'mapcode' => 'LAWS0024A6UF',
-              'mabseq' => '001',
-              'sprcode' => '12345678/1',
-              'academicyear' => '2023',
-              'pslcode' => 'T1/2',
-              'reassessment' => $type,
-              'source' => 'moodle-course'. $this->course1->id . '-' .$assessment->get_type() . $assessment->get_id()
-                          . '-user' . $USER->id,
-              'srarseq' => $type,
+                'mapcode' => 'LAWS0024A6UF',
+                'mabseq' => '001',
+                'sprcode' => '12345678/1',
+                'academicyear' => '2023',
+                'pslcode' => 'T1/2',
+                'reassessment' => $type,
+                'source' => 'moodle-course' . $this->course1->id . '-' . $assessment->get_type() . $assessment->get_id()
+                    . '-user' . $USER->id,
+                'srarseq' => $type,
             ];
 
             $this->assertEquals(
-              $expected,
-              $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id)
+                $expected,
+                $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id)
             );
         }
     }
@@ -887,8 +900,8 @@ final class manager_test extends base_test_class {
 
         // Test only the assessment data for a specific mapping is returned.
         $this->assertInstanceOf(
-          \stdClass::class,
-          $this->manager->get_assessment_data('mod', $this->assign1->cmid, $this->mappingid1)
+            \stdClass::class,
+            $this->manager->get_assessment_data('mod', $this->assign1->cmid, $this->mappingid1)
         );
 
         // Test array is returned if no mapping id is provided.
@@ -905,9 +918,12 @@ final class manager_test extends base_test_class {
     public function test_sort_grade_push_history_table(): void {
         $dataarray = tests_data_provider::get_sort_grade_push_history_table_data();
 
-        $dataobjects = array_map(function($item) {
-            return (object)$item;
-        }, $dataarray);
+        $dataobjects = array_map(
+            function ($item) {
+                return (object) $item;
+            },
+            $dataarray
+        );
 
         // Call the method and store the result.
         $result = $this->reflectionmanager->getMethod('sort_grade_push_history_table')->invoke($this->manager, $dataobjects);
@@ -915,8 +931,8 @@ final class manager_test extends base_test_class {
 
         // Assertions to ensure the sorting is correct.
         $this->assertEquals(
-          ['transfererror1', 'transfererror2', 'updatedaftertransfer', 'sublogerror1', 'sublogerror2', 'other', 'notyetpushed'],
-          $extracted
+            ['transfererror1', 'transfererror2', 'updatedaftertransfer', 'sublogerror1', 'sublogerror2', 'other', 'notyetpushed'],
+            $extracted
         );
     }
 
@@ -950,9 +966,9 @@ final class manager_test extends base_test_class {
     public function test_get_moodle_ast_codes(): void {
         // Test AST codes returned.
         $this->assertEquals(
-          ['BC02', 'CN01', 'EC03', 'EC04', 'ED03', 'ED04', 'GD01', 'GN01', 'GN02', 'GN03', 'HC01', 'HD01', 'HD02',
-           'HD03', 'HD04', 'HD05', 'LC01', 'MD01', 'ND01', 'RN01', 'RN02', 'RN03', 'SD01', 'TC01', 'ZD01', 'ZN01'],
-          $this->manager->get_moodle_ast_codes()
+            ['BC02', 'CN01', 'EC03', 'EC04', 'ED03', 'ED04', 'GD01', 'GN01', 'GN02', 'GN03', 'HC01', 'HD01', 'HD02',
+                'HD03', 'HD04', 'HD05', 'LC01', 'MD01', 'ND01', 'RN01', 'RN02', 'RN03', 'SD01', 'TC01', 'ZD01', 'ZN01'],
+            $this->manager->get_moodle_ast_codes()
         );
 
         // Set AST codes to empty.
@@ -972,8 +988,8 @@ final class manager_test extends base_test_class {
     public function test_get_moodle_ast_codes_work_with_exam_room_code(): void {
         // Test AST codes returned.
         $this->assertEquals(
-          ['BC02', 'EC03', 'EC04', 'ED03', 'ED04'],
-          $this->manager->get_moodle_ast_codes_work_with_exam_room_code()
+            ['BC02', 'EC03', 'EC04', 'ED03', 'ED04'],
+            $this->manager->get_moodle_ast_codes_work_with_exam_room_code()
         );
 
         // Set AST codes to empty.
@@ -994,7 +1010,7 @@ final class manager_test extends base_test_class {
         $fields = $this->manager->get_user_profile_fields();
 
         // Extract the field shortnames.
-        $fieldshortnames = array_map(function($field) {
+        $fieldshortnames = array_map(function ($field) {
             return $field->shortname;
         }, $fields);
 
@@ -1050,8 +1066,8 @@ final class manager_test extends base_test_class {
                 $this->manager->validate_component_grade($this->mab1->id, 'mod', $assignmod->cmid, $type);
             } catch (\moodle_exception $e) {
                 $this->assertStringContainsString(
-                  get_string('error:no_update_for_same_mapping', 'local_sitsgradepush'),
-                  $e->getMessage()
+                    get_string('error:no_update_for_same_mapping', 'local_sitsgradepush'),
+                    $e->getMessage()
                 );
             }
 
@@ -1061,8 +1077,8 @@ final class manager_test extends base_test_class {
                 $this->manager->validate_component_grade($mab2->id, 'mod', $assignmod->cmid, $type);
             } catch (\moodle_exception $e) {
                 $this->assertStringContainsString(
-                  get_string('error:same_map_code_for_same_activity', 'local_sitsgradepush'),
-                  $e->getMessage()
+                    get_string('error:same_map_code_for_same_activity', 'local_sitsgradepush'),
+                    $e->getMessage()
                 );
             }
 
@@ -1084,8 +1100,8 @@ final class manager_test extends base_test_class {
                 $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->quiz1->cmid, $type);
             } catch (\moodle_exception $e) {
                 $this->assertStringContainsString(
-                  get_string('error:grade_items_not_found', 'local_sitsgradepush'),
-                  $e->getMessage()
+                    get_string('error:grade_items_not_found', 'local_sitsgradepush'),
+                    $e->getMessage()
                 );
             }
 
@@ -1094,8 +1110,8 @@ final class manager_test extends base_test_class {
                 $this->manager->validate_component_grade($this->mab1->id, 'mod', $this->assign2->cmid, $type);
             } catch (\moodle_exception $e) {
                 $this->assertStringContainsString(
-                  get_string('error:gradetype_not_supported', 'local_sitsgradepush'),
-                  $e->getMessage()
+                    get_string('error:gradetype_not_supported', 'local_sitsgradepush'),
+                    $e->getMessage()
                 );
             }
 
@@ -1236,15 +1252,15 @@ final class manager_test extends base_test_class {
         $request = $this->createMock(irequest::class);
         $request->method('get_request_name')->willReturn('Push Grade');
         $request->method('get_endpoint_url_with_params')->willReturn(
-          'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle/ARCL0018A6UF-001/student/23456789_1-2023-T2-0/marks'
+            'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle/ARCL0018A6UF-001/student/23456789_1-2023-T2-0/marks'
         );
         $request->method('get_request_body')->willReturn(
-          '{"actual_mark":"85.00000","actual_grade":"","source":"moodle-course40812-mapping1593-user2"}'
+            '{"actual_mark":"85.00000","actual_grade":"","source":"moodle-course40812-mapping1593-user2"}'
         );
 
         $response = [
-          'code' => 0,
-          'message' => 'Grade successfully pushed to SITS via Easikit',
+            'code' => 0,
+            'message' => 'Grade successfully pushed to SITS via Easikit',
         ];
 
         $savetransferlog = $this->reflectionmanager->getMethod('save_transfer_log');
@@ -1422,16 +1438,18 @@ final class manager_test extends base_test_class {
         set_config('apiclient', 'easikit', 'local_sitsgradepush');
 
         // Set AST codes.
-        set_config('moodle_ast_codes',
-          'BC02, CN01, EC03, EC04, ED03, ED04, GD01, GN01, GN02, GN03, HC01, HD01, HD02,
+        set_config(
+            'moodle_ast_codes',
+            'BC02, CN01, EC03, EC04, ED03, ED04, GD01, GN01, GN02, GN03, HC01, HD01, HD02,
             HD03, HD04, HD05, LC01, MD01, ND01, RN01, RN02, RN03, SD01, TC01, ZD01, ZN01',
-          'local_sitsgradepush'
+            'local_sitsgradepush'
         );
 
         // Set AST codes must work with exam room code.
-        set_config('moodle_ast_codes_exam_room',
-          'BC02, EC03, EC04, ED03, ED04',
-          'local_sitsgradepush'
+        set_config(
+            'moodle_ast_codes_exam_room',
+            'BC02, EC03, EC04, ED03, ED04',
+            'local_sitsgradepush'
         );
 
         // Set block_lifecycle 'late_summer_assessment_end_date'.
@@ -1470,9 +1488,10 @@ final class manager_test extends base_test_class {
 
         // Create test courses.
         $this->course1 = $this->dg->create_course(
-          ['shortname' => 'C1', 'customfields' => [
-            ['shortname' => 'course_year', 'value' => date('Y')],
-          ]]);
+            ['shortname' => 'C1', 'customfields' => [
+                ['shortname' => 'course_year', 'value' => date('Y')],
+            ]]
+        );
         $this->course2 = $this->dg->create_course(['shortname' => 'C2']);
 
         // Create role.

@@ -30,7 +30,6 @@ use moodle_url;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 abstract class activity extends assessment {
-
     /** @var \stdClass Course module object */
     public \stdClass $coursemodule;
 
@@ -136,8 +135,15 @@ abstract class activity extends assessment {
      */
     public function get_user_grade(int $userid, ?int $partid = null): ?array {
         $result = null;
-        if ($grade = grade_get_grades(
-            $this->coursemodule->course, 'mod', $this->coursemodule->modname, $this->coursemodule->instance, $userid)) {
+        if (
+            $grade = grade_get_grades(
+                $this->coursemodule->course,
+                'mod',
+                $this->coursemodule->modname,
+                $this->coursemodule->instance,
+                $userid
+            )
+        ) {
             foreach ($grade->items as $item) {
                 foreach ($item->grades as $grade) {
                     if ($grade->grade) {
@@ -244,12 +250,14 @@ abstract class activity extends assessment {
         if (empty($gradebookroles)) {
             return[];
         }
-        list($gradebookrolessql, $gradebookrolesparams) =
+        [$gradebookrolessql, $gradebookrolesparams] =
             $DB->get_in_or_equal($gradebookroles, SQL_PARAMS_NAMED, 'gradebookroles');
 
         // We want to query both the current context and parent contexts.
-        list($relatedctxsql, $relatedctxparams) = $DB->get_in_or_equal(
-            $this->context->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx'
+        [$relatedctxsql, $relatedctxparams] = $DB->get_in_or_equal(
+            $this->context->get_parent_context_ids(true),
+            SQL_PARAMS_NAMED,
+            'relatedctx'
         );
         $sql = "SELECT DISTINCT userid FROM {role_assignments} WHERE roleid $gradebookrolessql AND contextid $relatedctxsql";
         return  $DB->get_fieldset_sql($sql, array_merge($gradebookrolesparams, $relatedctxparams));
@@ -265,7 +273,7 @@ abstract class activity extends assessment {
         $enrolledusers = get_enrolled_users($this->context, $capability);
         // Filter out non-gradeable users e.g. teachers.
         $gradeableids = self::get_gradeable_user_ids();
-        return array_filter($enrolledusers, function($u) use ($gradeableids) {
+        return array_filter($enrolledusers, function ($u) use ($gradeableids) {
             return in_array($u->id, $gradeableids);
         });
     }

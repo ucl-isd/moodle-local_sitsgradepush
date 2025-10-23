@@ -116,7 +116,8 @@ class webclient {
                     'error:curl',
                     'sitsapiclient_easikit',
                     '',
-                    ['requestname' => $request->get_request_name(), 'error' => $curl->error]);
+                    ['requestname' => $request->get_request_name(), 'error' => $curl->error]
+                );
             }
 
             // Get HTTP status code.

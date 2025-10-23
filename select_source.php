@@ -58,7 +58,7 @@ if (!$mab = $manager->get_local_component_grade_by_id($mabid)) {
 }
 
 // Check if the component grade is valid for mapping.
-list($mabvalid, $errormessages) = $manager->is_component_grade_valid_for_mapping($mab);
+[$mabvalid, $errormessages] = $manager->is_component_grade_valid_for_mapping($mab);
 if (!$mabvalid) {
     throw new moodle_exception('error:mab_invalid_for_mapping', 'local_sitsgradepush', '', implode(', ', $errormessages));
 }
@@ -92,10 +92,14 @@ $PAGE->set_secondary_navigation(false);
 // Set the breadcrumbs.
 $PAGE->navbar->add(get_string('courses'), new moodle_url('/course/index.php'));
 $PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php', ['id' => $courseid]));
-$PAGE->navbar->add(get_string('pluginname', 'local_sitsgradepush'),
-    new moodle_url('/local/sitsgradepush/dashboard.php', ['id' => $courseid]));
-$PAGE->navbar->add(get_string('selectsource:header', 'local_sitsgradepush'),
-    new moodle_url('/local/sitsgradepush/select_source.php', $param));
+$PAGE->navbar->add(
+    get_string('pluginname', 'local_sitsgradepush'),
+    new moodle_url('/local/sitsgradepush/dashboard.php', ['id' => $courseid])
+);
+$PAGE->navbar->add(
+    get_string('selectsource:header', 'local_sitsgradepush'),
+    new moodle_url('/local/sitsgradepush/select_source.php', $param)
+);
 
 // Page header.
 echo $OUTPUT->header();

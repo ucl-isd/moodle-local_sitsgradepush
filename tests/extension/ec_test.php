@@ -35,7 +35,6 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class ec_test extends extension_common {
-
     /**
      * Mapping ID.
      * @var int

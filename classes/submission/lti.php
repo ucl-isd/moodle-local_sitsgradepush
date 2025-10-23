@@ -49,7 +49,10 @@ class lti extends submission {
         global $DB;
         if (!$instance = $DB->get_record('lti', ['id' => $this->coursemodule->instance])) {
             throw new \moodle_exception(
-                'error:coursemodulenotfound', 'local_sitsgradepush', '', null,
+                'error:coursemodulenotfound',
+                'local_sitsgradepush',
+                '',
+                null,
                 "Instance ID: " . $this->coursemodule->instance
             );
         }
@@ -73,7 +76,12 @@ class lti extends submission {
         // When adding LTI to a course, teacher is not given the option (as in Quiz or Lesson) of use highest mark, average etc.
         $params = ['ltiid' => $this->modinstance->id, 'userid' => $this->userid];
         $attempts = $DB->get_records(
-            'lti_submission', $params, 'datesubmitted DESC', '*', 0, 1
+            'lti_submission',
+            $params,
+            'datesubmitted DESC',
+            '*',
+            0,
+            1
         );
         if (!empty($attempts)) {
             $attempt = reset($attempts);

@@ -27,7 +27,6 @@ use local_sitsgradepush\cachemanager;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class getstudents extends request {
-
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'mapcode' => 'MAP_CODE',

@@ -29,7 +29,6 @@ use local_sitsgradepush\taskmanager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class pushtask extends scheduled_task {
-
     /** @var int default max concurrent tasks allowed */
     const MAX_CONCURRENT_TASKS = 10;
 

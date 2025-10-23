@@ -30,7 +30,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class process_extensions_new_mapping extends adhoc_task {
-
     /**
      * Return name of the task.
      *

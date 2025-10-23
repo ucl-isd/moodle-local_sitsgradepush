@@ -37,7 +37,8 @@ if ($hassiteconfig) {
 
     if ($ADMIN->fulltree) {
         // General settings.
-        $settings->add(new admin_setting_heading('local_sitsgradepush_general_settings',
+        $settings->add(new admin_setting_heading(
+            'local_sitsgradepush_general_settings',
             get_string('settings:generalsettingsheader', 'local_sitsgradepush'),
             ''
         ));
@@ -50,7 +51,8 @@ if ($hassiteconfig) {
         ));
 
         // Threshold to allow for synchronous mark transfer.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/sync_threshold',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/sync_threshold',
             get_string('settings:sync_threshold', 'local_sitsgradepush'),
             get_string('settings:sync_threshold:desc', 'local_sitsgradepush'),
             30,
@@ -78,28 +80,32 @@ if ($hassiteconfig) {
         ));
 
         // Set SITS moodle AST codes, separated by comma.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/moodle_ast_codes',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/moodle_ast_codes',
             get_string('settings:moodleastcode', 'local_sitsgradepush'),
             get_string('settings:moodleastcode:desc', 'local_sitsgradepush'),
             ''
         ));
 
         // Set SITS moodle AST codes work with exam room code, separated by comma.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/moodle_ast_codes_exam_room',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/moodle_ast_codes_exam_room',
             get_string('settings:moodleastcodeexamroom', 'local_sitsgradepush'),
             get_string('settings:moodleastcodeexamroom:desc', 'local_sitsgradepush'),
             ''
         ));
 
         // Set SITS moodle exam room code.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/moodle_exam_room_code',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/moodle_exam_room_code',
             get_string('settings:moodleexamroomcode', 'local_sitsgradepush'),
             get_string('settings:moodleexamroomcode:desc', 'local_sitsgradepush'),
             'EXAMMDLE'
         ));
 
         // Set the concurrent running ad-hoc tasks.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/concurrent_running_tasks',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/concurrent_running_tasks',
             get_string('settings:concurrenttasks', 'local_sitsgradepush'),
             get_string('settings:concurrenttasks:desc', 'local_sitsgradepush'),
             10,
@@ -117,15 +123,16 @@ if ($hassiteconfig) {
             }
         }
         $settings->add(new admin_setting_configselect(
-                'local_sitsgradepush/user_profile_field',
-                get_string('settings:userprofilefield', 'local_sitsgradepush'),
-                get_string('settings:userprofilefield:desc', 'local_sitsgradepush'),
-                '',
-                $options)
-        );
+            'local_sitsgradepush/user_profile_field',
+            get_string('settings:userprofilefield', 'local_sitsgradepush'),
+            get_string('settings:userprofilefield:desc', 'local_sitsgradepush'),
+            '',
+            $options
+        ));
 
         // Set the support page URL.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/support_page_url',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/support_page_url',
             get_string('settings:support_page_url', 'local_sitsgradepush'),
             get_string('settings:support_page_url:desc', 'local_sitsgradepush'),
             'https://ucldata.atlassian.net/wiki/spaces/MoodleResourceCentre/pages/96567347/FAQs+errors+support' .
@@ -144,10 +151,10 @@ if ($hassiteconfig) {
 
         // Setting to enable/disable the re-assessment transfer feature.
         $settings->add(new admin_setting_configcheckbox(
-          'local_sitsgradepush/reassessment_enabled',
-          get_string('settings:reassessment_enabled', 'local_sitsgradepush'),
-          get_string('settings:reassessment_enabled:desc', 'local_sitsgradepush'),
-          '0'
+            'local_sitsgradepush/reassessment_enabled',
+            get_string('settings:reassessment_enabled', 'local_sitsgradepush'),
+            get_string('settings:reassessment_enabled:desc', 'local_sitsgradepush'),
+            '0'
         ));
 
         // Setting to enable/disable extension feature.
@@ -159,14 +166,16 @@ if ($hassiteconfig) {
         ));
 
         // Set SITS moodle AST codes that would apply SORA.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/ast_codes_sora_api_v1',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/ast_codes_sora_api_v1',
             get_string('settings:astcodessora', 'local_sitsgradepush'),
             get_string('settings:astcodessora:desc', 'local_sitsgradepush'),
             'BC02, HC01, EC03, EC04, ED03, ED04'
         ));
 
         // Set the extension support page URL.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/extension_support_page_url',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/extension_support_page_url',
             get_string('settings:extension_support_page_url', 'local_sitsgradepush'),
             get_string('settings:extension_support_page_url:desc', 'local_sitsgradepush'),
             'https://ucldata.atlassian.net/wiki/spaces/MoodleResourceCentre/pages/96567347/FAQs+errors+support' .
@@ -197,7 +206,10 @@ if ($hassiteconfig) {
             get_string('settings:new_feature_notification_html', 'local_sitsgradepush'),
             get_string('settings:new_feature_notification_html:desc', 'local_sitsgradepush'),
             get_string('settings:new_feature_notification_template_html', 'local_sitsgradepush'),
-            PARAM_RAW, 100, 8));
+            PARAM_RAW,
+            100,
+            8
+        ));
 
         // Setting to enable/disable fetching student candidate numbers from SITS.
         $settings->add(new admin_setting_configcheckbox(
@@ -224,48 +236,55 @@ if ($hassiteconfig) {
         ));
 
         // Setting for AWS.
-        $settings->add(new admin_setting_heading('local_sitsgradepush_aws_settings',
+        $settings->add(new admin_setting_heading(
+            'local_sitsgradepush_aws_settings',
             get_string('settings:awssettings', 'local_sitsgradepush'),
             get_string('settings:awssettings:desc', 'local_sitsgradepush')
         ));
 
         // AWS region.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_region',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/aws_region',
             get_string('settings:awsregion', 'local_sitsgradepush'),
             get_string('settings:awsregion:desc', 'local_sitsgradepush'),
             'eu-west-2'
         ));
 
         // AWS key.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_key',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/aws_key',
             get_string('settings:awskey', 'local_sitsgradepush'),
             get_string('settings:awskey:desc', 'local_sitsgradepush'),
             'CHANGEME'
         ));
 
         // AWS secret.
-        $settings->add(new admin_setting_configpasswordunmask('local_sitsgradepush/aws_secret',
+        $settings->add(new admin_setting_configpasswordunmask(
+            'local_sitsgradepush/aws_secret',
             get_string('settings:awssecret', 'local_sitsgradepush'),
             get_string('settings:awssecret:desc', 'local_sitsgradepush'),
             'CHANGEME'
         ));
 
         // AWS SORA queue URL.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_sora_sqs_queue_url',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/aws_sora_sqs_queue_url',
             get_string('settings:awssoraqueueurl', 'local_sitsgradepush'),
             get_string('settings:awssoraqueueurl:desc', 'local_sitsgradepush'),
             'CHANGEME'
         ));
 
         // AWS EC queue URL.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_ec_sqs_queue_url',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/aws_ec_sqs_queue_url',
             get_string('settings:awsecqueueurl', 'local_sitsgradepush'),
             get_string('settings:awsecqueueurl:desc', 'local_sitsgradepush'),
             'CHANGEME'
         ));
 
         // AWS delay process time.
-        $settings->add(new admin_setting_configtext('local_sitsgradepush/aws_delay_process_time',
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/aws_delay_process_time',
             get_string('settings:awsdelayprocesstime', 'local_sitsgradepush'),
             get_string('settings:awsdelayprocesstime:desc', 'local_sitsgradepush'),
             3900, // 1 hour and 5 minutes.

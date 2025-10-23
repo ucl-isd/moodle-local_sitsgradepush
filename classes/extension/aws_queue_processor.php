@@ -30,7 +30,6 @@ use local_sitsgradepush\logger;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 abstract class aws_queue_processor {
-
     /** @var int Maximum number of messages to fetch per call. 10 is the highest number, limited by AWS */
     const MAX_MESSAGES = 10;
 
@@ -131,8 +130,10 @@ abstract class aws_queue_processor {
         try {
             // Skip if message received time + delay time is greater than current time.
             $delaytime = (int) (get_config('local_sitsgradepush', 'aws_delay_process_time') ?: 0);
-            if (isset($messagebody['Timestamp']) &&
-                strtotime($messagebody['Timestamp']) + $delaytime > di::get(clock::class)->time()) {
+            if (
+                isset($messagebody['Timestamp']) &&
+                strtotime($messagebody['Timestamp']) + $delaytime > di::get(clock::class)->time()
+            ) {
                 mtrace("Skipping message due to delay time: {$messageid}");
                 return true;
             }
@@ -225,18 +226,24 @@ abstract class aws_queue_processor {
                         $processedcount++;
                     } catch (\Exception $e) {
                         logger::log($e->getMessage(), null, static::class . ' Processing Error');
-                        $this->save_message_record($message, $this->get_queue_name(), ['status' => self::STATUS_FAILED],
-                            $e->getMessage());
+                        $this->save_message_record(
+                            $message,
+                            $this->get_queue_name(),
+                            ['status' => self::STATUS_FAILED],
+                            $e->getMessage()
+                        );
                     }
                 }
-
             } while (!empty($messages));
 
-            mtrace(sprintf('Completed processing %d messages in %d batches (%.2f seconds)',
-                $processedcount,
-                $batchnumber,
-                time() - $starttime
-            ));
+            mtrace(
+                sprintf(
+                    'Completed processing %d messages in %d batches (%.2f seconds)',
+                    $processedcount,
+                    $batchnumber,
+                    time() - $starttime
+                )
+            );
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, static::class . ' Queue Error');
             throw $e;

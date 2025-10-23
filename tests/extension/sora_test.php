@@ -34,7 +34,6 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class sora_test extends extension_common {
-
     /** @var int Timestamp for earlier message (T1) */
     private int $earliertimestamp;
 
@@ -384,7 +383,8 @@ final class sora_test extends extension_common {
         return $this->getDataGenerator()->create_course(
             ['shortname' => 'C2', 'customfields' => [
                 ['shortname' => 'course_year', 'value' => $this->clock->now()->modify('-1 year')->format('Y')],
-            ]]);
+            ]]
+        );
     }
 
     /**
@@ -513,23 +513,26 @@ final class sora_test extends extension_common {
         global $DB;
 
         // Create and process later message first (T2).
-        $message_t2 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->latertimestamp);
+        $messaget2 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->latertimestamp);
         $processor = new sora_queue_processor();
-        $result_t2 = $this->call_process_message($processor, $message_t2);
+        $resultt2 = $this->call_process_message($processor, $messaget2);
 
         // Save the result to database (simulate full flow).
-        $this->save_message_to_aws_log($message_t2, $result_t2);
+        $this->save_message_to_aws_log($messaget2, $resultt2);
 
         // Create and process earlier message (T1).
-        $message_t1 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->earliertimestamp);
-        $result_t1 = $this->call_process_message($processor, $message_t1);
+        $messaget1 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->earliertimestamp);
+        $resultt1 = $this->call_process_message($processor, $messaget1);
 
         // Save the result to database.
-        $this->save_message_to_aws_log($message_t1, $result_t1);
+        $this->save_message_to_aws_log($messaget1, $resultt1);
 
         // Assertions.
-        $records = $DB->get_records('local_sitsgradepush_aws_log',
-            ['studentcode' => $this->student1->idnumber], 'eventtimestamp ASC');
+        $records = $DB->get_records(
+            'local_sitsgradepush_aws_log',
+            ['studentcode' => $this->student1->idnumber],
+            'eventtimestamp ASC'
+        );
 
         $this->assertCount(2, $records);
 
@@ -558,23 +561,26 @@ final class sora_test extends extension_common {
         global $DB;
 
         // Create and process earlier message first (T1).
-        $message_t1 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->earliertimestamp);
+        $messaget1 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->earliertimestamp);
         $processor = new sora_queue_processor();
-        $result_t1 = $this->call_process_message($processor, $message_t1);
+        $resultt1 = $this->call_process_message($processor, $messaget1);
 
         // Save the result to database (simulate full flow).
-        $this->save_message_to_aws_log($message_t1, $result_t1);
+        $this->save_message_to_aws_log($messaget1, $resultt1);
 
         // Create and process later message (T2).
-        $message_t2 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->latertimestamp);
-        $result_t2 = $this->call_process_message($processor, $message_t2);
+        $messaget2 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->latertimestamp);
+        $resultt2 = $this->call_process_message($processor, $messaget2);
 
         // Save the result to database.
-        $this->save_message_to_aws_log($message_t2, $result_t2);
+        $this->save_message_to_aws_log($messaget2, $resultt2);
 
         // Assertions.
-        $records = $DB->get_records('local_sitsgradepush_aws_log',
-            ['studentcode' => $this->student1->idnumber], 'eventtimestamp ASC');
+        $records = $DB->get_records(
+            'local_sitsgradepush_aws_log',
+            ['studentcode' => $this->student1->idnumber],
+            'eventtimestamp ASC'
+        );
 
         $this->assertCount(2, $records);
 

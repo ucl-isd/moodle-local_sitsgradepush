@@ -32,7 +32,6 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/base_test_class.php');
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class extension_common extends base_test_class {
-
     /** @var \stdClass $course1 Default test course 1 */
     protected \stdClass $course1;
 
@@ -83,7 +82,8 @@ class extension_common extends base_test_class {
         $this->course1 = $dg->create_course(
             ['shortname' => 'C1', 'customfields' => [
                 ['shortname' => 'course_year', 'value' => $this->clock->now()->format('Y')],
-            ]]);
+            ]]
+        );
         $this->student1 = $dg->create_user(['idnumber' => '12345678']);
         $dg->enrol_user($this->student1->id, $this->course1->id, 'student');
 
@@ -91,7 +91,8 @@ class extension_common extends base_test_class {
         $assessmentenddate = strtotime('2025-02-17 12:00:00'); // End date: 2025-02-17 12:00:00.
 
         // Create test assignment 1.
-        $this->assign1 = $dg->create_module('assign',
+        $this->assign1 = $dg->create_module(
+            'assign',
             [
                 'name' => 'Test Assignment 1',
                 'course' => $this->course1->id,
@@ -142,7 +143,8 @@ class extension_common extends base_test_class {
         int $courseid,
         \stdClass $assessment,
         string $modtype,
-        int $reassess = 0): bool|int {
+        int $reassess = 0
+    ): bool|int {
         global $DB;
 
         return $DB->insert_record('local_sitsgradepush_mapping', [

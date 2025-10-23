@@ -153,9 +153,7 @@ Feature: Marks transfer from Moodle to SITS
     And I follow "Coursework 1"
     And I click on "Upload your submission" "link"
     And I upload "lib/tests/fixtures/empty.txt" file to "Upload a file" filemanager
-    And I press "Submit"
-    And I press "Finalise your submission"
-    And I press "Yes"
+    And I press "Submit and finalise"
     And I log out
     And I am on the "Course 1" course page logged in as teacher1
     And I follow "Coursework 1"

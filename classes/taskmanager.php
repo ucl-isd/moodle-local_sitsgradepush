@@ -34,7 +34,6 @@ use local_sitsgradepush\task\process_extensions_new_mapping;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class taskmanager {
-
     /** @var int Push task status - requested */
     const PUSH_TASK_STATUS_REQUESTED = 0;
 
@@ -79,8 +78,13 @@ class taskmanager {
         self::update_task_status($task->id, self::PUSH_TASK_STATUS_PROCESSING);
 
         // Get the assessment data.
-        if ($mapping = $manager->get_assessment_data(
-            $assessmentmapping->sourcetype, $assessmentmapping->sourceid, $assessmentmapping->id)) {
+        if (
+            $mapping = $manager->get_assessment_data(
+                $assessmentmapping->sourcetype,
+                $assessmentmapping->sourceid,
+                $assessmentmapping->id
+            )
+        ) {
             if (!empty($mapping->students)) {
                 // Number of students in the mapping.
                 $numberofstudents = count($mapping->students);
@@ -431,7 +435,7 @@ class taskmanager {
             }
 
             // Add an adhoc task to process extensions if the mapped assessment is supported.
-            if (in_array($mapping->moduletype, extension::SUPPORTED_MODULE_TYPES) ) {
+            if (in_array($mapping->moduletype, extension::SUPPORTED_MODULE_TYPES)) {
                 $task = new process_extensions_new_mapping();
                 $task->set_custom_data((object)['mapid' => $mappingid]);
                 coretaskmanager::queue_adhoc_task($task);

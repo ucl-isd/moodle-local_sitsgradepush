@@ -54,7 +54,7 @@ class sitsapiclient extends base {
      * @return string
      */
     public function get_settings_section_name() {
-        return 'sitsapiclient'.$this->name.'settings';
+        return 'sitsapiclient' . $this->name . 'settings';
     }
 
     /**

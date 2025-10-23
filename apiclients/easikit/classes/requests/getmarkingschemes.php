@@ -25,7 +25,6 @@ namespace sitsapiclient_easikit\requests;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class getmarkingschemes extends request {
-
     /** @var string request method */
     const METHOD = 'GET';
 

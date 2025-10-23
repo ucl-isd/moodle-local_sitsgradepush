@@ -25,7 +25,6 @@ namespace local_sitsgradepush\assessment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class assessmentfactory {
-
     /** @var string Course module source type */
     const SOURCETYPE_MOD = 'mod';
 

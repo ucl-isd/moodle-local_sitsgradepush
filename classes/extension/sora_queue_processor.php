@@ -25,7 +25,6 @@ namespace local_sitsgradepush\extension;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class sora_queue_processor extends aws_queue_processor {
-
     /** @var string QUEUE_NAME */
     const QUEUE_NAME = 'SORA';
 

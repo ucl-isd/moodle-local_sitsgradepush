@@ -30,7 +30,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class sora extends extension {
-
     /** @var string Prefix used to create RAA groups */
     const SORA_GROUP_PREFIX = 'RAA-Activity-';
 
@@ -183,8 +182,12 @@ class sora extends extension {
         if (!empty($studentcode)) {
             $this->studentcode = $studentcode;
             $this->set_userid($studentcode);
-            $this->extraduration = $this->convert_time_to_minutes($messagedata->entity->person_sora->extra_duration ?? self::EMPTY_EXTENSION);
-            $this->restduration = $this->convert_time_to_minutes($messagedata->entity->person_sora->rest_duration ?? self::EMPTY_EXTENSION);
+            $this->extraduration = $this->convert_time_to_minutes(
+                $messagedata->entity->person_sora->extra_duration ?? self::EMPTY_EXTENSION
+            );
+            $this->restduration = $this->convert_time_to_minutes(
+                $messagedata->entity->person_sora->rest_duration ?? self::EMPTY_EXTENSION
+            );
             $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
         } else {
             throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
@@ -207,8 +210,12 @@ class sora extends extension {
         $this->datasource = self::DATASOURCE_API;
 
         // Set properties.
-        $this->extraduration = $this->convert_time_to_minutes($student['student_assessment']['sora']['extra_duration'] ?? self::EMPTY_EXTENSION);
-        $this->restduration = $this->convert_time_to_minutes($student['student_assessment']['sora']['rest_duration'] ?? self::EMPTY_EXTENSION);
+        $this->extraduration = $this->convert_time_to_minutes(
+            $student['student_assessment']['sora']['extra_duration'] ?? self::EMPTY_EXTENSION
+        );
+        $this->restduration = $this->convert_time_to_minutes(
+            $student['student_assessment']['sora']['rest_duration'] ?? self::EMPTY_EXTENSION
+        );
 
         // Calculate and set the time extension in seconds.
         $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());

@@ -25,7 +25,6 @@ namespace local_sitsgradepush;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class errormanager_test extends \advanced_testcase {
-
     /**
      * Set up the test.
      *
@@ -73,17 +72,17 @@ final class errormanager_test extends \advanced_testcase {
         $this->assertEquals(errormanager::ERROR_NO_MARK_SCHEME, errormanager::identify_error('no mark scheme defined'));
         $this->assertEquals(errormanager::ERROR_ATTEMPT_NUMBER_BLANK, errormanager::identify_error('Attempt number blank'));
         $this->assertEquals(
-          errormanager::ERROR_OVERWRITE_EXISTING_RECORD,
-          errormanager::identify_error('Cannot overwrite existing')
+            errormanager::ERROR_OVERWRITE_EXISTING_RECORD,
+            errormanager::identify_error('Cannot overwrite existing')
         );
         $this->assertEquals(
-          errormanager::ERROR_OVERWRITE_EXISTING_RECORD,
-          errormanager::identify_error('no further update allowed')
+            errormanager::ERROR_OVERWRITE_EXISTING_RECORD,
+            errormanager::identify_error('no further update allowed')
         );
         $this->assertEquals(errormanager::ERROR_INVALID_MARKS, errormanager::identify_error('Mark and/or Grade not valid'));
         $this->assertEquals(
-          errormanager::ERROR_INVALID_HAND_IN_STATUS,
-          errormanager::identify_error('handin_status provided is not in SUS table')
+            errormanager::ERROR_INVALID_HAND_IN_STATUS,
+            errormanager::identify_error('handin_status provided is not in SUS table')
         );
 
         // Test unknown error is returned if no match is found.

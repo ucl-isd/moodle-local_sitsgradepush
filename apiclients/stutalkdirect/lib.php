@@ -37,7 +37,6 @@ use sitsapiclient_stutalkdirect\requests\pushsubmissionlog;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class stutalkdirect extends client {
-
     /**
      * Constructor.
      */

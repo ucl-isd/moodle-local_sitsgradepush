@@ -25,7 +25,6 @@ namespace local_sitsgradepush\assessment;
  * @author     David Watson <david-watson@ucl.ac.uk>
  */
 class lesson extends activity {
-
     /**
      * Get all participants.
      *
