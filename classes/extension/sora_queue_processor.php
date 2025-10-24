@@ -123,19 +123,18 @@ class sora_queue_processor extends aws_queue_processor {
             return false;
         }
 
-        // Query for the latest processed/ignored message for this student in SORA queue.
+        // Query for the latest processed message for this student in SORA queue.
         $sql = "SELECT MAX(eventtimestamp) as latesttimestamp
                 FROM {local_sitsgradepush_aws_log}
                 WHERE queuename = :queuename
                 AND studentcode = :studentcode
-                AND (status = :processed OR status = :ignored)
+                AND status = :processed
                 AND eventtimestamp IS NOT NULL";
 
         $params = [
             'queuename' => self::QUEUE_NAME,
             'studentcode' => $studentcode,
             'processed' => self::STATUS_PROCESSED,
-            'ignored' => self::STATUS_IGNORED,
         ];
 
         $result = $DB->get_record_sql($sql, $params);
