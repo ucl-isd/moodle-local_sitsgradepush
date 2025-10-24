@@ -152,7 +152,8 @@ class manager {
         if (!empty($modocc)) {
             foreach ($modocc as $occ) {
                 // Get the cache.
-                $key = implode('_',
+                $key = implode(
+                    '_',
                     [
                         cachemanager::CACHE_AREA_COMPONENTGRADES,
                         $occ->mod_code,
@@ -398,8 +399,10 @@ class manager {
 
         // Check assessment type codes that works with exam room code.
         if (!empty($assessmenttypecodeswithexamcode) && !empty($examroomcode)) {
-            if (in_array($componentgrade->astcode, $assessmenttypecodeswithexamcode) &&
-                $componentgrade->examroomcode != $examroomcode) {
+            if (
+                in_array($componentgrade->astcode, $assessmenttypecodeswithexamcode) &&
+                $componentgrade->examroomcode != $examroomcode
+            ) {
                 $valid = false;
                 $unavailablereasons[] = get_string('error:ast_code_exam_room_code_not_matched', 'local_sitsgradepush');
             }
@@ -428,9 +431,12 @@ class manager {
         $unmappedmabs = $this->get_unmapped_local_mabs($occ);
         if (!empty($unmappedmabs)) {
             $mabseqstokeep = array_column($componentgrades, 'MAB_SEQ');
-            $mabstodelete = array_filter($unmappedmabs, function($mab) use ($mabseqstokeep) {
-                return !in_array($mab->mabseq, $mabseqstokeep);
-            });
+            $mabstodelete = array_filter(
+                $unmappedmabs,
+                function ($mab) use ($mabseqstokeep) {
+                    return !in_array($mab->mabseq, $mabseqstokeep);
+                }
+            );
 
             if (!empty($mabstodelete)) {
                 $DB->delete_records_list(self::TABLE_COMPONENT_GRADE, 'id', array_column($mabstodelete, 'id'));
@@ -439,14 +445,19 @@ class manager {
 
         $recordsinsert = [];
         foreach ($componentgrades as $componentgrade) {
-            if ($record = $DB->get_record(self::TABLE_COMPONENT_GRADE, [
-                'modcode' => $componentgrade['MOD_CODE'],
-                'modocc' => $componentgrade['MAV_OCCUR'],
-                'academicyear' => $componentgrade['AYR_CODE'],
-                'periodslotcode' => $componentgrade['PSL_CODE'],
-                'mapcode' => $componentgrade['MAP_CODE'],
-                'mabseq' => $componentgrade['MAB_SEQ'],
-            ])) {
+            if (
+                $record = $DB->get_record(
+                    self::TABLE_COMPONENT_GRADE,
+                    [
+                        'modcode' => $componentgrade['MOD_CODE'],
+                        'modocc' => $componentgrade['MAV_OCCUR'],
+                        'academicyear' => $componentgrade['AYR_CODE'],
+                        'periodslotcode' => $componentgrade['PSL_CODE'],
+                        'mapcode' => $componentgrade['MAP_CODE'],
+                        'mabseq' => $componentgrade['MAB_SEQ'],
+                    ]
+                )
+            ) {
                 // Update record if this component grade already exists.
                 $record->astcode = $componentgrade['AST_CODE'];
                 $record->mabperc = $componentgrade['MAB_PERC'];
@@ -485,10 +496,10 @@ class manager {
 
         // Validate component grade.
         $assessment = $this->validate_component_grade(
-          $data->componentgradeid,
-          $data->sourcetype,
-          $data->sourceid,
-          $data->reassessment
+            $data->componentgradeid,
+            $data->sourcetype,
+            $data->sourceid,
+            $data->reassessment
         );
 
         if ($existingmapping = $this->is_component_grade_mapped($data->componentgradeid, $data->reassessment)) {
@@ -656,10 +667,10 @@ class manager {
         // Stutalk Direct is not supported currently.
         if ($this->apiclient->get_client_name() == 'Stutalk Direct') {
             throw new \moodle_exception(
-              'error:multiplemappingsnotsupported',
-              'local_sitsgradepush',
-              '',
-              $this->apiclient->get_client_name()
+                'error:multiplemappingsnotsupported',
+                'local_sitsgradepush',
+                '',
+                $this->apiclient->get_client_name()
             );
         }
 
@@ -822,7 +833,13 @@ class manager {
 
                 // Save push log.
                 $this->save_transfer_log(
-                    self::PUSH_SUBMISSION_LOG, $assessmentmapping->id, $userid, $request, $response, $taskid);
+                    self::PUSH_SUBMISSION_LOG,
+                    $assessmentmapping->id,
+                    $userid,
+                    $request,
+                    $response,
+                    $taskid
+                );
 
                 return true;
             }
@@ -1268,8 +1285,11 @@ class manager {
 
         // Prevent new mapping for gradebook items and categories if the gradebook feature is disabled.
         $gradebookenabled = get_config('local_sitsgradepush', 'gradebook_enabled');
-        if (!$gradebookenabled && ($sourcetype == assessmentfactory::SOURCETYPE_GRADE_ITEM ||
-                $sourcetype == assessmentfactory::SOURCETYPE_GRADE_CATEGORY)) {
+        if (
+            !$gradebookenabled &&
+            ($sourcetype == assessmentfactory::SOURCETYPE_GRADE_ITEM ||
+                $sourcetype == assessmentfactory::SOURCETYPE_GRADE_CATEGORY)
+        ) {
             throw new \moodle_exception('error:gradebook_disabled', 'local_sitsgradepush');
         }
 
@@ -1547,8 +1567,8 @@ class manager {
             $extensionenabledonlysql = '';
         }
         $sql = "SELECT am.*, cg.mapcode, cg.mabseq
-                FROM {".self::TABLE_ASSESSMENT_MAPPING."} am
-                JOIN {".self::TABLE_COMPONENT_GRADE."} cg ON am.componentgradeid = cg.id
+                FROM {" . self::TABLE_ASSESSMENT_MAPPING . "} am
+                JOIN {" . self::TABLE_COMPONENT_GRADE . "} cg ON am.componentgradeid = cg.id
                 WHERE courseid = :courseid $extensionenabledonlysql";
 
         return $DB->get_records_sql($sql, ['courseid' => $courseid]);
@@ -1624,7 +1644,13 @@ class manager {
      * @throws \dml_exception
      */
     private function save_transfer_log(
-        string $type, int $assessmentmappingid, int $userid, mixed $request, array $response, ?int $taskid, ?int $errorlogid = null
+        string $type,
+        int $assessmentmappingid,
+        int $userid,
+        mixed $request,
+        array $response,
+        ?int $taskid,
+        ?int $errorlogid = null
     ): void {
         global $USER, $DB;
         $insert = new \stdClass();
@@ -1688,7 +1714,8 @@ class manager {
             // Log error.
             $errorlogid = logger::log_request_error(
                 get_string(
-                    'error:emptyresponse', 'local_sitsgradepush',
+                    'error:emptyresponse',
+                    'local_sitsgradepush',
                     $request->get_request_name()
                 ),
                 $request,
@@ -1699,7 +1726,11 @@ class manager {
             $debuginfo = $errorlogid ?: null;
 
             throw new \moodle_exception(
-                'error:emptyresponse', 'local_sitsgradepush', '', $request->get_request_name(), $debuginfo
+                'error:emptyresponse',
+                'local_sitsgradepush',
+                '',
+                $request->get_request_name(),
+                $debuginfo
             );
         }
     }
@@ -1716,7 +1747,12 @@ class manager {
      * @throws \dml_exception
      */
     private function mark_push_as_failed(
-        string $requestidentifier, int $assessmentmappingid, int $userid, ?int $taskid, \moodle_exception $exception): void {
+        string $requestidentifier,
+        int $assessmentmappingid,
+        int $userid,
+        ?int $taskid,
+        \moodle_exception $exception
+    ): void {
         // Failed response.
         $response = [
             "code" => "-1",
@@ -1817,7 +1853,7 @@ class manager {
      */
     public static function allowed_activities(): array {
         $mods = \core\plugininfo\mod::get_enabled_plugins();
-        return array_values(array_filter($mods, function($mod): bool {
+        return array_values(array_filter($mods, function ($mod): bool {
             return class_exists("\\local_sitsgradepush\\assessment\\$mod");
         }));
     }

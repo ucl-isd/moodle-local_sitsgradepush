@@ -35,7 +35,6 @@ use plugin_renderer_base;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class renderer extends plugin_renderer_base {
-
     /** @var manager|null Manager */
     private ?manager $manager;
 
@@ -321,8 +320,10 @@ class renderer extends plugin_renderer_base {
             $validassessments[] = $formattedassessment;
         }
 
-        return $this->output->render_from_template('local_sitsgradepush/select_source',
-            ['assessments' => $validassessments]);
+        return $this->output->render_from_template(
+            'local_sitsgradepush/select_source',
+            ['assessments' => $validassessments]
+        );
     }
 
     /**
@@ -334,7 +335,7 @@ class renderer extends plugin_renderer_base {
     private function get_label_html(?int $errortype = null): string {
         // This is for old data that does not have the error type.
         if (is_null($errortype)) {
-            return '<span class="badge badge-danger">'.errormanager::get_error_label(errormanager::ERROR_UNKNOWN).'</span> ';
+            return '<span class="badge badge-danger">' . errormanager::get_error_label(errormanager::ERROR_UNKNOWN) . '</span> ';
         }
 
         // Return different label based on the error type.
@@ -344,10 +345,10 @@ class renderer extends plugin_renderer_base {
                 return '<span class="badge badge-success">Success</span> ';
             case errormanager::ERROR_STUDENT_NOT_ENROLLED:
                 // Student not enrolled error will have a warning label.
-                return '<span class="badge badge-warning">'.errormanager::get_error_label($errortype).'</span> ';
+                return '<span class="badge badge-warning">' . errormanager::get_error_label($errortype) . '</span> ';
             default:
                 // Other errors will have a danger label.
-                return '<span class="badge badge-danger">'.errormanager::get_error_label($errortype).'</span> ';
+                return '<span class="badge badge-danger">' . errormanager::get_error_label($errortype) . '</span> ';
         }
     }
 
@@ -378,9 +379,12 @@ class renderer extends plugin_renderer_base {
         if ($lasttasktime > 0) {
             $lasttasktext = get_string(
                 'label:lastpushtext',
-                'local_sitsgradepush', [
-                'date' => date('d/m/Y', $lasttasktime),
-                'time' => date('g:i:s a', $lasttasktime), ]);
+                'local_sitsgradepush',
+                [
+                    'date' => date('d/m/Y', $lasttasktime),
+                    'time' => date('g:i:s a', $lasttasktime),
+                ]
+            );
         }
 
         return $lasttasktext;
@@ -421,21 +425,21 @@ class renderer extends plugin_renderer_base {
         $selectmenu = new \core\output\select_menu('dashboardtype', $menuarray, $activeurl);
         $selectmenu->set_label(get_string('dashboard:type', 'local_sitsgradepush'), ['class' => 'sr-only']);
         $options = \html_writer::tag(
-          'div',
-          $this->output->render_from_template(
-            'core/tertiary_navigation_selector',
-            $selectmenu->export_for_template($this->output)
-          ),
-          ['class' => 'navitem']
+            'div',
+            $this->output->render_from_template(
+                'core/tertiary_navigation_selector',
+                $selectmenu->export_for_template($this->output)
+            ),
+            ['class' => 'navitem']
         );
 
         return \html_writer::tag(
-          'div',
-          $options,
-          [
-            'class' => 'tertiary-navigation border-bottom mb-2 d-flex',
-            'id'    => 'tertiary-navigation',
-          ]
+            'div',
+            $options,
+            [
+                'class' => 'tertiary-navigation border-bottom mb-2 d-flex',
+                'id'    => 'tertiary-navigation',
+            ]
         );
     }
 
@@ -490,8 +494,10 @@ class renderer extends plugin_renderer_base {
      * @return string
      */
     private function get_new_feature_notification_html(): string {
-        if (get_config('local_sitsgradepush', 'new_feature_notification_enabled') == '1' &&
-            !empty(get_config('local_sitsgradepush', 'new_feature_notification_html'))) {
+        if (
+            get_config('local_sitsgradepush', 'new_feature_notification_enabled') == '1' &&
+            !empty(get_config('local_sitsgradepush', 'new_feature_notification_html'))
+        ) {
             return get_config('local_sitsgradepush', 'new_feature_notification_html');
         }
         return '';
@@ -517,7 +523,8 @@ class renderer extends plugin_renderer_base {
             return '';
         }
 
-        return $this->output->render_from_template('local_sitsgradepush/extensions_mapped_eligible_message',
+        return $this->output->render_from_template(
+            'local_sitsgradepush/extensions_mapped_eligible_message',
             ['overrideurl' => $assessment->get_overrides_page_url('user', false)]
         );
     }

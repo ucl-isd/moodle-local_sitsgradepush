@@ -76,7 +76,7 @@ class quiz extends submission {
      */
     private function get_best_attempt() {
         global $CFG, $DB;
-        require_once($CFG->dirroot.'/mod/quiz/locallib.php');
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
         // Get student's quiz attempts.
         $attempts = quiz_get_user_attempts($this->modinstance->id, $this->userid);

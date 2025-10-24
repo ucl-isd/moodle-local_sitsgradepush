@@ -25,7 +25,6 @@ namespace sitsapiclient_stutalkdirect\requests;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class pushgrade extends request {
-
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'assessmentcomponent' => 'ASSESSMENT-COMPONENT',

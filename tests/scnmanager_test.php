@@ -32,7 +32,6 @@ require_once(__DIR__ . '/base_test_class.php');
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class scnmanager_test extends base_test_class {
-
     /** @var string Test mapcode */
     private const TEST_MAPCODE = 'TEST001A6UH';
 

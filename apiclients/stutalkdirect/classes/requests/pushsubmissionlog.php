@@ -27,7 +27,6 @@ use local_sitsgradepush\submission\submission;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class pushsubmissionlog extends request {
-
     /** @var string[] Fields mapping - Local data fields to SITS' fields */
     const FIELDS_MAPPING = [
         'assessmentcomponent' => 'ASSESSMENT-COMPONENT',

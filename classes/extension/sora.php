@@ -30,12 +30,14 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class sora extends extension {
+    /** @var string Prefix used to create RAA groups */
+    const SORA_GROUP_PREFIX = 'RAA-Activity-';
 
-    /** @var string Prefix used to create SORA groups */
-    const SORA_GROUP_PREFIX = 'SORA-Activity-';
+    /** @var string SORA message type - New code to replace the old EXAM type code */
+    const SORA_MESSAGE_TYPE_RAPXR = 'RAPXR';
 
-    /** @var string SORA message type - EXAM */
-    const SORA_MESSAGE_TYPE_EXAM = 'EXAM';
+    /** @var string Empty time extension in HH:MM format */
+    const EMPTY_EXTENSION = '00:00';
 
     /** @var int Extra duration in minutes per hour */
     protected int $extraduration;
@@ -180,8 +182,12 @@ class sora extends extension {
         if (!empty($studentcode)) {
             $this->studentcode = $studentcode;
             $this->set_userid($studentcode);
-            $this->extraduration = (int) $messagedata->entity->person_sora->extra_duration ?? 0;
-            $this->restduration = (int) $messagedata->entity->person_sora->rest_duration ?? 0;
+            $this->extraduration = $this->convert_time_to_minutes(
+                $messagedata->entity->person_sora->extra_duration ?? self::EMPTY_EXTENSION
+            );
+            $this->restduration = $this->convert_time_to_minutes(
+                $messagedata->entity->person_sora->rest_duration ?? self::EMPTY_EXTENSION
+            );
             $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
         } else {
             throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
@@ -204,8 +210,12 @@ class sora extends extension {
         $this->datasource = self::DATASOURCE_API;
 
         // Set properties.
-        $this->extraduration = (int) $student['student_assessment']['sora']['extra_duration'] ?? 0;
-        $this->restduration = (int) $student['student_assessment']['sora']['rest_duration'] ?? 0;
+        $this->extraduration = $this->convert_time_to_minutes(
+            $student['student_assessment']['sora']['extra_duration'] ?? self::EMPTY_EXTENSION
+        );
+        $this->restduration = $this->convert_time_to_minutes(
+            $student['student_assessment']['sora']['rest_duration'] ?? self::EMPTY_EXTENSION
+        );
 
         // Calculate and set the time extension in seconds.
         $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
@@ -273,6 +283,30 @@ class sora extends extension {
 
         // Common pre-process extension checks.
         return parent::pre_process_extension_checks($mappings);
+    }
+
+    /**
+     * Convert time string in HH:MM format to total minutes.
+     *
+     * @param string $time Time string in HH:MM format (e.g., "00:15", "01:30").
+     * @return int Total minutes.
+     */
+    private function convert_time_to_minutes(string $time): int {
+        // Handle empty or invalid input.
+        if (empty($time)) {
+            return 0;
+        }
+
+        // Split the time string by colon.
+        $parts = explode(':', $time);
+        if (count($parts) !== 2) {
+            return 0;
+        }
+
+        $hours = (int) $parts[0];
+        $minutes = (int) $parts[1];
+
+        return ($hours * HOURMINS) + $minutes;
     }
 
     /**

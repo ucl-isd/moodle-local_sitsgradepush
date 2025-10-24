@@ -30,7 +30,6 @@ require_once(__DIR__ . '/base_test_class.php');
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class user_enrolment_callbacks_test extends base_test_class {
-
     /** @var string Task classname constant */
     private const TASK_CLASSNAME = '\\local_sitsgradepush\\task\\fetch_candidate_numbers_task';
 

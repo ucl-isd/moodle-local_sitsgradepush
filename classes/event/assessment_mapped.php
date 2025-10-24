@@ -25,7 +25,6 @@ namespace local_sitsgradepush\event;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class assessment_mapped extends \core\event\base {
-
     /**
      * Init method.
      *

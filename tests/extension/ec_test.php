@@ -35,7 +35,6 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class ec_test extends extension_common {
-
     /**
      * Mapping ID.
      * @var int
@@ -82,7 +81,7 @@ final class ec_test extends extension_common {
 
         // Test case 1: Process a valid message.
         $result = $method->invoke($processor, ['Message' => $eventdata]);
-        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $result);
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $result['status']);
 
         $override = $DB->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => $this->student1->id]);
         $this->assertNotEmpty($override);
@@ -98,7 +97,7 @@ final class ec_test extends extension_common {
             'PANEL';
 
         $result = $method->invoke($processor, ['Message' => json_encode($ignoredmessage)]);
-        $this->assertEquals(aws_queue_processor::STATUS_IGNORED, $result);
+        $this->assertEquals(aws_queue_processor::STATUS_IGNORED, $result['status']);
 
         // Test case 3: Test exception when student not found.
         $manager = $this->createMock(manager::class);

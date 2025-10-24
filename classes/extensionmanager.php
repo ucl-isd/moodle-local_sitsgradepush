@@ -34,7 +34,6 @@ use local_sitsgradepush\task\process_extensions_new_enrolment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class extensionmanager {
-
     /** @var string DB table for storing overrides */
     const TABLE_OVERRIDES = 'local_sitsgradepush_overrides';
 
@@ -274,10 +273,10 @@ class extensionmanager {
      * @throws \dml_exception
      */
     public static function get_active_user_mt_overrides_by_mapid(
-        int    $mapid,
-        int    $cmid,
+        int $mapid,
+        int $cmid,
         string $extensiontype,
-        int    $userid,
+        int $userid,
     ): \stdClass|false {
         global $DB;
         $sql = "SELECT *

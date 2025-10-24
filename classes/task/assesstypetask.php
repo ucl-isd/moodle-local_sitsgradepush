@@ -30,7 +30,6 @@ use local_sitsgradepush\assesstype;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class assesstypetask extends scheduled_task {
-
     /** @var string date time format */
     const DATE_TIME_FORMAT = 'Y-m-d H:i:s';
 

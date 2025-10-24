@@ -38,7 +38,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     $dbman = $DB->get_manager();
 
     if ($oldversion < 2023030902) {
-
         // Define field marks to be dropped from local_sitsgradepush_tfr_log.
         $table = new xmldb_table('local_sitsgradepush_tfr_log');
 
@@ -95,7 +94,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023032800) {
-
         // Define table local_sitsgradepush_err_log to be created.
         $table = new xmldb_table('local_sitsgradepush_err_log');
 
@@ -123,7 +121,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023041700) {
-
         // Define field examroomcode to be added to local_sitsgradepush_mab.
         $table = new xmldb_table('local_sitsgradepush_mab');
         $field = new xmldb_field('examroomcode', XMLDB_TYPE_CHAR, '30', null, null, null, null, 'mabname');
@@ -147,7 +144,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023051200) {
-
         // Define index assessmentmappingid_idx (not unique) to be dropped form local_sitsgradepush_tfr_log.
         $table = new xmldb_table('local_sitsgradepush_tfr_log');
         $index = new xmldb_index('assessmentmappingid_idx', XMLDB_INDEX_NOTUNIQUE, ['assessmentmappingid']);
@@ -176,7 +172,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023051201) {
-
         // Define field errlogid to be added to local_sitsgradepush_tfr_log.
         $table = new xmldb_table('local_sitsgradepush_tfr_log');
         $field = new xmldb_field('errlogid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'usermodified');
@@ -191,7 +186,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023051700) {
-
         // Define field response to be added to local_sitsgradepush_err_log.
         $table = new xmldb_table('local_sitsgradepush_err_log');
         $field = new xmldb_field('response', XMLDB_TYPE_TEXT, null, null, null, null, null, 'data');
@@ -206,7 +200,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023051800) {
-
         // Define field request to be added to local_sitsgradepush_tfr_log.
         $table = new xmldb_table('local_sitsgradepush_tfr_log');
         $field = new xmldb_field('request', XMLDB_TYPE_TEXT, null, null, null, null, null, 'coursemoduleid');
@@ -221,7 +214,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023052300) {
-
         // Define table local_sitsgradepush_tasks to be created.
         $table = new xmldb_table('local_sitsgradepush_tasks');
 
@@ -251,7 +243,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023060500) {
-
         // Define field errortype to be added to local_sitsgradepush_err_log.
         $table = new xmldb_table('local_sitsgradepush_err_log');
         $field = new xmldb_field('errortype', XMLDB_TYPE_INTEGER, '3', null, null, null, null, 'message');
@@ -266,11 +257,18 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023103100) {
-
         // Define field assessmentmappingid to be added to local_sitsgradepush_tfr_log.
         $table = new xmldb_table('local_sitsgradepush_tfr_log');
         $field = new xmldb_field(
-            'assessmentmappingid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'coursemoduleid');
+            'assessmentmappingid',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            null,
+            null,
+            null,
+            'coursemoduleid'
+        );
 
         // Conditionally launch add field assessmentmappingid.
         if (!$dbman->field_exists($table, $field)) {
@@ -291,7 +289,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023110600) {
-
         // Define field coursemoduleid to be dropped from local_sitsgradepush_tfr_log.
         $table = new xmldb_table('local_sitsgradepush_tfr_log');
         $field = new xmldb_field('coursemoduleid');
@@ -385,7 +382,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2024020100) {
-
         // Define field taskid to be added to local_sitsgradepush_tfr_log.
         $table = new xmldb_table('local_sitsgradepush_tfr_log');
         $field = new xmldb_field('taskid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'usermodified');
@@ -400,7 +396,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2024022600) {
-
         // Define field mkscode to be added to local_sitsgradepush_mab.
         $table = new xmldb_table('local_sitsgradepush_mab');
         $field = new xmldb_field('mkscode', XMLDB_TYPE_CHAR, '6', null, null, null, null, 'examroomcode');
@@ -415,7 +410,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2024051300) {
-
         // Rename field coursemoduleid on table local_sitsgradepush_mapping to sourceid.
         $table = new xmldb_table('local_sitsgradepush_mapping');
         $field = new xmldb_field('coursemoduleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, 'courseid');
@@ -447,7 +441,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2024072300) {
-
         // Define key componentgradeid (foreign-unique) to be dropped form local_sitsgradepush_mapping.
         $table = new xmldb_table('local_sitsgradepush_mapping');
 
@@ -460,11 +453,11 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         $dbman->change_field_notnull($table, $field);
 
         $key = new xmldb_key(
-          'componentgradeid',
-          XMLDB_KEY_FOREIGN_UNIQUE,
-          ['componentgradeid'],
-          'local_sits_component_grades',
-          ['id']
+            'componentgradeid',
+            XMLDB_KEY_FOREIGN_UNIQUE,
+            ['componentgradeid'],
+            'local_sits_component_grades',
+            ['id']
         );
 
         // Launch drop key componentgradeid.
@@ -521,7 +514,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2024101000) {
-
         // Define field options to be added to local_sitsgradepush_tasks.
         $table = new xmldb_table('local_sitsgradepush_tasks');
         $field = new xmldb_field('options', XMLDB_TYPE_TEXT, null, null, null, null, null, 'assessmentmappingid');
@@ -536,7 +528,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025021000) {
-
         // Define field enableextension to be added to local_sitsgradepush_mapping.
         $table = new xmldb_table('local_sitsgradepush_mapping');
         $field = new xmldb_field('enableextension', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'reassessmentseq');
@@ -551,7 +542,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025021002) {
-
         // Define table local_sitsgradepush_aws_log to be created.
         $table = new xmldb_table('local_sitsgradepush_aws_log');
 
@@ -582,7 +572,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025021003) {
-
         // Define table local_sitsgradepush_enrol to be created.
         $table = new xmldb_table('local_sitsgradepush_enrol');
 
@@ -609,7 +598,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025060300) {
-
         // Define field userid to be added to local_sitsgradepush_mapping.
         $table = new xmldb_table('local_sitsgradepush_mapping');
         $field = new xmldb_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'enableextension');
@@ -632,7 +620,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025060500) {
-
         // Define field queuename to be added to local_sitsgradepush_aws_log.
         $table = new xmldb_table('local_sitsgradepush_aws_log');
         $field = new xmldb_field('queuename', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'id');
@@ -660,7 +647,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025061200) {
-
         // Define table local_sitsgradepush_overrides to be created.
         $table = new xmldb_table('local_sitsgradepush_overrides');
 
@@ -708,7 +694,6 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025081500) {
-
         // Define table local_sitsgradepush_scn to be created.
         $table = new xmldb_table('local_sitsgradepush_scn');
 
@@ -736,6 +721,64 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
 
         // Sitsgradepush savepoint reached.
         upgrade_plugin_savepoint(true, 2025081500, 'local', 'sitsgradepush');
+    }
+
+    if ($oldversion < 2025102200) {
+        // Define field studentcode to be added to local_sitsgradepush_aws_log.
+        $table = new xmldb_table('local_sitsgradepush_aws_log');
+        $field = new xmldb_field('studentcode', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'messageid');
+
+        // Conditionally launch add field studentcode.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field eventtimestamp to be added to local_sitsgradepush_aws_log.
+        $field = new xmldb_field('eventtimestamp', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'studentcode');
+
+        // Conditionally launch add field eventtimestamp.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field ignore_reason to be added to local_sitsgradepush_aws_log.
+        $field = new xmldb_field('ignore_reason', XMLDB_TYPE_TEXT, null, null, null, null, null, 'error_message');
+
+        // Conditionally launch add field ignore_reason.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index idx_studentcode (not unique) to be added to local_sitsgradepush_aws_log.
+        $index = new xmldb_index('idx_studentcode', XMLDB_INDEX_NOTUNIQUE, ['studentcode']);
+
+        // Conditionally launch add index idx_studentcode.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Define index idx_eventtimestamp (not unique) to be added to local_sitsgradepush_aws_log.
+        $index = new xmldb_index('idx_eventtimestamp', XMLDB_INDEX_NOTUNIQUE, ['eventtimestamp']);
+
+        // Conditionally launch add index idx_eventtimestamp.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Define composite index for efficient queries.
+        $index = new xmldb_index(
+            'idx_queue_student_ts',
+            XMLDB_INDEX_NOTUNIQUE,
+            ['queuename', 'studentcode', 'eventtimestamp']
+        );
+
+        // Conditionally launch add index idx_queue_student_ts.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2025102200, 'local', 'sitsgradepush');
     }
 
     return true;

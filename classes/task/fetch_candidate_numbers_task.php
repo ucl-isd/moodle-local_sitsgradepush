@@ -29,7 +29,6 @@ use local_sitsgradepush\scnmanager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class fetch_candidate_numbers_task extends adhoc_task {
-
     /**
      * Return name of the task.
      *

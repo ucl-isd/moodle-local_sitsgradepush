@@ -118,10 +118,13 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="queuename" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="AWS queue name"/>
         <FIELD NAME="messageid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="AWS SQS Message ID"/>
+        <FIELD NAME="studentcode" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Student code from message"/>
+        <FIELD NAME="eventtimestamp" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="AWS message timestamp"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Process status"/>
         <FIELD NAME="attempts" TYPE="int" LENGTH="2" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="payload" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Original message content"/>
         <FIELD NAME="error_message" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="ignore_reason" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Reason why message was ignored"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
@@ -132,6 +135,9 @@
         <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
         <INDEX NAME="timemodified" UNIQUE="false" FIELDS="timemodified"/>
         <INDEX NAME="idx_queuename" UNIQUE="false" FIELDS="queuename"/>
+        <INDEX NAME="idx_studentcode" UNIQUE="false" FIELDS="studentcode"/>
+        <INDEX NAME="idx_eventtimestamp" UNIQUE="false" FIELDS="eventtimestamp"/>
+        <INDEX NAME="idx_queue_student_ts" UNIQUE="false" FIELDS="queuename, studentcode, eventtimestamp"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_sitsgradepush_enrol" COMMENT="Store user enrolment events for assessment extension processing">

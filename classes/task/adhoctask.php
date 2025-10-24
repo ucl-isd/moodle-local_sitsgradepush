@@ -30,7 +30,6 @@ use local_sitsgradepush\taskmanager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class adhoctask extends adhoc_task {
-
     /**
      * Return name of the task.
      *

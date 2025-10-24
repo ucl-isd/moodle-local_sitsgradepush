@@ -42,7 +42,11 @@ class submissionfactory {
         // Throw exception if the course module is not found.
         if (empty($coursemodule)) {
             throw new \moodle_exception(
-                'error:coursemodulenotfound', 'local_sitsgradepush', '', null, "ID $coursemoduleid"
+                'error:coursemodulenotfound',
+                'local_sitsgradepush',
+                '',
+                null,
+                "ID $coursemoduleid"
             );
         }
 
@@ -51,8 +55,11 @@ class submissionfactory {
             return new $classname($coursemodule, $userid);
         }
         throw new \moodle_exception(
-            'error:coursemodulenotfound', 'local_sitsgradepush', '', null,
-            'Mod name '. $coursemodule->modname .' not found.'
+            'error:coursemodulenotfound',
+            'local_sitsgradepush',
+            '',
+            null,
+            'Mod name ' . $coursemodule->modname . ' not found.'
         );
     }
 }

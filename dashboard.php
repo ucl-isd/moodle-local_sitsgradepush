@@ -66,9 +66,11 @@ if ($action = optional_param('action', '', PARAM_ALPHA)) {
             redirect(new moodle_url('/local/sitsgradepush/dashboard.php', $urlparams));
         } catch (moodle_exception $e) {
             // Add notification.
-            redirect(new moodle_url(
-                '/local/sitsgradepush/dashboard.php',
-                $urlparams),
+            redirect(
+                new moodle_url(
+                    '/local/sitsgradepush/dashboard.php',
+                    $urlparams
+                ),
                 $e->getMessage(),
                 null,
                 notification::NOTIFY_ERROR

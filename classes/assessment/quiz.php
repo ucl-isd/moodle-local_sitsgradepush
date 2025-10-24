@@ -30,7 +30,6 @@ use mod_quiz\local\override_manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class quiz extends activity {
-
     /**
      * Is the user a participant in the quiz.
      *
@@ -193,13 +192,17 @@ class quiz extends activity {
     protected function apply_sora_extension(sora $sora): void {
         global $DB;
 
-        // Determine time limit and new values.
-        $hastimelimit = !empty($this->get_time_limit());
-        $newtimeclose = $this->get_end_date() + $sora->get_time_extension();
-        $newtimelimit = $hastimelimit ? $this->get_time_limit() + $sora->get_time_extension() : null;
+        $timelimit = $this->get_time_limit();
+        $quizduration = $this->get_end_date() - $this->get_start_date();
 
-        // Total extension in minutes.
-        $totalminutes = round($sora->get_time_extension() / MINSECS);
+        // Determine which duration to consider for the extension, time limit or time between start and end date.
+        // If there is a time limit, use the lesser of time limit and quiz duration, otherwise use the quiz duration.
+        $actualduration = $timelimit ? min($timelimit, $quizduration) : $quizduration;
+
+        // Calculate the actual extension.
+        // Since RAA extension is time / hour, therefore multiply the actual duration in hours with the time extension.
+        $actualextensioninsecs = ($actualduration / HOURSECS) * $sora->get_time_extension();
+        $totalminutes = round($actualextensioninsecs / MINSECS);
 
         // Get the group ID.
         $groupid = $sora->get_sora_group_id(
@@ -217,22 +220,21 @@ class quiz extends activity {
         $this->remove_user_from_previous_sora_groups($sora->get_userid(), $groupid);
 
         // Prepare override data.
+        // Extend the time limit if exists.
+        $newtimelimit = $timelimit ? $timelimit + $actualextensioninsecs : null;
+
+        // Extend the time close if quiz has no time limit set or the new time limit exceeds the quiz duration,
+        // otherwise leave it null (no override).
+        $newtimeclose = (!$timelimit || $newtimelimit > $quizduration) ? $this->get_end_date() + $actualextensioninsecs : null;
+
         $overridedata = [
             'quiz' => $this->get_source_instance()->id,
             'groupid' => $groupid,
             'timelimit' => $newtimelimit,
+            'timeclose' => $newtimeclose,
         ];
 
-        // Case 1: quiz has no time limit set, so set new time close.
-        // Case 2: new time limit is greater than the quiz's duration, so set new time close.
-        if (!$hastimelimit || $newtimelimit > ($this->get_end_date() - $this->get_start_date())) {
-            $overridedata['timeclose'] = $newtimeclose;
-        } else {
-            // Case 3: new time limit is less than or equal to the quiz's duration, so should not set new time close.
-            $overridedata['timeclose'] = null;
-        }
-
-        // Check for an existing override.
+        // Check for an existing override and update if exists.
         $override = $DB->get_record('quiz_overrides', [
             'quiz' => $this->get_source_instance()->id,
             'groupid' => $groupid,

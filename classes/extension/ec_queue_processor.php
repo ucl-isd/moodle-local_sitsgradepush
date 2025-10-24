@@ -28,7 +28,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class ec_queue_processor extends aws_queue_processor {
-
     /** @var string QUEUE_NAME */
     const QUEUE_NAME = 'EC';
 
@@ -37,6 +36,12 @@ class ec_queue_processor extends aws_queue_processor {
 
     /** @var string DECISION_TYPE_DECISION  */
     const DECISION_TYPE_DECISION = 'DECISION';
+
+    /** @var string PROCESS_STATUS_PROCESSED */
+    const PROCESS_STATUS_PROCESSED = 'P';
+
+    /** @var string PROCESS_STATUS_DELETED */
+    const PROCESS_STATUS_DELETED = 'D';
 
     /**
      * Get the queue URL.
@@ -57,19 +62,43 @@ class ec_queue_processor extends aws_queue_processor {
      * @throws \moodle_exception
      * @throws \dml_exception
      */
-    protected function process_message(array $messagebody): string {
+    protected function process_message(array $messagebody): array {
         $ec = new ec();
         $ec->set_properties_from_aws_message($messagebody['Message']);
 
+        // Extract event timestamp from AWS message.
+        $eventtimestamp = isset($messagebody['Timestamp'])
+            ? $this->clock->now()->modify($messagebody['Timestamp'])->getTimestamp()
+            : null;
+
         // Check if we should ignore the message.
-        if ($this->should_ignore_message($ec)) {
-            return self::STATUS_IGNORED;
+        $ignoreresult = $this->should_ignore_message($ec);
+        if ($ignoreresult !== false) {
+            return [
+                'status' => self::STATUS_IGNORED,
+                'studentcode' => $ec->get_student_code(),
+                'eventtimestamp' => $eventtimestamp,
+                'ignore_reason' => $ignoreresult,
+            ];
         }
 
         // Get the EC/DAP data from API. We cannot guarantee that the EC/DAP data updated has the latest new due date.
         // For example, a student may have multiple ECs, we need to know the latest new due date among all ECs / DAPs.
         if ($ec->get_data_source() === extension::DATASOURCE_AWS) {
-            $mab = explode('-', $ec->get_mab_identifier());
+            $mabidentifier = $ec->get_mab_identifier();
+
+            // Check if MAB identifier matches expected pattern (e.g., AMER0038A4UG-001).
+            if (empty($mabidentifier) || !preg_match('/^[A-Z0-9]+-\d{3}$/', $mabidentifier)) {
+                // Empty MAB identifier or doesn't match expected pattern.
+                throw new moodle_exception(
+                    'error:invalid_mab_identifier',
+                    'local_sitsgradepush',
+                    '',
+                    ['mabidentifier' => $ec->get_mab_identifier(), 'studentcode' => $ec->get_student_code()]
+                );
+            }
+
+            $mab = explode('-', $mabidentifier);
 
             // Set EC data from API.
             $students = manager::get_manager()->get_students_from_sits(
@@ -93,26 +122,44 @@ class ec_queue_processor extends aws_queue_processor {
         // Process the extension.
         $ec->process_extension($ec->get_mappings_by_mab($ec->get_mab_identifier()));
 
-        return self::STATUS_PROCESSED;
+        return [
+            'status' => self::STATUS_PROCESSED,
+            'studentcode' => $ec->get_student_code(),
+            'eventtimestamp' => $eventtimestamp,
+            'ignore_reason' => null,
+        ];
     }
 
     /**
      * Check if we should ignore the message.
      *
      * @param ec $ec
-     * @return bool
+     * @return string|false Returns ignore reason string if should ignore, false otherwise
      */
-    protected function should_ignore_message(ec $ec): bool {
+    protected function should_ignore_message(ec $ec): string|false {
         $eventdata = $ec->get_event_data();
-        // Ignore if the EC request status is not COMPLETE or decision type is not DECISION.
-        if (!($eventdata->extenuating_circumstances->request->status === self::EVENT_STATUS_COMPLETE &&
-            $eventdata->extenuating_circumstances->request->decision_type === self::DECISION_TYPE_DECISION)) {
-            return true;
+        $ecs = $eventdata->extenuating_circumstances;
+
+        // Ignore EC event for the following conditions:
+        // 1. The request status is not COMPLETE.
+        // 2. The decision type is not DECISION.
+        // 3. The process status is not 'D' (deleted) or 'P' (processed).
+        if (
+            $ecs->request->status !== self::EVENT_STATUS_COMPLETE ||
+            $ecs->request->decision_type !== self::DECISION_TYPE_DECISION ||
+            !($ecs->process_status === self::PROCESS_STATUS_DELETED || $ecs->process_status === self::PROCESS_STATUS_PROCESSED)
+        ) {
+            return sprintf(
+                'EC does not meet processing criteria (status: %s, decision_type: %s, process_status: %s)',
+                $ecs->request->status ?? 'NULL',
+                $ecs->request->decision_type ?? 'NULL',
+                $ecs->process_status ?? 'NULL'
+            );
         }
 
         // If there are no changes, we should ignore the message.
         if (empty($ec->get_extension_changes())) {
-            return true;
+            return 'No changes detected in the message';
         }
 
         return false;

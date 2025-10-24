@@ -29,7 +29,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 abstract class extension implements iextension {
-
     /** @var array Supported module types */
     const SUPPORTED_MODULE_TYPES = ['assign', 'quiz'];
 
@@ -141,8 +140,8 @@ abstract class extension implements iextension {
         $params = array_merge($params, $inparams);
 
         $sql = "SELECT am.*
-                FROM {". manager::TABLE_ASSESSMENT_MAPPING ."} am
-                JOIN {". manager::TABLE_COMPONENT_GRADE ."} mab ON am.componentgradeid = mab.id
+                FROM {" . manager::TABLE_ASSESSMENT_MAPPING . "} am
+                JOIN {" . manager::TABLE_COMPONENT_GRADE . "} mab ON am.componentgradeid = mab.id
                 WHERE mab.mapcode = :mapcode AND mab.mabseq = :mabseq AND am.moduletype $insql
                 AND am.enableextension = 1";
 
@@ -169,7 +168,8 @@ abstract class extension implements iextension {
         }
 
         // Get current academic year course IDs.
-        $currentyearcourses = array_map(fn($course) => $course->id,
+        $currentyearcourses = array_map(
+            fn($course) => $course->id,
             array_filter($courses, fn($course) => manager::get_manager()->is_current_academic_year_activity($course->id))
         );
 
@@ -181,8 +181,8 @@ abstract class extension implements iextension {
 
         // Find all mapped moodle assessments for the student.
         $sql = "SELECT am.*, mab.mapcode, mab.mabseq
-                FROM {". manager::TABLE_ASSESSMENT_MAPPING ."} am
-                JOIN {". manager::TABLE_COMPONENT_GRADE ."} mab ON am.componentgradeid = mab.id
+                FROM {" . manager::TABLE_ASSESSMENT_MAPPING . "} am
+                JOIN {" . manager::TABLE_COMPONENT_GRADE . "} mab ON am.componentgradeid = mab.id
                 WHERE am.courseid $courseinsql AND am.moduletype $modinsql AND am.enableextension = 1";
 
         $mappings = $DB->get_records_sql($sql, $params);

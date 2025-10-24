@@ -29,7 +29,6 @@ use local_sitsgradepush\task\process_extensions_new_enrolment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class user_enrolment_callbacks {
-
     /**
      * Callback for the user_enrolment hook.
      *

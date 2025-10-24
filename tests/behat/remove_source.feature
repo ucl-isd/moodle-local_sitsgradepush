@@ -54,6 +54,6 @@ Feature: Remove Moodle source for SITS assessment component
     And I select "SITS Marks Transfer" from secondary navigation
     And I should see "Assign 2" is mapped to "72hr take-home examination (3000 words)"
     And I click on the "Remove source" button for "72hr take-home examination (3000 words)"
-    Then I should see "Are you sure you want to remove source Assign 2 for SITS assessment (001) 72hr take-home examination (3000 words) including automated SoRA extension groups and EC/DAP extension user overrides?"
+    Then I should see "Are you sure you want to remove source Assign 2 for SITS assessment (001) 72hr take-home examination (3000 words) including automated Reasonable Academic Adjustments (RAAs) extension groups and EC/DAP extension user overrides?"
     And I click on "Confirm" "button" in the "Remove source" "dialogue"
     Then I should see "72hr take-home examination (3000 words)" is not mapped

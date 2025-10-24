@@ -25,7 +25,6 @@ namespace sitsapiclient_easikit\privacy;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class provider implements \core_privacy\local\metadata\null_provider {
-
     /**
      * Get the language string identifier with the component's language
      * file to explain why this plugin stores no data.

@@ -27,7 +27,6 @@ use ReflectionClass;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class tests_data_provider {
-
     /**
      * Return SITS marking scheme data.
      *
@@ -58,7 +57,7 @@ class tests_data_provider {
     public static function get_sort_grade_push_history_table_data() {
         global $CFG;
         $data = file_get_contents(
-          $CFG->dirroot . "/local/sitsgradepush/tests/fixtures/test_sort_grade_push_history_table.json"
+            $CFG->dirroot . "/local/sitsgradepush/tests/fixtures/test_sort_grade_push_history_table.json"
         );
         return json_decode($data, true);
     }
@@ -117,14 +116,15 @@ class tests_data_provider {
 
         // Set cache, so the get component grade API is not called.
         foreach ($modoccsarray as $modocc) {
-            $key = implode('_',
-              [
-                cachemanager::CACHE_AREA_COMPONENTGRADES,
-                $modocc->mod_code,
-                $modocc->mod_occ_mav,
-                $modocc->mod_occ_psl_code,
-                $modocc->mod_occ_year_code,
-              ]
+            $key = implode(
+                '_',
+                [
+                    cachemanager::CACHE_AREA_COMPONENTGRADES,
+                    $modocc->mod_code,
+                    $modocc->mod_occ_mav,
+                    $modocc->mod_occ_psl_code,
+                    $modocc->mod_occ_year_code,
+                ]
             );
             // Replace '/' with '_' for simple key.
             $key = str_replace('/', '_', $key);

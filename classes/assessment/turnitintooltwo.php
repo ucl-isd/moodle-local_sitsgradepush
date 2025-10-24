@@ -25,7 +25,6 @@ namespace local_sitsgradepush\assessment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class turnitintooltwo extends activity {
-
     /** @var array Parts of this turnitin assignment. */
     private array $turnitinparts;
 

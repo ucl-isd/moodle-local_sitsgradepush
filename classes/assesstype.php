@@ -29,7 +29,6 @@ use local_sitsgradepush\assessment\assessmentfactory;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class assesstype {
-
     /** @var int Action lock */
     const ACTION_LOCK = 1;
 
@@ -185,7 +184,7 @@ class assesstype {
     public static function is_assess_type_installed(): bool {
         // Check if the assessment type plugin is installed.
         return (bool)core_plugin_manager::instance()->get_plugin_info(
-          'local_assess_type'
+            'local_assess_type'
         );
     }
 
@@ -274,8 +273,12 @@ class assesstype {
 
             // The grade item is part of a calculation of a mapped manual grade item.
             if ($calgradeitem->itemtype === 'manual') {
-                if ($DB->record_exists(manager::TABLE_ASSESSMENT_MAPPING,
-                    ['sourcetype' => assessmentfactory::SOURCETYPE_GRADE_ITEM, 'sourceid' => $calgradeitem->id])) {
+                if (
+                    $DB->record_exists(
+                        manager::TABLE_ASSESSMENT_MAPPING,
+                        ['sourcetype' => assessmentfactory::SOURCETYPE_GRADE_ITEM, 'sourceid' => $calgradeitem->id]
+                    )
+                ) {
                     return true;
                 }
             }
@@ -340,8 +343,12 @@ class assesstype {
         // Traverse up the category hierarchy.
         while ($category && $category->depth > 1) {
             // Check if this category is mapped.
-            if ($DB->record_exists('local_sitsgradepush_mapping',
-                ['sourcetype' => 'gradecategory', 'sourceid' => $category->id])) {
+            if (
+                $DB->record_exists(
+                    'local_sitsgradepush_mapping',
+                    ['sourcetype' => 'gradecategory', 'sourceid' => $category->id]
+                )
+            ) {
                 return true;
             }
 

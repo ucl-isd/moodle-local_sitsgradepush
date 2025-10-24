@@ -32,7 +32,6 @@ require_once($CFG->dirroot . '/lib/guzzlehttp/guzzle/src/functions.php');
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class sqs {
-
     /** @var SqsClient AWS client */
     protected SqsClient $client;
 

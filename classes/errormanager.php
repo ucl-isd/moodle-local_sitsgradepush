@@ -25,7 +25,6 @@ namespace local_sitsgradepush;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class errormanager {
-
     /** @var int error type cannot be determined */
     const ERROR_UNKNOWN = -99;
 

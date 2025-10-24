@@ -16,7 +16,9 @@
 
 namespace local_sitsgradepush;
 
+use local_sitsgradepush\extension\aws_queue_processor;
 use local_sitsgradepush\extension\sora;
+use local_sitsgradepush\extension\sora_queue_processor;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -32,9 +34,18 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class sora_test extends extension_common {
+    /** @var int Timestamp for earlier message (T1) */
+    private int $earliertimestamp;
+
+    /** @var int Timestamp for later message (T2) */
+    private int $latertimestamp;
 
     public function setUp(): void {
         parent::setUp();
+
+        // Define timestamps for message ordering tests.
+        $this->earliertimestamp = $this->clock->now()->modify('-2 minute')->getTimestamp();
+        $this->latertimestamp = $this->clock->now()->modify('-1 minute')->getTimestamp();
 
         // Add 'CN01' to SORA supported assessment types, so that Sora can be applied for this assessment type.
         set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
@@ -93,7 +104,8 @@ final class sora_test extends extension_common {
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Verify override was created for the assignment.
-        $this->assert_assignment_override_exists($sora, $this->assign1, 35);
+        // 3 hours duration assignment, so 35 minutes extension per hour from SITS results in 105 minutes total extension.
+        $this->assert_assignment_override_exists($sora, $this->assign1, 105);
 
         // Verify no override was created for the quiz, since the SITS assessment mapped to it has the type 'CN01',
         // which is not supported by SORA.
@@ -104,7 +116,9 @@ final class sora_test extends extension_common {
         // Verify override was created for the quiz now.
         set_config('ast_codes_sora_api_v1', 'BC02, HC01, EC03, EC04, ED03, ED04, CN01', 'local_sitsgradepush');
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
-        $this->assert_quiz_override_exists($sora, $this->quiz1, 35);
+
+        // 3 hours duration quiz, so 35 minutes extension per hour from SITS results in 105 minutes total extension.
+        $this->assert_quiz_override_exists($sora, $this->quiz1, 105);
     }
 
     /**
@@ -148,7 +162,7 @@ final class sora_test extends extension_common {
 
         // Verify overrides were created correctly.
         $sora = new sora();
-        $this->assert_overrides_exist($sora, 25);
+        $this->assert_overrides_exist($sora, 75);
 
         // Delete all mappings.
         $this->delete_all_mappings();
@@ -185,10 +199,15 @@ final class sora_test extends extension_common {
 
             // When the time limit is 60 minutes, the time close should not be overridden
             // as the new time limit is less than the quiz's duration.
-            // When the time limit is 180 minutes, the time close should be 25 minutes after the original time close
+            // When the time limit is 180 minutes, the time close should be 75 minutes after the original time close
             // as the new time limit is more than the quiz's duration.
-            $expectedtimelimit = ($timelimit + 25) * MINSECS;
-            $expectedtimeclose = $timelimit === 180 ? $this->quiz1->timeclose + 25 * MINSECS : null;
+            if ($timelimit === 60) {
+                $expectedtimelimit = ($timelimit + 25) * MINSECS;
+                $expectedtimeclose = null;
+            } else {
+                $expectedtimelimit = ($timelimit + 75) * MINSECS;
+                $expectedtimeclose = $this->quiz1->timeclose + 75 * MINSECS;
+            }
 
             // Assertions.
             $this->assertEquals($expectedtimelimit, $override->timelimit);
@@ -215,11 +234,11 @@ final class sora_test extends extension_common {
 
         // Test update SORA from aws can handle reassessment.
         $sora = new sora();
-        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
+        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data()); // 35 minutes extension per hour.
         $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Verify override was created for the assignment.
-        $this->assert_assignment_override_exists($sora, $assign, 35);
+        $this->assert_assignment_override_exists($sora, $assign, 105);
     }
 
     /**
@@ -364,7 +383,8 @@ final class sora_test extends extension_common {
         return $this->getDataGenerator()->create_course(
             ['shortname' => 'C2', 'customfields' => [
                 ['shortname' => 'course_year', 'value' => $this->clock->now()->modify('-1 year')->format('Y')],
-            ]]);
+            ]]
+        );
     }
 
     /**
@@ -378,7 +398,7 @@ final class sora_test extends extension_common {
             'course' => $courseid,
             'name' => 'Reassessment Assignment',
             'allowsubmissionsfromdate' => $this->clock->now()->modify('+1 days')->getTimestamp(),
-            'duedate' => $this->clock->now()->modify('+2 days')->getTimestamp(),
+            'duedate' => $this->clock->now()->modify('+1 days')->getTimestamp() + 3 * HOURSECS,
         ]);
 
         // Enrol the student to the course.
@@ -408,5 +428,170 @@ final class sora_test extends extension_common {
         $manager->get_students_from_sits($mab);
 
         return $mapping;
+    }
+
+    /**
+     * Create AWS SORA message array for testing message ordering.
+     *
+     * @param string $studentcode
+     * @param int $timestamp Unix timestamp
+     * @return array AWS message structure
+     */
+    private function create_sora_aws_message_for_ordering(string $studentcode, int $timestamp): array {
+        return [
+            'Message' => json_encode([
+                'entity' => [
+                    'person_sora' => [
+                        'person' => ['student_code' => $studentcode],
+                        'type' => ['code' => sora::SORA_MESSAGE_TYPE_RAPXR],
+                        'extra_duration' => '00:35',
+                        'rest_duration' => '00:00',
+                    ],
+                ],
+                'changes' => ['extra_duration'],
+            ]),
+            'Timestamp' => $this->clock->now()->setTimestamp($timestamp)->format('Y-m-d\TH:i:s\Z'),
+        ];
+    }
+
+    /**
+     * Call protected process_message method using reflection.
+     *
+     * @param sora_queue_processor $processor
+     * @param array $message
+     * @return array
+     * @throws \ReflectionException
+     */
+    private function call_process_message(sora_queue_processor $processor, array $message): array {
+        $reflection = new \ReflectionClass($processor);
+        $method = $reflection->getMethod('process_message');
+        $method->setAccessible(true);
+        return $method->invokeArgs($processor, [$message]);
+    }
+
+    /**
+     * Simulate saving message result to AWS log database.
+     *
+     * @param array $message AWS message
+     * @param array $result Processing result
+     * @return void
+     * @throws \dml_exception
+     */
+    private function save_message_to_aws_log(array $message, array $result): void {
+        global $DB;
+
+        $messagebody = json_decode($message['Message'], true);
+        $studentcode = $messagebody['entity']['person_sora']['person']['student_code'] ?? null;
+        $timestamp = isset($message['Timestamp']) ? $this->clock->now()->modify($message['Timestamp'])->getTimestamp() : null;
+
+        $record = new \stdClass();
+        $record->queuename = 'SORA';
+        $record->messageid = 'test-message-' . uniqid();
+        $record->studentcode = $studentcode;
+        $record->eventtimestamp = $timestamp;
+        $record->status = $result['status'];
+        $record->attempts = 1;
+        $record->payload = $message['Message'];
+        $record->error_message = null;
+        $record->ignore_reason = $result['ignore_reason'] ?? null;
+        $record->timemodified = $this->clock->time();
+
+        $DB->insert_record('local_sitsgradepush_aws_log', $record);
+    }
+
+    /**
+     * Test that earlier SORA messages are ignored when later message already processed.
+     *
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::process_message
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::is_message_out_of_order
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::should_ignore_message
+     * @return void
+     * @throws \dml_exception
+     * @throws \ReflectionException
+     */
+    public function test_earlier_message_ignored_when_later_already_processed(): void {
+        global $DB;
+
+        // Create and process later message first (T2).
+        $messaget2 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->latertimestamp);
+        $processor = new sora_queue_processor();
+        $resultt2 = $this->call_process_message($processor, $messaget2);
+
+        // Save the result to database (simulate full flow).
+        $this->save_message_to_aws_log($messaget2, $resultt2);
+
+        // Create and process earlier message (T1).
+        $messaget1 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->earliertimestamp);
+        $resultt1 = $this->call_process_message($processor, $messaget1);
+
+        // Save the result to database.
+        $this->save_message_to_aws_log($messaget1, $resultt1);
+
+        // Assertions.
+        $records = $DB->get_records(
+            'local_sitsgradepush_aws_log',
+            ['studentcode' => $this->student1->idnumber],
+            'eventtimestamp ASC'
+        );
+
+        $this->assertCount(2, $records);
+
+        // T1 (earlier) should be ignored.
+        $t1 = array_shift($records);
+        $this->assertEquals($this->earliertimestamp, $t1->eventtimestamp);
+        $this->assertEquals(aws_queue_processor::STATUS_IGNORED, $t1->status);
+
+        // T2 (later) should be processed.
+        $t2 = array_shift($records);
+        $this->assertEquals($this->latertimestamp, $t2->eventtimestamp);
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $t2->status);
+    }
+
+    /**
+     * Test that later SORA messages are processed when earlier message already processed.
+     *
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::process_message
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::is_message_out_of_order
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::should_ignore_message
+     * @return void
+     * @throws \dml_exception
+     * @throws \ReflectionException
+     */
+    public function test_later_message_processed_when_earlier_already_processed(): void {
+        global $DB;
+
+        // Create and process earlier message first (T1).
+        $messaget1 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->earliertimestamp);
+        $processor = new sora_queue_processor();
+        $resultt1 = $this->call_process_message($processor, $messaget1);
+
+        // Save the result to database (simulate full flow).
+        $this->save_message_to_aws_log($messaget1, $resultt1);
+
+        // Create and process later message (T2).
+        $messaget2 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->latertimestamp);
+        $resultt2 = $this->call_process_message($processor, $messaget2);
+
+        // Save the result to database.
+        $this->save_message_to_aws_log($messaget2, $resultt2);
+
+        // Assertions.
+        $records = $DB->get_records(
+            'local_sitsgradepush_aws_log',
+            ['studentcode' => $this->student1->idnumber],
+            'eventtimestamp ASC'
+        );
+
+        $this->assertCount(2, $records);
+
+        // T1 (earlier) should be processed.
+        $t1 = array_shift($records);
+        $this->assertEquals($this->earliertimestamp, $t1->eventtimestamp);
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $t1->status);
+
+        // T2 (later) should also be processed.
+        $t2 = array_shift($records);
+        $this->assertEquals($this->latertimestamp, $t2->eventtimestamp);
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $t2->status);
     }
 }

@@ -30,7 +30,6 @@ use local_sitsgradepush\extensionmanager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class assign extends activity {
-
     /**
      * Is the user a participant in the assignment.
      *
@@ -186,10 +185,12 @@ class assign extends activity {
         require_once($CFG->dirroot . '/group/lib.php');
 
         // Calculate the new due date.
-        $newduedate = $this->get_end_date() + $sora->get_time_extension();
+        // Find the difference between the start and end date in hours. Multiply by the time extension per hour.
+        $actualextension = (($this->get_end_date() - $this->get_start_date()) / HOURSECS) * $sora->get_time_extension();
+        $newduedate = $this->get_end_date() + round($actualextension);
 
         // Total extension in minutes.
-        $totalminutes = round($sora->get_time_extension() / MINSECS);
+        $totalminutes = round($actualextension / MINSECS);
 
         // Get the group id, create if it doesn't exist and add the user to the group.
         $groupid = $sora->get_sora_group_id(
@@ -223,7 +224,7 @@ class assign extends activity {
 
         $params = [
             'assignid' => $this->sourceinstance->id,
-            'name' => sora::SORA_GROUP_PREFIX . $this->get_id(). '%',
+            'name' => sora::SORA_GROUP_PREFIX . $this->get_id() . '%',
         ];
 
         // Get all sora group overrides.

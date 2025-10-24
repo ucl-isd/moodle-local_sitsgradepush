@@ -27,7 +27,6 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 abstract class gradebook extends assessment {
-
     /**
      * Get all participants.
      *

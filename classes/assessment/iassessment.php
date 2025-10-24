@@ -25,7 +25,6 @@ namespace local_sitsgradepush\assessment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 interface iassessment {
-
     /**
      * Check if the assessment can be mapped to MAB.
      *

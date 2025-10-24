@@ -30,7 +30,6 @@ require_once(__DIR__ . '/../fixtures/tests_data_provider.php');
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class behat_sitsgradepush extends behat_base {
-
     /**
      * Set up before scenario.
      *
@@ -59,10 +58,13 @@ class behat_sitsgradepush extends behat_base {
 
         // Create a new custom field category if it doesn't exist.
         $category = $DB->get_record(
-          'customfield_category',
-          ['name' => $data['category'],
-           'component' => 'core_course',
-           'area' => 'course']);
+            'customfield_category',
+            [
+                'name' => $data['category'],
+                'component' => 'core_course',
+                'area' => 'course',
+            ]
+        );
 
         if (!$category) {
             $category     = (object)[
@@ -74,8 +76,8 @@ class behat_sitsgradepush extends behat_base {
               'timemodified' => time(),
             ];
             $category->id = $DB->insert_record(
-              'customfield_category',
-              $category
+                'customfield_category',
+                $category
             );
         }
 
@@ -270,7 +272,8 @@ class behat_sitsgradepush extends behat_base {
         string $sourcename,
         string $mabname,
         bool $reassessment,
-        bool $extension = false): void {
+        bool $extension = false
+    ): void {
         global $DB;
         $manager = manager::get_manager();
 
@@ -323,7 +326,7 @@ class behat_sitsgradepush extends behat_base {
      * @return object
      * @throws \Exception
      */
-    public function get_coursemodule(string $modulename, string $sourcename ): mixed {
+    public function get_coursemodule(string $modulename, string $sourcename): mixed {
         global $DB;
 
         if ($modulename == 'lti') {

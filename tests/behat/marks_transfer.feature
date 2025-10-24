@@ -151,19 +151,17 @@ Feature: Marks transfer from Moodle to SITS
       | mod/coursework:publish | Allow      | editingteacher | Course       | C1        |
     And I am on the "Course 1" course page logged in as student1
     And I follow "Coursework 1"
-    And I press "Upload your submission"
+    And I click on "Upload your submission" "link"
     And I upload "lib/tests/fixtures/empty.txt" file to "Upload a file" filemanager
-    And I press "Submit"
-    And I press "Finalise your submission"
-    And I press "Yes"
+    And I press "Submit and finalise"
     And I log out
     And I am on the "Course 1" course page logged in as teacher1
     And I follow "Coursework 1"
-    And I click on "Add final feedback" "link"
+    And I click on "Add feedback" "link"
     And I press "Save and finalise"
     And I reload the page
-    And I press "Release all grades"
-    And I press "Continue"
+    And I click on "Release the marks" "link"
+    And I press "Confirm"
     And the "mod_coursework" "coursework1" is mapped to "72hr take-home examination (3000 words)"
     And I am on the "Course 1" course page logged in as teacher1
     And I click on "More" "link" in the ".secondary-navigation" "css_element"

@@ -71,8 +71,10 @@ if ($source->get_type() === assessmentfactory::SOURCETYPE_MOD) {
     $PAGE->navbar->add(get_string('courses'), new moodle_url('/course/index.php'));
     $PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php', ['id' => $courseid]));
     $PAGE->navbar->add($source->get_assessment_name(), $source->get_assessment_url(true));
-    $PAGE->navbar->add(get_string('pluginname', 'local_sitsgradepush'),
-        $source->get_assessment_transfer_history_url(true));
+    $PAGE->navbar->add(
+        get_string('pluginname', 'local_sitsgradepush'),
+        $source->get_assessment_transfer_history_url(true)
+    );
     $showassessmentname = true;
 }
 $PAGE->set_url($source->get_assessment_transfer_history_url(true));

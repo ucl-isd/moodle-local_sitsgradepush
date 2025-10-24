@@ -49,7 +49,10 @@ class lesson extends submission {
         global $DB;
         if (!$instance = $DB->get_record('lesson', ['id' => $this->coursemodule->instance])) {
             throw new \moodle_exception(
-                'error:coursemodulenotfound', 'local_sitsgradepush', '', null,
+                'error:coursemodulenotfound',
+                'local_sitsgradepush',
+                '',
+                null,
                 "Instance ID: " . $this->coursemodule->instance
             );
         }
@@ -86,8 +89,8 @@ class lesson extends submission {
             if ($maxgrade !== false) {
                 $params['maxgrade'] = $maxgrade;
                 $mostrecentmaxgradetime = $DB->get_field_sql(
-                "SELECT MAX(completed) FROM {lesson_grades}
-                      WHERE lessonid = :lessonid AND userid = :userid AND grade = :maxgrade",
+                    "SELECT MAX(completed) FROM {lesson_grades}
+                     WHERE lessonid = :lessonid AND userid = :userid AND grade = :maxgrade",
                     $params
                 );
                 if ($mostrecentmaxgradetime) {

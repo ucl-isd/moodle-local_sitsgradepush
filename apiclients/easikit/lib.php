@@ -38,7 +38,6 @@ use sitsapiclient_easikit\requests\request;
  * @author      Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class easikit extends client {
-
     /**
      * Constructor.
      */

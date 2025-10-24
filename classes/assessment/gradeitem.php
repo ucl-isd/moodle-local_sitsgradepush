@@ -25,7 +25,6 @@ namespace local_sitsgradepush\assessment;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class gradeitem extends gradebook {
-
     /** @var string Display type name */
     const DISPLAY_TYPE_NAME = 'Grade Item';
 

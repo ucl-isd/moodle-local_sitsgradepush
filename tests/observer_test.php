@@ -31,7 +31,6 @@ require_once(__DIR__ . '/base_test_class.php');
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class observer_test extends base_test_class {
-
     /** @var \stdClass $course Test course */
     private \stdClass $course;
 

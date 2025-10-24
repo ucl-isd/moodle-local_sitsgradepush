@@ -28,7 +28,6 @@ use local_sitsgradepush\aws\sqs;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class sqs_test extends \advanced_testcase {
-
     /**
      * Set up the test.
      *
