@@ -293,6 +293,17 @@ if ($hassiteconfig) {
         ));
     }
 
+    // Add link to manage extension tiers page.
+    $ADMIN->add(
+        'localsitssettings',
+        new admin_externalpage(
+            'local_sitsgradepush_manageextensiontiers',
+            get_string('tier:manageextensiontiers', 'local_sitsgradepush'),
+            new moodle_url('/local/sitsgradepush/manage_extension_tiers.php'),
+            'local/sitsgradepush:manageextensiontiers'
+        )
+    );
+
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
     foreach ($subplugins as $plugin) {
         /** @var sitsapiclient $plugin */

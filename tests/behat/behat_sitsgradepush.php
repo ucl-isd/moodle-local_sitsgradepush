@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 use Behat\Gherkin\Node\TableNode;
+use core\clock;
+use core\di;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\manager;
 
@@ -399,5 +401,42 @@ class behat_sitsgradepush extends behat_base {
      */
     public function i_click_on_the_transfer_type_menu_and_select(string $transfertype): void {
         $this->execute('behat_forms::i_set_the_field_to', ['Dashboard Type', $transfertype]);
+    }
+
+    /**
+     * Create extension tiers.
+     *
+     * @Given /^the following extension tiers exist:$/
+     * @param TableNode $table
+     * @return void
+     * @throws \dml_exception
+     */
+    public function the_following_extension_tiers_exist(TableNode $table): void {
+        global $DB;
+
+        $rows = $table->getHash();
+        $time = di::get(clock::class)->time();
+
+        foreach ($rows as $row) {
+            $record = new stdClass();
+            $record->assessmenttype = $row['assessmenttype'];
+            $record->tier = (int) $row['tier'];
+            $record->extensiontype = $row['extensiontype'];
+            $record->extensionvalue = !empty($row['extensionvalue']) ? (int) $row['extensionvalue'] : null;
+            $record->extensionunit = !empty($row['extensionunit']) ? $row['extensionunit'] : null;
+            $record->breakvalue = !empty($row['breakvalue']) ? (int) $row['breakvalue'] : null;
+            $record->enabled = isset($row['enabled']) ? (int) $row['enabled'] : 1;
+            $record->timecreated = $time;
+            $record->timemodified = $time;
+
+            // Auto-set extension unit based on type.
+            if ($record->extensiontype === 'days') {
+                $record->extensionunit = 'days';
+            } else if ($record->extensiontype === 'time_per_hour') {
+                $record->extensionunit = 'minutes';
+            }
+
+            $DB->insert_record('local_sitsgradepush_ext_tiers', $record);
+        }
     }
 }

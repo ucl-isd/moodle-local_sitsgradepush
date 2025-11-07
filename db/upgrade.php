@@ -781,5 +781,37 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025102200, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2025110600) {
+        // Define table local_sitsgradepush_ext_tiers to be created.
+        $table = new xmldb_table('local_sitsgradepush_ext_tiers');
+
+        // Adding fields to table local_sitsgradepush_ext_tiers.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('assessmenttype', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('tier', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('extensiontype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('extensionvalue', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('extensionunit', XMLDB_TYPE_CHAR, '20', null, null, null, null);
+        $table->add_field('breakvalue', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('enabled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table local_sitsgradepush_ext_tiers.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_sitsgradepush_ext_tiers.
+        $table->add_index('idx_assessmenttype', XMLDB_INDEX_NOTUNIQUE, ['assessmenttype']);
+        $table->add_index('idx_assessmenttype_tier', XMLDB_INDEX_UNIQUE, ['assessmenttype', 'tier']);
+
+        // Conditionally launch create table for local_sitsgradepush_ext_tiers.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2025110600, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

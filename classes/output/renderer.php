@@ -528,4 +528,105 @@ class renderer extends plugin_renderer_base {
             ['overrideurl' => $assessment->get_overrides_page_url('user', false)]
         );
     }
+
+    /**
+     * Render extension tiers table.
+     *
+     * @param array $tiers Array of tier records.
+     * @return string Rendered HTML.
+     */
+    public function render_extension_tiers_table(array $tiers): string {
+        $data = [
+            'hastiers' => !empty($tiers),
+            'tiers' => [],
+        ];
+
+        foreach ($tiers as $tier) {
+            $data['tiers'][] = [
+                'assessmenttype' => $tier->assessmenttype,
+                'tier' => $tier->tier,
+                'extensiondisplay' => $this->format_extension_display($tier),
+                'breakdisplay' => $this->format_break_display($tier),
+                'enabled' => $tier->enabled == 1,
+            ];
+        }
+
+        return $this->output->render_from_template('local_sitsgradepush/extension_tiers_table', $data);
+    }
+
+    /**
+     * Render import preview.
+     *
+     * @param array $currenttiers Current tier records.
+     * @param array $newtiers New tier data from CSV.
+     * @param string $mode Import mode.
+     * @param string $confirmurl Confirm button URL.
+     * @param string $cancelurl Cancel button URL.
+     * @return string Rendered HTML.
+     */
+    public function render_import_preview(
+        array $currenttiers,
+        array $newtiers,
+        string $mode,
+        string $confirmurl,
+        string $cancelurl
+    ): string {
+        $data = [
+            'importmodedescription' => get_string('tier:importmode_' . $mode, 'local_sitsgradepush'),
+            'isreplace' => $mode === 'replace',
+            'rowcount' => count($newtiers),
+            'currentcount' => count($currenttiers),
+            'hastiers' => !empty($newtiers),
+            'tiers' => [],
+            'confirmurl' => $confirmurl,
+            'cancelurl' => $cancelurl,
+        ];
+
+        foreach ($newtiers as $tier) {
+            $tierobj = (object)$tier;
+            $data['tiers'][] = [
+                'assessmenttype' => $tier['assessmenttype'],
+                'tier' => $tier['tier'],
+                'extensiondisplay' => $this->format_extension_display($tierobj),
+                'breakdisplay' => $this->format_break_display($tierobj),
+                'enabled' => $tier['enabled'] == 1,
+            ];
+        }
+
+        return $this->output->render_from_template('local_sitsgradepush/import_preview', $data);
+    }
+
+    /**
+     * Format extension display.
+     *
+     * @param \stdClass $config Tier configuration.
+     * @return string Formatted display.
+     */
+    private function format_extension_display(\stdClass $config): string {
+        if (empty($config->extensionvalue)) {
+            return '-';
+        }
+
+        $display = $config->extensionvalue . ' ' . $config->extensionunit;
+
+        if ($config->extensiontype === 'time_per_hour') {
+            $display .= ' ' . get_string('tier:perhour', 'local_sitsgradepush');
+        }
+
+        return $display;
+    }
+
+    /**
+     * Format break display.
+     *
+     * @param \stdClass $config Tier configuration.
+     * @return string Formatted display.
+     */
+    private function format_break_display(\stdClass $config): string {
+        if ($config->extensiontype !== 'time_per_hour' || empty($config->breakvalue)) {
+            return '-';
+        }
+
+        return $config->breakvalue . ' ' . get_string('tier:minutesperhour', 'local_sitsgradepush');
+    }
 }
