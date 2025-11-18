@@ -19,6 +19,7 @@ namespace local_sitsgradepush\assessment;
 use core\context\module;
 use grade_item;
 use local_sitsgradepush\manager;
+use moodle_exception;
 use moodle_url;
 
 /**
@@ -181,22 +182,39 @@ abstract class activity extends assessment {
     }
 
     /**
-     * Delete all SORA overrides for the assessment.
+     * Delete SORA overrides for a mapping.
      *
+     * @param \stdClass $mapping
      * @return void
      * @throws \coding_exception
-     * @throws \dml_exception
+     * @throws \dml_exception|moodle_exception
      */
-    public function delete_all_sora_overrides(): void {
+    public function delete_sora_overrides_for_mapping(\stdClass $mapping): void {
         global $CFG;
         require_once($CFG->dirroot . '/group/lib.php');
 
         // Find all the sora group overrides for the assessment.
         $overrides = $this->get_assessment_sora_overrides();
+        if (empty($overrides)) {
+            return;
+        }
 
-        // Delete all sora groups of that assessment from the course.
-        if (!empty($overrides)) {
-            foreach ($overrides as $override) {
+        // Get MAB from the mapping.
+        $mab = manager::get_manager()->get_local_component_grade_by_id($mapping->componentgradeid);
+
+        if (empty($mab)) {
+            throw new moodle_exception('error:mab_not_found', 'local_sitsgradepush', '', $mapping->componentgradeid);
+        }
+
+        foreach ($overrides as $override) {
+            // Remove students coming from that mapping.
+            $students = manager::get_manager()->get_students_from_sits($mab, false, 2);
+            foreach ($students as $student) {
+                groups_remove_member($override->groupid, $student['moodleuserid']);
+            }
+
+            // Check no group members.
+            if (empty(groups_get_members($override->groupid))) {
                 groups_delete_group($override->groupid);
             }
         }

@@ -54,6 +54,9 @@ abstract class assessment implements iassessment {
     /** @var int SITS mapping id */
     protected int $sitsmappingid = 0;
 
+    /** @var \stdClass|null Assessment extension tier, the extension that will be applied, e.g. CN01 Tier 1. */
+    protected ?\stdClass $assessmentextensiontier = null;
+
     /**
      * Constructor.
      *
@@ -89,11 +92,6 @@ abstract class assessment implements iassessment {
         if ($extension instanceof ec) {
             $this->apply_ec_extension($extension);
         } else if ($extension instanceof sora) {
-            // Skip SORA overrides if the end date of the assessment is in the past.
-            if ($this->get_end_date() < $this->clock->time()) {
-                return;
-            }
-
             // Remove user from all SORA groups in this assessment.
             if ($extension->get_time_extension() == 0) {
                 $this->remove_user_from_previous_sora_groups($extension->get_userid());
@@ -271,13 +269,14 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Delete all SORA override for a Moodle assessment.
+     * Delete SORA overrides for a mapping.
      * It is used to delete all SORA overrides for an assessment when the mapping is removed.
      *
+     * @param \stdClass $mapping
      * @return void
      * @throws \moodle_exception
      */
-    public function delete_all_sora_overrides(): void {
+    public function delete_sora_overrides_for_mapping(\stdClass $mapping): void {
         // Default not supported. Override in child class if needed.
         throw new \moodle_exception('error:soraextensionnotsupported', 'local_sitsgradepush');
     }
@@ -395,6 +394,54 @@ abstract class assessment implements iassessment {
     }
 
     /**
+     * Check if assessment can apply SORA extension for a given SORA object and mapping id.
+     *
+     * @param sora $sora SORA extension object.
+     * @param int $mappingid SITS mapping ID.
+     * @return bool
+     */
+    public function can_assessment_apply_sora(sora $sora, int $mappingid): bool {
+        // Check if extension feature is enabled.
+        if (!extensionmanager::is_extension_enabled()) {
+            return false;
+        }
+
+        // Check if the user is a participant of the assessment.
+        if (!$this->is_user_a_participant($sora->get_userid())) {
+            return false;
+        }
+
+        // Skip SORA overrides if the end date of the assessment is in the past.
+        if ($this->get_end_date() < $this->clock->time()) {
+            return false;
+        }
+
+        // Skip if we cannot identify the extension's tier from the SORA info.
+        // For example, 20 minutes extra time per hour and 20 break time per hour is not a valid reference tier.
+        $refextensiontier = $sora->get_ref_extension_tier();
+        if (is_null($refextensiontier)) {
+            return false;
+        }
+
+        // Find enabled assessment extension tier from the MAB AST code and reference extension tier.
+        $mab = manager::get_manager()->get_mab_and_map_info_by_mapping_id($mappingid);
+        // This is the extension tier that will be applied for the student, e.g. CN01 Tier 1.
+        $this->assessmentextensiontier = extensionmanager::get_extension_tier_by_assessment_and_tier(
+            $mab->astcode,
+            $refextensiontier,
+            1
+        );
+
+        // No enabled extension tier found for the assessment.
+        // For example, there is no extension tier defined for the assessment or the extension tier is disabled.
+        if (is_null($this->assessmentextensiontier)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Mark the saved override record in local_sitsgradepush_override table as restored.
      *
      * @param int $overrideid
@@ -497,6 +544,16 @@ abstract class assessment implements iassessment {
      */
     protected function get_override_record(int $userid, ?int $groupid = null): mixed {
         return false;
+    }
+
+    /**
+     * Get the assessment extension tier object.
+     * The extension that will be applied, e.g. CN01 Tier 1.
+     *
+     * @return \stdClass|null
+     */
+    protected function get_assessment_extension_tier(): ?\stdClass {
+        return $this->assessmentextensiontier;
     }
 
     /**

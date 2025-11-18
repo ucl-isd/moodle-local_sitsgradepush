@@ -67,6 +67,8 @@ class getstudentsv2 extends request {
      * @return array
      */
     public function process_response($response): array {
+        global $DB;
+
         if (empty($response)) {
             // If no response, return empty array.
             return [];
@@ -80,13 +82,38 @@ class getstudentsv2 extends request {
             return [];
         }
 
-        // Attach academic year to each student.
+        // Collect all student codes for batch query.
+        $studentcodes = [];
+        foreach ($response['response']['student_collection']['student'] as $student) {
+            $studentcode = $student['association']['supplementary']['student_code'] ?? null;
+            if ($studentcode !== null) {
+                $studentcodes[] = $studentcode;
+            }
+        }
+
+        // Query Moodle user IDs by student codes in a single query.
+        $useridmap = [];
+        if (!empty($studentcodes)) {
+            [$insql, $params] = $DB->get_in_or_equal($studentcodes, SQL_PARAMS_NAMED);
+            $sql = "SELECT idnumber, id FROM {user} WHERE idnumber $insql";
+            $users = $DB->get_records_sql($sql, $params);
+
+            foreach ($users as $user) {
+                $useridmap[$user->idnumber] = $user->id;
+            }
+        }
+
+        // Attach academic year and Moodle user ID to each student.
         $students = $response['response']['student_collection']['student'];
         foreach ($students as &$student) {
             if (isset($response['response']['assessment_component']['academic_year']['code'])) {
                 $student['association']['supplementary']['academic_year'] =
                     $response['response']['assessment_component']['academic_year']['code'];
             }
+
+            // Add Moodle user ID.
+            $studentcode = $student['association']['supplementary']['student_code'] ?? null;
+            $student['moodleuserid'] = $useridmap[$studentcode] ?? null;
         }
 
         return $students;

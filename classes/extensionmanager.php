@@ -57,6 +57,24 @@ class extensionmanager {
         'Enabled',
     ];
 
+    /** @var string RAA extension type for time per hour */
+    const RAA_EXTENSION_TYPE_TIME_PER_HOUR = 'time_per_hour';
+
+    /** @var string RAA extension type for time */
+    const RAA_EXTENSION_TYPE_TIME = 'time';
+
+    /** @var string RAA extension type for days */
+    const RAA_EXTENSION_TYPE_DAYS = 'days';
+
+    /** @var string RAA extension unit for minutes */
+    const RAA_EXTENSION_UNIT_MINUTES = 'minutes';
+
+    /** @var string RAA extension unit for hours */
+    const RAA_EXTENSION_UNIT_HOURS = 'hours';
+
+    /** @var string RAA extension unit for days */
+    const RAA_EXTENSION_UNIT_DAYS = 'days';
+
     /**
      * Update SORA extension for students in a mapping using the SITS get students API as the data source.
      *
@@ -186,35 +204,11 @@ class extensionmanager {
                 return;
             }
 
-            // Delete all SORA overrides for the assessment.
-            $assessment->delete_all_sora_overrides();
+            // Delete all SORA overrides for the deleted mapping.
+            $assessment->delete_sora_overrides_for_mapping($deletedmapping);
         } catch (\Exception $e) {
             logger::log($e->getMessage(), null, "Deleted Mapping: " . json_encode($deletedmapping));
         }
-    }
-
-    /**
-     * Check if the assessment types are supported.
-     * The V1 API only returns SORA information for certain assessment types.
-     *
-     * @param string $astcode
-     * @return bool
-     */
-    public static function is_assessment_types_sora_supported(string $astcode): bool {
-        $supportedtypes = get_config('local_sitsgradepush', 'ast_codes_sora_api_v1');
-        return in_array($astcode, array_map('trim', explode(',', $supportedtypes)));
-    }
-
-    /**
-     * Check if the extension is eligible for the SITS assessment.
-     *
-     * @param \stdClass $componentgrade
-     * @return bool
-     * @throws \dml_exception
-     */
-    public static function is_sits_assessment_sora_extension_eligible(\stdClass $componentgrade): bool {
-        return self::is_extension_enabled() && // Extension is enabled.
-            self::is_assessment_types_sora_supported($componentgrade->astcode); // Assessment type is supported for API V1.
     }
 
     /**
@@ -491,6 +485,35 @@ class extensionmanager {
         fclose($csvoutput);
 
         return $csv;
+    }
+
+    /**
+     * Get extension tier by assessment type and tier number.
+     *
+     * @param string $assessmenttype
+     * @param int $tier
+     * @param int|null $enabled Optional filter by enabled status.
+     * @return \stdClass|null
+     * @throws \dml_exception
+     */
+    public static function get_extension_tier_by_assessment_and_tier(
+        string $assessmenttype,
+        int $tier,
+        ?int $enabled = null
+    ): ?\stdClass {
+        global $DB;
+        $params = [
+            'assessmenttype' => $assessmenttype,
+            'tier' => $tier,
+        ];
+
+        if ($enabled !== null) {
+            $params['enabled'] = $enabled;
+        }
+
+        $tier = $DB->get_record(self::TABLE_EXTENSION_TIERS, $params);
+
+        return !empty($tier) ? $tier : null;
     }
 
     /**
