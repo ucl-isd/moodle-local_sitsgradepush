@@ -192,23 +192,16 @@ class quiz extends activity {
     protected function apply_sora_extension(sora $sora): void {
         global $DB;
 
-        $tier = $this->get_assessment_extension_tier();
-        if (!$tier) {
-            throw new \moodle_exception('error:assessmentextensiontiernotset', 'local_sitsgradepush');
-        }
-
-        // Calculate extension details (duration for time_per_hour type).
-        $duration = $tier->extensiontype === extensionmanager::RAA_EXTENSION_TYPE_TIME_PER_HOUR
-            ? $this->calculate_actual_duration()
-            : null;
-
-        $extensiondetails = $sora->calculate_extension_details($tier, $this->get_end_date(), $duration);
+        // Calculate extension details.
+        $extensiondetails = $this->calculate_sora_extension_details($sora);
+        $extensioninsecs = $extensiondetails['extensioninsecs'];
+        $newduedate = $extensiondetails['newduedate'];
 
         // Get or create SORA group and add user to it.
         $groupid = $sora->get_or_create_sora_group(
             $this->get_course_id(),
             $this->get_coursemodule_id(),
-            $extensiondetails['extensioninsecs']
+            $extensioninsecs
         );
 
         // Remove user from previous SORA groups.
@@ -219,8 +212,8 @@ class quiz extends activity {
         $overridedata = [
             'quiz' => $this->get_source_instance()->id,
             'groupid' => $groupid,
-            'timelimit' => $timelimit ? $timelimit + $extensiondetails['extensioninsecs'] : null,
-            'timeclose' => $extensiondetails['newduedate'],
+            'timelimit' => $timelimit ? $timelimit + $extensioninsecs : null,
+            'timeclose' => $newduedate,
         ];
 
         // Check for existing override and update if exists.
@@ -277,12 +270,12 @@ class quiz extends activity {
     }
 
     /**
-     * Calculate the actual duration to use for time per hour extensions.
+     * Get the assessment duration in seconds.
      * Returns the lesser of time limit and quiz duration, or quiz duration if no time limit.
      *
      * @return int Duration in seconds.
      */
-    private function calculate_actual_duration(): int {
+    protected function get_assessment_duration(): int {
         $quizduration = $this->get_end_date() - $this->get_start_date();
         $timelimit = $this->get_time_limit();
 

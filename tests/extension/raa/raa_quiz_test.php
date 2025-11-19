@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\extension\raa;
 
 use local_sitsgradepush\extension\sora;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\tests_data_provider;
 
@@ -285,6 +286,94 @@ final class raa_quiz_test extends raa_base {
             $quiz,
             60 * MINSECS,
             $this->clock->now()->modify('2025-02-11 14:00:00')->getTimestamp()
+        );
+    }
+
+    /**
+     * Data provider for fallback extension tier tests.
+     *
+     * @return array Test data for each tier scenario.
+     */
+    public static function fallback_tier_provider(): array {
+        return [
+            'tier 1 (10 mins < 25)' => [
+                'extra' => '00:05',
+                'rest' => '00:05',
+                'ed03extension' => 1800,
+                'ed03endtime' => '2025-02-11 13:30:00',
+                'hd05extension' => 14 * HOURSECS,
+                'hd05endtime' => '2025-02-19 04:00:00',
+            ],
+            'tier 2 (30 mins >= 25 and < 40)' => [
+                'extra' => '00:15',
+                'rest' => '00:15',
+                'ed03extension' => 5400,
+                'ed03endtime' => '2025-02-11 14:30:00',
+                'hd05extension' => 16 * HOURSECS,
+                'hd05endtime' => '2025-02-19 06:00:00',
+            ],
+            'tier 3 (40 mins >= 40)' => [
+                'extra' => '00:20',
+                'rest' => '00:20',
+                'ed03extension' => 7200,
+                'ed03endtime' => '2025-02-11 15:00:00',
+                'hd05extension' => 18 * HOURSECS,
+                'hd05endtime' => '2025-02-19 08:00:00',
+            ],
+        ];
+    }
+
+    /**
+     * Test RAA fallback extension when SORA data doesn't match any TIERREF.
+     * Determines provision tier based on raw extension value and uses it for calculation.
+     *
+     * @dataProvider fallback_tier_provider
+     * @covers \local_sitsgradepush\assessment\assessment::can_assessment_apply_sora
+     * @covers \local_sitsgradepush\assessment\quiz::apply_sora_extension
+     * @param string $extra Extra duration in HH:MM format.
+     * @param string $rest Rest duration in HH:MM format.
+     * @param int $ed03extension Expected ED03 extension in seconds.
+     * @param string $ed03endtime Expected ED03 end time.
+     * @param int $hd05extension Expected HD05 extension in seconds.
+     * @param string $hd05endtime Expected HD05 end time.
+     * @return void
+     * @throws \dml_exception
+     */
+    public function test_fallback_extension_for_non_matching_tierref(
+        string $extra,
+        string $rest,
+        int $ed03extension,
+        string $ed03endtime,
+        int $hd05extension,
+        string $hd05endtime
+    ): void {
+        // Create SORA data that doesn't match any TIERREF.
+        $student = tests_data_provider::get_sora_testing_student_data();
+        $student['moodleuserid'] = $this->student1->id;
+        $student['student_assessment']['sora']['extra_duration'] = $extra;
+        $student['student_assessment']['sora']['rest_duration'] = $rest;
+
+        // Process SORA for all mappings with modified student data.
+        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
+        foreach ($mappings as $mapping) {
+            extensionmanager::update_sora_for_mapping($mapping, [$student]);
+        }
+
+        // Verify override was created for ED03 quiz.
+        $sora = new sora();
+        $this->assert_quiz_override_exists(
+            $sora,
+            $this->raaquiz1,
+            $ed03extension,
+            $this->clock->now()->modify($ed03endtime)->getTimestamp()
+        );
+
+        // Verify override was created for HD05 quiz.
+        $this->assert_quiz_override_exists(
+            $sora,
+            $this->raaquiz3,
+            $hd05extension,
+            $this->clock->now()->modify($hd05endtime)->getTimestamp()
         );
     }
 
