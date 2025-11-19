@@ -184,30 +184,23 @@ class assign extends activity {
         global $CFG;
         require_once($CFG->dirroot . '/group/lib.php');
 
-        $tier = $this->get_assessment_extension_tier();
-        if (!$tier) {
-            throw new \moodle_exception('error:assessmentextensiontiernotset', 'local_sitsgradepush');
-        }
-
-        // Calculate extension details (duration for time_per_hour type).
-        $duration = $tier->extensiontype === extensionmanager::RAA_EXTENSION_TYPE_TIME_PER_HOUR
-            ? $this->get_end_date() - $this->get_start_date()
-            : null;
-
-        $extensiondetails = $sora->calculate_extension_details($tier, $this->get_end_date(), $duration);
+        // Calculate extension details.
+        $extensiondetails = $this->calculate_sora_extension_details($sora);
+        $extensioninsecs = $extensiondetails['extensioninsecs'];
+        $newduedate = $extensiondetails['newduedate'];
 
         // Get or create SORA group and add user to it.
         $groupid = $sora->get_or_create_sora_group(
             $this->get_course_id(),
             $this->get_coursemodule_id(),
-            $extensiondetails['extensioninsecs']
+            $extensioninsecs
         );
 
         // Remove user from previous SORA groups.
         $this->remove_user_from_previous_sora_groups($sora->get_userid(), $groupid);
 
         // Apply the new due date override.
-        $this->overrides_due_date($extensiondetails['newduedate'], $sora->get_userid(), $groupid);
+        $this->overrides_due_date($newduedate, $sora->get_userid(), $groupid);
     }
 
     /**

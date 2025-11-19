@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\extension\raa;
 
 use local_sitsgradepush\extension\sora;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\tests_data_provider;
 
@@ -217,6 +218,45 @@ final class raa_assign_test extends raa_base {
             60 * MINSECS,
             $this->clock->now()->modify('2025-02-11 14:00:00')->getTimestamp()
         );
+    }
+
+    /**
+     * Test RAA fallback extension when SORA data doesn't match any TIERREF.
+     * Uses the time extension directly for time_per_hour assessment types.
+     *
+     * @covers \local_sitsgradepush\assessment\assessment::can_assessment_apply_sora
+     * @covers \local_sitsgradepush\assessment\assign::apply_sora_extension
+     * @return void
+     * @throws \dml_exception
+     */
+    public function test_fallback_extension_for_non_matching_tierref(): void {
+        global $DB;
+
+        // Create SORA data that doesn't match any TIERREF (20 mins extra, 20 mins rest).
+        $student = tests_data_provider::get_sora_testing_student_data();
+        $student['moodleuserid'] = $this->student1->id;
+        $student['student_assessment']['sora']['extra_duration'] = '00:20';
+        $student['student_assessment']['sora']['rest_duration'] = '00:20';
+
+        // Process SORA for all mappings with modified student data.
+        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
+        foreach ($mappings as $mapping) {
+            extensionmanager::update_sora_for_mapping($mapping, [$student]);
+        }
+
+        // Verify override was created for ED03 assignment with fallback calculation.
+        // Fallback: duration (3 hours) * timeextension (40 mins = 2400 secs) = 3 * 2400 = 7200 secs = 2 hours.
+        $sora = new sora();
+        $this->assert_assignment_override_exists(
+            $sora,
+            $this->raaassign1,
+            7200,
+            $this->clock->now()->modify('2025-02-11 15:00:00')->getTimestamp()
+        );
+
+        // Verify no override was created for HD05 (time type, not time_per_hour).
+        $override = $DB->get_record('assign_overrides', ['assignid' => $this->raaassign3->id]);
+        $this->assertFalse($override);
     }
 
     /**
