@@ -73,7 +73,7 @@ class coursework extends submission {
         // We don't expect there will be more than one submission per user, but check that here and throw exception if so.
         // We use authorid to identify the user being graded, since userid may be the user who submitted on their behalf.
         $submissions = $DB->get_records_sql(
-            "SELECT id, userid as submittedby, authorid as userid, timecreated, timemodified, finalised,
+            "SELECT id, userid as submittedby, authorid as userid, timecreated, timemodified, finalisedstatus,
                     manualsrscode, createdby, lastupdatedby, allocatableid, allocatableuser, allocatablegroup,
                     allocatabletype, firstpublished, lastpublished, timesubmitted
                     FROM {coursework_submissions}

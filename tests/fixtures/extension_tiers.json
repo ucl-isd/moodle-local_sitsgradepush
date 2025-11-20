@@ -1,0 +1,101 @@
+[
+  {
+    "assessmenttype": "TIERREF",
+    "tier": 1,
+    "extensiontype": "time_per_hour",
+    "extensionvalue": 15,
+    "extensionunit": "minutes",
+    "breakvalue": 5,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "TIERREF",
+    "tier": 2,
+    "extensiontype": "time_per_hour",
+    "extensionvalue": 15,
+    "extensionunit": "minutes",
+    "breakvalue": 10,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "TIERREF",
+    "tier": 3,
+    "extensiontype": "time_per_hour",
+    "extensionvalue": 30,
+    "extensionunit": "minutes",
+    "breakvalue": 10,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "ED03",
+    "tier": 1,
+    "extensiontype": "time_per_hour",
+    "extensionvalue": 15,
+    "extensionunit": "minutes",
+    "breakvalue": 5,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "ED03",
+    "tier": 2,
+    "extensiontype": "time_per_hour",
+    "extensionvalue": 15,
+    "extensionunit": "minutes",
+    "breakvalue": 10,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "ED03",
+    "tier": 3,
+    "extensiontype": "time_per_hour",
+    "extensionvalue": 30,
+    "extensionunit": "minutes",
+    "breakvalue": 10,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "HD05",
+    "tier": 1,
+    "extensiontype": "time",
+    "extensionvalue": 14,
+    "extensionunit": "hours",
+    "breakvalue": null,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "HD05",
+    "tier": 2,
+    "extensiontype": "time",
+    "extensionvalue": 16,
+    "extensionunit": "hours",
+    "breakvalue": null,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "HD05",
+    "tier": 3,
+    "extensiontype": "time",
+    "extensionvalue": 18,
+    "extensionunit": "hours",
+    "breakvalue": null,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "CN01",
+    "tier": 1,
+    "extensiontype": "days",
+    "extensionvalue": 5,
+    "extensionunit": "days",
+    "breakvalue": null,
+    "enabled": 1
+  },
+  {
+    "assessmenttype": "CN01",
+    "tier": 2,
+    "extensiontype": "days",
+    "extensionvalue": 10,
+    "extensionunit": "days",
+    "breakvalue": null,
+    "enabled": 1
+  }
+]

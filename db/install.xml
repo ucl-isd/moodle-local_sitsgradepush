@@ -210,5 +210,26 @@
         <INDEX NAME="idx_academic_year" UNIQUE="false" FIELDS="academic_year"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_sitsgradepush_ext_tiers" COMMENT="Extension tier configuration for different assessment types">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="assessmenttype" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="AST code from SITS"/>
+        <FIELD NAME="tier" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="Tier level: 1, 2, or 3"/>
+        <FIELD NAME="extensiontype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="time, time_per_hour, or days"/>
+        <FIELD NAME="extensionvalue" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Extension value (nullable)"/>
+        <FIELD NAME="extensionunit" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="minutes, hours, or days"/>
+        <FIELD NAME="breakvalue" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Break value in minutes (time_per_hour only)"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Whether this tier config is enabled"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_assessmenttype" UNIQUE="false" FIELDS="assessmenttype"/>
+        <INDEX NAME="idx_assessmenttype_tier" UNIQUE="true" FIELDS="assessmenttype, tier"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

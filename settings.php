@@ -165,14 +165,6 @@ if ($hassiteconfig) {
             '0'
         ));
 
-        // Set SITS moodle AST codes that would apply SORA.
-        $settings->add(new admin_setting_configtext(
-            'local_sitsgradepush/ast_codes_sora_api_v1',
-            get_string('settings:astcodessora', 'local_sitsgradepush'),
-            get_string('settings:astcodessora:desc', 'local_sitsgradepush'),
-            'BC02, HC01, EC03, EC04, ED03, ED04'
-        ));
-
         // Set the extension support page URL.
         $settings->add(new admin_setting_configtext(
             'local_sitsgradepush/extension_support_page_url',
@@ -292,6 +284,17 @@ if ($hassiteconfig) {
             10
         ));
     }
+
+    // Add link to manage extension tiers page.
+    $ADMIN->add(
+        'localsitssettings',
+        new admin_externalpage(
+            'local_sitsgradepush_manageextensiontiers',
+            get_string('tier:manageextensiontiers', 'local_sitsgradepush'),
+            new moodle_url('/local/sitsgradepush/manage_extension_tiers.php'),
+            'local/sitsgradepush:manageextensiontiers'
+        )
+    );
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
     foreach ($subplugins as $plugin) {

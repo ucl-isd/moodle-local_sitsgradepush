@@ -192,49 +192,31 @@ class quiz extends activity {
     protected function apply_sora_extension(sora $sora): void {
         global $DB;
 
-        $timelimit = $this->get_time_limit();
-        $quizduration = $this->get_end_date() - $this->get_start_date();
+        // Calculate extension details.
+        $extensiondetails = $this->calculate_sora_extension_details($sora);
+        $extensioninsecs = $extensiondetails['extensioninsecs'];
+        $newduedate = $extensiondetails['newduedate'];
 
-        // Determine which duration to consider for the extension, time limit or time between start and end date.
-        // If there is a time limit, use the lesser of time limit and quiz duration, otherwise use the quiz duration.
-        $actualduration = $timelimit ? min($timelimit, $quizduration) : $quizduration;
-
-        // Calculate the actual extension.
-        // Since RAA extension is time / hour, therefore multiply the actual duration in hours with the time extension.
-        $actualextensioninsecs = ($actualduration / HOURSECS) * $sora->get_time_extension();
-        $totalminutes = round($actualextensioninsecs / MINSECS);
-
-        // Get the group ID.
-        $groupid = $sora->get_sora_group_id(
+        // Get or create SORA group and add user to it.
+        $groupid = $sora->get_or_create_sora_group(
             $this->get_course_id(),
             $this->get_coursemodule_id(),
-            $sora->get_userid(),
-            $totalminutes
+            $extensioninsecs
         );
 
-        if (!$groupid) {
-            throw new \moodle_exception('error:cannotgetsoragroupid', 'local_sitsgradepush');
-        }
-
-        // Remove the user from the previous SORA groups.
+        // Remove user from previous SORA groups.
         $this->remove_user_from_previous_sora_groups($sora->get_userid(), $groupid);
 
         // Prepare override data.
-        // Extend the time limit if exists.
-        $newtimelimit = $timelimit ? $timelimit + $actualextensioninsecs : null;
-
-        // Extend the time close if quiz has no time limit set or the new time limit exceeds the quiz duration,
-        // otherwise leave it null (no override).
-        $newtimeclose = (!$timelimit || $newtimelimit > $quizduration) ? $this->get_end_date() + $actualextensioninsecs : null;
-
+        $timelimit = $this->get_time_limit();
         $overridedata = [
             'quiz' => $this->get_source_instance()->id,
             'groupid' => $groupid,
-            'timelimit' => $newtimelimit,
-            'timeclose' => $newtimeclose,
+            'timelimit' => $timelimit ? $timelimit + $extensioninsecs : null,
+            'timeclose' => $newduedate,
         ];
 
-        // Check for an existing override and update if exists.
+        // Check for existing override and update if exists.
         $override = $DB->get_record('quiz_overrides', [
             'quiz' => $this->get_source_instance()->id,
             'groupid' => $groupid,
@@ -285,5 +267,18 @@ class quiz extends activity {
             $quiz,
             $this->get_module_context()
         );
+    }
+
+    /**
+     * Get the assessment duration in seconds.
+     * Returns the lesser of time limit and quiz duration, or quiz duration if no time limit.
+     *
+     * @return int Duration in seconds.
+     */
+    protected function get_assessment_duration(): int {
+        $quizduration = $this->get_end_date() - $this->get_start_date();
+        $timelimit = $this->get_time_limit();
+
+        return $timelimit ? min($timelimit, $quizduration) : $quizduration;
     }
 }

@@ -184,28 +184,22 @@ class assign extends activity {
         global $CFG;
         require_once($CFG->dirroot . '/group/lib.php');
 
-        // Calculate the new due date.
-        // Find the difference between the start and end date in hours. Multiply by the time extension per hour.
-        $actualextension = (($this->get_end_date() - $this->get_start_date()) / HOURSECS) * $sora->get_time_extension();
-        $newduedate = $this->get_end_date() + round($actualextension);
+        // Calculate extension details.
+        $extensiondetails = $this->calculate_sora_extension_details($sora);
+        $extensioninsecs = $extensiondetails['extensioninsecs'];
+        $newduedate = $extensiondetails['newduedate'];
 
-        // Total extension in minutes.
-        $totalminutes = round($actualextension / MINSECS);
-
-        // Get the group id, create if it doesn't exist and add the user to the group.
-        $groupid = $sora->get_sora_group_id(
+        // Get or create SORA group and add user to it.
+        $groupid = $sora->get_or_create_sora_group(
             $this->get_course_id(),
             $this->get_coursemodule_id(),
-            $sora->get_userid(),
-            $totalminutes
+            $extensioninsecs
         );
 
-        if (!$groupid) {
-            throw new \moodle_exception('error:cannotgetsoragroupid', 'local_sitsgradepush');
-        }
-
-        // Remove the user from the previous SORA groups.
+        // Remove user from previous SORA groups.
         $this->remove_user_from_previous_sora_groups($sora->get_userid(), $groupid);
+
+        // Apply the new due date override.
         $this->overrides_due_date($newduedate, $sora->get_userid(), $groupid);
     }
 

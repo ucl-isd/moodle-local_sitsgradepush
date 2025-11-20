@@ -19,7 +19,6 @@ namespace local_sitsgradepush\extension;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
-use local_sitsgradepush\manager;
 
 /**
  * Class for Summary of Reasonable Adjustments (SORA).
@@ -85,7 +84,7 @@ class sora extends extension {
      * @param int $courseid The course ID.
      * @param int $cmid The course module ID.
      * @param int $userid The user ID.
-     * @param int $totalextension The total extension in minutes, including extra and rest duration.
+     * @param int $totalextension The total extension in seconds.
      *
      * @return int
      * @throws \coding_exception
@@ -127,7 +126,7 @@ class sora extends extension {
      * Get the SORA group name.
      *
      * @param int $sourceid The moodle source ID.
-     * @param int $totalextension The total extension in minutes, including extra and rest duration.
+     * @param int $totalextension The total extension in seconds.
      * @return string
      */
     public static function get_extension_group_name(int $sourceid, int $totalextension): string {
@@ -135,24 +134,33 @@ class sora extends extension {
     }
 
     /**
-     * Format the extension time.
+     * Format extension time from seconds to human-readable string.
      *
-     * @param int $minutes
-     * @return string
+     * @param int $seconds The duration in seconds.
+     * @return string Formatted time string (e.g., "2days3hrs30mins").
      */
-    public static function formatextensionstime(int $minutes): string {
-        if ($minutes < HOURMINS) {
-            return "{$minutes}mins";
+    public static function formatextensionstime(int $seconds): string {
+        $days = floor($seconds / DAYSECS);
+        $remainingseconds = $seconds % DAYSECS;
+        $hours = floor($remainingseconds / HOURSECS);
+        $remainingseconds = $remainingseconds % HOURSECS;
+        $minutes = floor($remainingseconds / MINSECS);
+
+        $result = '';
+
+        if ($days > 0) {
+            $result .= "{$days}day" . ($days > 1 ? "s" : "");
         }
 
-        $hours = floor($minutes / HOURMINS);
-        $remainingminutes = $minutes % HOURMINS;
-
-        if ($remainingminutes == 0) {
-            return "{$hours}hr" . ($hours > 1 ? "s" : "");
+        if ($hours > 0) {
+            $result .= "{$hours}hr" . ($hours > 1 ? "s" : "");
         }
 
-        return "{$hours}hr" . ($hours > 1 ? "s" : "") . "{$remainingminutes}mins";
+        if ($minutes > 0) {
+            $result .= "{$minutes}min" . ($minutes > 1 ? "s" : "");
+        }
+
+        return $result;
     }
 
     /**
@@ -228,7 +236,6 @@ class sora extends extension {
      * @param array $mappings
      *
      * @return void
-     * @throws \coding_exception
      * @throws \dml_exception|\moodle_exception
      */
     public function process_extension(array $mappings): void {
@@ -241,13 +248,9 @@ class sora extends extension {
         foreach ($mappings as $mapping) {
             try {
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
-                if (!$assessment->is_user_a_participant($this->get_userid())) {
-                    continue;
-                }
 
-                // Skip if the SITS assessment type is not SORA eligible.
-                $mab = manager::get_manager()->get_mab_and_map_info_by_mapping_id($mapping->id);
-                if (!extensionmanager::is_sits_assessment_sora_extension_eligible($mab)) {
+                // Check if the assessment can apply SORA extension.
+                if (!$assessment->can_assessment_apply_sora($this, $mapping->id)) {
                     continue;
                 }
 
@@ -266,6 +269,162 @@ class sora extends extension {
      */
     public function get_sora_message_type(): ?string {
         return $this->soramessagetype;
+    }
+
+    /**
+     * Get the extension tier.
+     *
+     * @return string|null
+     */
+    public function get_ref_extension_tier(): ?string {
+        global $DB;
+
+        // Get the extension tier from the database based on extra and rest duration.
+        $record = $DB->get_record(extensionmanager::TABLE_EXTENSION_TIERS, [
+            'assessmenttype' => 'TIERREF',
+            'extensionvalue' => $this->get_extra_duration(),
+            'breakvalue' => $this->get_rest_duration(),
+        ]);
+
+        return $record ? $record->tier : null;
+    }
+
+    /**
+     * Calculate total extension time in seconds based on tier configuration.
+     *
+     * @param \stdClass $tier Extension tier configuration.
+     * @param int|null $duration Duration in seconds (required for time_per_hour type).
+     * @return int Total extension time in seconds.
+     * @throws \coding_exception If invalid extension type or missing required duration.
+     */
+    public function calculate_total_extension_time(\stdClass $tier, ?int $duration = null): int {
+        switch ($tier->extensiontype) {
+            case extensionmanager::RAA_EXTENSION_TYPE_TIME_PER_HOUR:
+                if ($duration === null) {
+                    throw new \coding_exception(get_string('error:extensiondurationrequired', 'local_sitsgradepush'));
+                }
+                // Calculate total minutes per hour (extension + break), multiply by hours, convert to seconds.
+                $totalhours = $duration / HOURSECS;
+                $minutesperhour = $tier->extensionvalue + $tier->breakvalue;
+                return (int) ($totalhours * $minutesperhour * MINSECS);
+
+            case extensionmanager::RAA_EXTENSION_TYPE_TIME:
+                return match ($tier->extensionunit) {
+                    extensionmanager::RAA_EXTENSION_UNIT_MINUTES => (int) ($tier->extensionvalue * MINSECS),
+                    extensionmanager::RAA_EXTENSION_UNIT_HOURS => (int) ($tier->extensionvalue * HOURSECS),
+                    default => throw new \coding_exception(
+                        get_string('error:extensioninvalidunit', 'local_sitsgradepush', $tier->extensionunit)
+                    ),
+                };
+
+            case extensionmanager::RAA_EXTENSION_TYPE_DAYS:
+                return (int) ($tier->extensionvalue * DAYSECS);
+
+            default:
+                throw new \coding_exception(
+                    get_string('error:extensionunsupportedtype', 'local_sitsgradepush', $tier->extensiontype)
+                );
+        }
+    }
+
+    /**
+     * Calculate extension details (new due date and extension time) based on tier configuration.
+     *
+     * @param \stdClass $tier The assessment extension tier configuration.
+     * @param int $enddate The original assessment end date timestamp.
+     * @param int|null $duration Optional duration in seconds (required for time_per_hour type).
+     * @return array Array with 'newduedate' and 'extensioninsecs' keys.
+     * @throws \coding_exception If tier is invalid or missing required duration.
+     */
+    public function calculate_extension_details(\stdClass $tier, int $enddate, ?int $duration = null): array {
+        switch ($tier->extensiontype) {
+            case extensionmanager::RAA_EXTENSION_TYPE_TIME_PER_HOUR:
+                if ($duration === null) {
+                    throw new \coding_exception(get_string('error:extensiondurationrequired', 'local_sitsgradepush'));
+                }
+                $extensioninsecs = $this->calculate_total_extension_time($tier, $duration);
+                $newduedate = $enddate + $extensioninsecs;
+                break;
+
+            case extensionmanager::RAA_EXTENSION_TYPE_TIME:
+                $extensioninsecs = $this->calculate_total_extension_time($tier);
+                $newduedate = $enddate + $extensioninsecs;
+                break;
+
+            case extensionmanager::RAA_EXTENSION_TYPE_DAYS:
+                $extensioninsecs = $this->calculate_total_extension_time($tier);
+                $newduedate = $this->get_new_duedate($tier, $enddate);
+                break;
+
+            default:
+                throw new \coding_exception(
+                    get_string('error:extensionunsupportedtype', 'local_sitsgradepush', $tier->extensiontype)
+                );
+        }
+
+        return [
+            'newduedate' => $newduedate,
+            'extensioninsecs' => $extensioninsecs,
+        ];
+    }
+
+    /**
+     * Get or create SORA group and add user to it.
+     *
+     * @param int $courseid The course ID.
+     * @param int $cmid The course module ID.
+     * @param int $extensioninsecs The extension time in seconds.
+     * @return int The group ID.
+     * @throws \moodle_exception If group creation or user addition fails.
+     */
+    public function get_or_create_sora_group(int $courseid, int $cmid, int $extensioninsecs): int {
+        $groupid = $this->get_sora_group_id($courseid, $cmid, $this->get_userid(), $extensioninsecs);
+
+        if (!$groupid) {
+            throw new \moodle_exception('error:cannotgetsoragroupid', 'local_sitsgradepush');
+        }
+
+        return $groupid;
+    }
+
+    /**
+     * Get new due date for RAA extension.
+     *
+     * @param \stdClass $tier The assessment extension tier, e.g. tier record from extension_tiers table for an assessment type.
+     * @param int $enddate The original assessment end date timestamp.
+     * @return int The new due date timestamp.
+     * @throws \coding_exception If the extension type is not days.
+     * @throws \moodle_exception If the feedback tracker plugin is not installed.
+     */
+    public function get_new_duedate(\stdClass $tier, int $enddate): int {
+        // Only works for days extension type.
+        if ($tier->extensiontype !== extensionmanager::RAA_EXTENSION_TYPE_DAYS) {
+            throw new \coding_exception(get_string('error:extensionnewtduedatedaysonly', 'local_sitsgradepush'));
+        }
+
+        // Check if feedback tracker plugin is installed.
+        if (!class_exists('\report_feedback_tracker\local\helper')) {
+            throw new \moodle_exception('error:extensionfeedbacktrackernotinstalled', 'local_sitsgradepush');
+        }
+
+        $closuredays = \report_feedback_tracker\local\helper::get_closuredays();
+        $daystoextend = (int) $tier->extensionvalue;
+        $newduedate = $enddate;
+        $daysadded = 0;
+
+        // Loop until the required number of working days have been added.
+        while ($daysadded < $daystoextend) {
+            $newduedate += DAYSECS;
+            $datestring = date('Y-m-d', $newduedate);
+            $weekday = date('N', $newduedate);
+
+            // Count the day if it's a weekday and not a closure day.
+            if ($weekday < 6 && !in_array($datestring, $closuredays, true)) {
+                $daysadded++;
+            }
+        }
+
+        return $newduedate;
     }
 
     /**

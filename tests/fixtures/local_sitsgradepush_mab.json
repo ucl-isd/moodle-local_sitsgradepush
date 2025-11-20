@@ -223,5 +223,35 @@
     "mkscode": "UGM05",
     "timecreated": "1707494753",
     "timemodified": "1707494753"
+  },
+  {
+    "modcode": "PUBL0065",
+    "modocc": "A7P",
+    "academicyear": "2024",
+    "periodslotcode": "T2",
+    "mapcode": "PUBL0065A7PG",
+    "mabseq": "001",
+    "astcode": "HD05",
+    "mabperc": "20",
+    "mabname": "Take-home paper 7 days (departmentally managed)",
+    "examroomcode": null,
+    "mkscode": "GNA02",
+    "timecreated": "1707494753",
+    "timemodified": "1707494753"
+  },
+  {
+    "modcode": "BIOC0006",
+    "modocc": "A5U",
+    "academicyear": "2024",
+    "periodslotcode": "T2",
+    "mapcode": "BIOC0006A5UG",
+    "mabseq": "002",
+    "astcode": "ED03",
+    "mabperc": "20",
+    "mabname": "In-course Moodle test",
+    "examroomcode": null,
+    "mkscode": "GNA01",
+    "timecreated": "1707494753",
+    "timemodified": "1707494753"
   }
 ]

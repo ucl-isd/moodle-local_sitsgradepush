@@ -159,4 +159,27 @@ class extension_common extends base_test_class {
             'timemodified' => $this->clock->now()->modify('-3 days')->getTimestamp(),
         ]);
     }
+
+    /**
+     * Delete all mappings for the course
+     */
+    protected function delete_all_mappings(): void {
+        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
+        foreach ($mappings as $mapping) {
+            manager::get_manager()->remove_mapping($this->course1->id, $mapping->id);
+        }
+    }
+
+    /**
+     * Create a past year course
+     *
+     * @return object The course object
+     */
+    protected function create_past_year_course(): object {
+        return $this->getDataGenerator()->create_course(
+            ['shortname' => 'C2', 'customfields' => [
+                ['shortname' => 'course_year', 'value' => $this->clock->now()->modify('-1 year')->format('Y')],
+            ]]
+        );
+    }
 }

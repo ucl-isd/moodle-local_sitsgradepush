@@ -157,7 +157,7 @@ Feature: Marks transfer from Moodle to SITS
     And I log out
     And I am on the "Course 1" course page logged in as teacher1
     And I follow "Coursework 1"
-    And I click on "Add feedback" "link"
+    And I click on "Add mark" "link"
     And I press "Save and finalise"
     And I reload the page
     And I click on "Release the marks" "link"
