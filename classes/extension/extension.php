@@ -42,7 +42,7 @@ abstract class extension implements iextension {
     protected int $userid;
 
     /** @var string Student code / ID number */
-    protected string $studentcode;
+    protected string $studentcode = '';
 
     /** @var bool Used to check if the extension data is set. */
     protected bool $dataisset = false;
@@ -81,15 +81,6 @@ abstract class extension implements iextension {
      */
     public function get_userid(): int {
         return $this->userid;
-    }
-
-    /**
-     * Get the MAB identifier.
-     *
-     * @return string
-     */
-    public function get_mab_identifier(): string {
-        return $this->mabidentifier;
     }
 
     /**

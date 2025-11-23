@@ -20,6 +20,7 @@ use DateTime;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
+use local_sitsgradepush\manager;
 
 /**
  * Class for extenuating circumstance (EC).
@@ -31,10 +32,16 @@ use local_sitsgradepush\logger;
  */
 class ec extends extension {
     /** @var string New deadline */
-    private string $newdeadline = '';
+    protected string $newdeadline = '';
 
     /** @var string MAB identifier, e.g. CCME0158A6UF-001 */
-    protected string $mabidentifier;
+    protected string $mabidentifier = '';
+
+    /** @var string Identifier for the EC/DAP request which has latest new due date */
+    protected string $latestidentifier = '';
+
+    /** @var bool Indicate if it is a processable deleted DAP event */
+    protected bool $deleteddapprocessable = false;
 
     /**
      * Returns the new deadline.
@@ -43,6 +50,24 @@ class ec extends extension {
      */
     public function get_new_deadline(): string {
         return $this->newdeadline;
+    }
+
+    /**
+     * Get the MAB identifier.
+     *
+     * @return string
+     */
+    public function get_mab_identifier(): string {
+        return $this->mabidentifier;
+    }
+
+    /**
+     * Get the latest identifier. This is the identifier for the EC/DAP request which has the latest new due date.
+     *
+     * @return string
+     */
+    public function get_latest_identifier(): string {
+        return $this->latestidentifier;
     }
 
     /**
@@ -65,26 +90,27 @@ class ec extends extension {
                 }
 
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
-                if ($assessment->is_user_a_participant($this->userid)) {
-                    $assessment->set_sits_mapping_id($mapping->id);
-                    if (empty($this->get_new_deadline())) {
-                        // Check if student has an active EC override.
-                        $mtoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
-                            $mapping->id,
-                            $mapping->sourceid,
-                            extensionmanager::EXTENSION_EC,
-                            $this->get_userid()
-                        );
-                        // Delete previous EC override if exists when the new deadline is empty,
-                        // i.e. EC is removed for the student on SITS.
-                        if (!empty($mtoverride)) {
-                            $assessment->delete_ec_override($mtoverride);
-                        }
-                        // Skip as the new deadline is empty.
-                        return;
-                    }
-                    $assessment->apply_extension($this);
+                if (!$assessment->is_user_a_participant($this->userid)) {
+                    continue;
                 }
+                $assessment->set_sits_mapping_id($mapping->id);
+                if (empty($this->get_new_deadline())) {
+                    // Check if student has an active EC override.
+                    $mtoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
+                        $mapping->id,
+                        $mapping->sourceid,
+                        extensionmanager::EXTENSION_EC,
+                        $this->get_userid()
+                    );
+                    // Delete previous EC override if exists when the new deadline is empty,
+                    // i.e. EC is removed for the student on SITS.
+                    if (!empty($mtoverride)) {
+                        $assessment->delete_ec_override($mtoverride);
+                    }
+                    // Continue to next mapping as the new deadline is empty.
+                    continue;
+                }
+                $assessment->apply_extension($this);
             } catch (\Exception $e) {
                 logger::log($e->getMessage(), null, "Mapping ID: $mapping->id");
             }
@@ -111,6 +137,20 @@ class ec extends extension {
 
         // Set event data.
         $this->eventdata = $studentec;
+
+        // Check if this is a deleted DAP event.
+        if ($this->is_deleted_dap_event()) {
+            // Handle deleted DAP event by looking up override record.
+            if ($this->handle_deleted_dap_event()) {
+                // Set data source and mark data as set.
+                $this->datasource = self::DATASOURCE_AWS;
+                $this->dataisset = true;
+                $this->deleteddapprocessable = true;
+                return;
+            }
+        }
+
+        // Normal EC message processing.
         $this->mabidentifier = $studentec->assessment_component->identifier;
         $this->studentcode = $studentec->student->student_code;
         $this->set_userid($this->studentcode);
@@ -133,7 +173,9 @@ class ec extends extension {
         // Set new deadline.
         // $student['extenuating_circumstance'] is an array.
         if (!empty($student['extenuating_circumstance'])) {
-            $this->newdeadline = $this->get_latest_deadline($student['extenuating_circumstance']);
+            $latestduedate = $this->get_latest_deadline($student['extenuating_circumstance']);
+            $this->newdeadline = $latestduedate['new_due_date'] ?? '';
+            $this->latestidentifier = $latestduedate['identifier'] ?? '';
         }
 
         // Set data source.
@@ -152,13 +194,23 @@ class ec extends extension {
     }
 
     /**
+     * Check if this is a processable deleted DAP event.
+     *
+     * @return bool True if this is a processable deleted DAP event, false otherwise.
+     */
+    public function is_deleted_dap_processable(): bool {
+        return $this->deleteddapprocessable;
+    }
+
+    /**
      * Get the latest deadline.
      *
      * @param array $extensions An array of extenuating circumstances.
-     * @return string
+     * @return array
      */
-    protected function get_latest_deadline(array $extensions): string {
-        $latest = null;
+    protected function get_latest_deadline(array $extensions): array {
+        $latestdate = null;
+        $latestidentifier = null;
 
         // Use the latest deadline from the extenuating circumstances.
         foreach ($extensions as $extension) {
@@ -168,11 +220,93 @@ class ec extends extension {
 
             $current = new DateTime($extension['new_due_date']);
 
-            if (!$latest || $current > $latest) {
-                $latest = $current;
+            if ($latestdate === null || $current > $latestdate) {
+                $latestdate = $current;
+                $latestidentifier = $extension['identifier'];
             }
         }
 
-        return $latest ? $latest->format('Y-m-d') : '';
+        if ($latestdate === null) {
+            return [];
+        }
+
+        return [
+            'identifier' => $latestidentifier,
+            'new_due_date' => $latestdate->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * Check if this is a deleted DAP event.
+     *
+     * @return bool True if this is a deleted DAP event.
+     */
+    public function is_deleted_dap_event(): bool {
+        // Check if process_status changed to 'D'.
+        $statusdeleted = false;
+        if (!empty($this->extensionchanges)) {
+            foreach ($this->extensionchanges as $change) {
+                if ($change->attribute === 'extenuating_circumstances.process_status' && $change->to === 'D') {
+                    $statusdeleted = true;
+                    break;
+                }
+            }
+        }
+
+        // Not a deleted event.
+        if (!$statusdeleted) {
+            return false;
+        }
+
+        // Check if request identifier starts with "DAP-".
+        $identifier = $this->eventdata->extenuating_circumstances->request->identifier ?? '';
+        return str_starts_with($identifier, 'DAP-');
+    }
+
+    /**
+     * Handle deleted DAP event by looking up override record and setting EC properties.
+     *
+     * @return bool True if properties were set successfully, false otherwise.
+     * @throws \dml_exception
+     */
+    protected function handle_deleted_dap_event(): bool {
+        global $DB;
+
+        // Get the DAP request identifier.
+        $identifier = $this->eventdata->extenuating_circumstances->request->identifier ?? '';
+        if (empty($identifier)) {
+            return false;
+        }
+
+        // Query local_sitsgradepush_overrides for matching request identifier.
+        $override = $DB->get_record('local_sitsgradepush_overrides', [
+            'requestidentifier' => $identifier,
+            'extensiontype' => extensionmanager::EXTENSION_EC,
+            'timerestored' => null,
+        ]);
+
+        if (!$override) {
+            return false;
+        }
+
+        // Get user's idnumber from user table.
+        $user = $DB->get_record('user', ['id' => $override->userid], 'idnumber');
+        if (!$user) {
+            return false;
+        }
+
+        $this->userid = $override->userid;
+        $this->studentcode = $user->idnumber;
+
+        // Get MAB info from mapping id.
+        $mapping = manager::get_manager()->get_mab_and_map_info_by_mapping_id($override->mapid);
+        if (empty($mapping)) {
+            return false;
+        }
+
+        // Construct mabidentifier as "mapcode-mabseq".
+        $this->mabidentifier = $mapping->mapcode . '-' . $mapping->mabseq;
+
+        return true;
     }
 }

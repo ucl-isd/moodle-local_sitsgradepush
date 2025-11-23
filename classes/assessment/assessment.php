@@ -334,6 +334,7 @@ abstract class assessment implements iassessment {
      * @param \stdClass $override Current override.
      * @param \stdClass|false $preexistsoverride Pre-existing override.
      * @param int|null $groupid Moodle group ID.
+     * @param string|null $requestidentifier Request identifier for tracking purposes.
      *
      * @return void
      * @throws \dml_exception
@@ -346,6 +347,7 @@ abstract class assessment implements iassessment {
         \stdClass $override,
         \stdClass|false $preexistsoverride,
         ?int $groupid = null,
+        ?string $requestidentifier = null,
     ): void {
         global $DB, $USER;
         if (!$this->is_extension_supported()) {
@@ -358,6 +360,12 @@ abstract class assessment implements iassessment {
             'override_data' => json_encode($override),
             'created_by' => $USER->id,
         ];
+
+        // Add request identifier if provided.
+        if ($requestidentifier !== null) {
+            $data['requestidentifier'] = $requestidentifier;
+        }
+
         $extensiontype = ($groupid) ? extensionmanager::EXTENSION_SORA : extensionmanager::EXTENSION_EC;
 
         // Update existing record without updating original override data field.

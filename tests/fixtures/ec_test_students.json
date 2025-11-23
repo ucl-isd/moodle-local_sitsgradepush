@@ -47,7 +47,7 @@
   },
   "extenuating_circumstance": [
     {
-      "identifier": "DAP-ABCDE07-001",
+      "identifier": "EC-ABCDE07-009",
       "module_code": "LAWS0024",
       "record_type": "A",
       "sequence_number": "1",
@@ -57,7 +57,7 @@
       "approved_mitigation": "298"
     },
     {
-      "identifier": "EC-ABCDE07-009",
+      "identifier": "DAP-ABCDE07-001",
       "module_code": "LAWS0024",
       "record_type": "A",
       "sequence_number": "1",

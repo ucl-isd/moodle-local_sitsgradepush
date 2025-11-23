@@ -1,0 +1,25 @@
+{
+  "identifier": "355d9bb8-1234-5678-9a01-295c3f147800",
+  "timestamp": "20251103T163756.094875UTC",
+  "event": {
+    "name": "student_extenuating_circumstances",
+    "operation": "update",
+    "source": "sits"
+  },
+  "changes": [
+    {
+      "attribute": "extenuating_circumstances.process_status",
+      "from": "I",
+      "to": "D"
+    }
+  ],
+  "entity": {
+    "student_extenuating_circumstances": {
+      "extenuating_circumstances": {
+        "request": {
+          "identifier": "DAP-ABCDE07-001"
+        }
+      }
+    }
+  }
+}

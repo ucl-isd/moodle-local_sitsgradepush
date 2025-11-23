@@ -813,5 +813,35 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025110600, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2025112400) {
+        // Define field requestidentifier to be added to local_sitsgradepush_overrides.
+        $table = new xmldb_table('local_sitsgradepush_overrides');
+        $field = new xmldb_field('requestidentifier', XMLDB_TYPE_CHAR, '100', null, null, null, null, 'groupid');
+
+        // Conditionally launch add field requestidentifier.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index for requestidentifier lookups with extensiontype and timerestored.
+        $index = new xmldb_index(
+            'idx_requestid_ext_restored',
+            XMLDB_INDEX_NOTUNIQUE,
+            [
+                'requestidentifier',
+                'extensiontype',
+                'timerestored',
+            ]
+        );
+
+        // Conditionally launch add index.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2025112400, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
