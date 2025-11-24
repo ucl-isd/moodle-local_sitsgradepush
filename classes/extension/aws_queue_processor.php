@@ -120,11 +120,12 @@ abstract class aws_queue_processor {
      * Check should we process the message.
      *
      * @param string $messageid AWS SQS Message ID
+     * @param string $receipthandle AWS SQS Receipt Handle
      * @param array $messagebody AWS SQS Message body
      * @return bool True if message is processed already, false otherwise
      * @throws \dml_exception
      */
-    protected function should_not_process_message(string $messageid, array $messagebody): bool {
+    protected function should_not_process_message(string $messageid, string $receipthandle, array $messagebody): bool {
         global $DB;
 
         try {
@@ -155,6 +156,10 @@ abstract class aws_queue_processor {
             );
             if ($handledmessages) {
                 mtrace("Skipping message due to already processed, ignored or exceeded maximum attempts: {$messageid}");
+                // Delete the message on AWS SQS as we won't process it again.
+                // Processed and ignored messages should already be deleted after processing,
+                // so the message deleting here is message that exceeded maximum attempts.
+                $this->delete_message($receipthandle);
                 return true;
             }
 
@@ -216,7 +221,7 @@ abstract class aws_queue_processor {
                             throw new \Exception('Invalid JSON data: ' . json_last_error_msg());
                         }
 
-                        if ($this->should_not_process_message($message['MessageId'], $messagebody)) {
+                        if ($this->should_not_process_message($message['MessageId'], $message['ReceiptHandle'], $messagebody)) {
                             continue;
                         }
 

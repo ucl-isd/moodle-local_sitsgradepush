@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\extension;
 
 use local_sitsgradepush\extension_common;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\task\process_extensions_new_enrolment;
 use local_sitsgradepush\task\process_extensions_new_mapping;
@@ -47,10 +48,7 @@ final class ec_test extends extension_common {
      */
     public function tearDown(): void {
         parent::tearDown();
-        $managerreflection = new \ReflectionClass(manager::class);
-        $instance = $managerreflection->getProperty('instance');
-        $instance->setAccessible(true);
-        $instance->setValue(null, null);
+        $this->reset_manager_instance();
     }
 
     /**
@@ -64,29 +62,17 @@ final class ec_test extends extension_common {
     public function test_ec_queue_processor_process_message(): void {
         global $DB;
 
-        $mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
-        $this->mappingid = $this->insert_mapping($mab1->id, $this->course1->id, $this->assign1, 'assign');
-
-        // Load test data.
+        $assign = $this->setup_common_test_data();
         $eventdata = file_get_contents(__DIR__ . '/../fixtures/ec_event_data.json');
-        $this->setup_mock_manager();
-
-        // Create EC queue processor instance.
         $processor = new ec_queue_processor();
-
-        // Use reflection to access protected method.
-        $reflection = new \ReflectionClass($processor);
-        $method = $reflection->getMethod('process_message');
-        $method->setAccessible(true);
+        $method = $this->get_accessible_method($processor, 'process_message');
 
         // Test case 1: Process a valid message.
         $result = $method->invoke($processor, ['Message' => $eventdata]);
         $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $result['status']);
 
-        $override = $DB->get_record('assign_overrides', ['assignid' => $this->assign1->id, 'userid' => $this->student1->id]);
+        $override = $DB->get_record('assign_overrides', ['assignid' => $assign->id, 'userid' => $this->student1->id]);
         $this->assertNotEmpty($override);
-
-        // Check the new deadline is set correctly.
         $this->assertEquals(strtotime('2025-02-27 12:00'), $override->duedate);
 
         // Test case 2: Test message that should be ignored.
@@ -101,88 +87,10 @@ final class ec_test extends extension_common {
 
         // Test case 3: Test exception when student not found.
         $manager = $this->createMock(manager::class);
-        $manager->method('get_students_from_sits')
-            ->willReturn([]);
-        $instance = new \ReflectionClass(manager::class);
-        $instanceprop = $instance->getProperty('instance');
-        $instanceprop->setAccessible(true);
-        $instanceprop->setValue(null, $manager);
+        $manager->method('get_students_from_sits')->willReturn([]);
+        $this->set_manager_instance($manager);
         $this->expectException(\moodle_exception::class);
         $method->invoke($processor, ['Message' => $eventdata]);
-    }
-
-    /**
-     * Setup mock manager
-     *
-     * @return void
-     */
-    private function setup_mock_manager(): void {
-        // Load test data.
-        $studentdata = json_decode(file_get_contents(__DIR__ . '/../fixtures/ec_test_students.json'), true);
-
-        // Mock manager class.
-        $manager = $this->getMockBuilder(manager::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['get_students_from_sits'])
-            ->getMock();
-        $manager->method('get_students_from_sits')
-            ->willReturn([$studentdata]);
-
-        // Set manager instance.
-        $managerreflection = new \ReflectionClass(manager::class);
-        $instance = $managerreflection->getProperty('instance');
-        $instance->setAccessible(true);
-        $instance->setValue(null, $manager);
-    }
-
-    /**
-     * Setup common test data including mock manager and mapping
-     *
-     * @param string $type Activity type (assign/quiz)
-     * @return object The activity object
-     */
-    private function setup_common_test_data(string $type = 'assign'): object {
-        global $DB;
-        $this->setup_mock_manager();
-
-        $mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
-        $activity = $type === 'assign' ? $this->assign1 : $this->quiz1;
-        $this->mappingid = $this->insert_mapping($mab1->id, $this->course1->id, $activity, $type);
-
-        return $activity;
-    }
-
-    /**
-     * Get override table details for a given activity type
-     *
-     * @param string $type Activity type (assign/quiz)
-     * @return array Table details containing table name, date field, and activity field
-     */
-    private static function get_override_table_details(string $type): array {
-        return $type === 'assign' ?
-            ['table' => 'assign_overrides', 'datefield' => 'duedate', 'activityfield' => 'assignid'] :
-            ['table' => 'quiz_overrides', 'datefield' => 'timeclose', 'activityfield' => 'quiz'];
-    }
-
-    /**
-     * Verify override exists with expected date
-     *
-     * @param object $activity The activity object
-     * @param string $type Activity type
-     * @param int|null $expecteddate Expected date timestamp (null to expect no override)
-     * @return void
-     */
-    private function verify_override(object $activity, string $type, ?int $expecteddate): void {
-        global $DB;
-        $details = $this->get_override_table_details($type);
-        $conditions = [$details['activityfield'] => $activity->id, 'userid' => $this->student1->id];
-        $override = $DB->get_record($details['table'], $conditions);
-
-        if ($expecteddate === null) {
-            $this->assertFalse($override);
-        } else {
-            $this->assertEquals($expecteddate, $override->{$details['datefield']});
-        }
     }
 
     /**
@@ -277,5 +185,175 @@ final class ec_test extends extension_common {
         // Remove mapping and verify original date is restored.
         manager::get_manager()->remove_mapping($this->course1->id, $this->mappingid);
         $this->verify_override($activity, $type, strtotime('2025-02-20 12:00'));
+    }
+
+    /**
+     * Test deleted DAP event processing.
+     *
+     * @covers \\local_sitsgradepush\\extension\\ec::is_deleted_dap_event
+     * @covers \\local_sitsgradepush\\extension\\ec::handle_deleted_dap_event
+     * @covers \\local_sitsgradepush\\extension\\ec::set_properties_from_aws_message
+     * @covers \\local_sitsgradepush\\extension\\ec::process_extension
+     * @covers \\local_sitsgradepush\\extension\\ec_queue_processor::process_message
+     * @return void
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function test_deleted_dap_event(): void {
+        global $DB;
+        $assign = $this->setup_common_test_data();
+
+        // Process initial DAP extension message.
+        $eventdata = file_get_contents(__DIR__ . '/../fixtures/ec_event_data.json');
+        $processor = new ec_queue_processor();
+        $method = $this->get_accessible_method($processor, 'process_message');
+        $result = $method->invoke($processor, ['Message' => $eventdata]);
+
+        // Verify override was created with DAP identifier.
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $result['status']);
+        $this->assertNotEmpty($DB->get_record('assign_overrides', ['assignid' => $assign->id, 'userid' => $this->student1->id]));
+
+        $overridebackup = $DB->get_record('local_sitsgradepush_overrides', [
+            'mapid' => $this->mappingid,
+            'userid' => $this->student1->id,
+            'extensiontype' => extensionmanager::EXTENSION_EC,
+        ]);
+        $this->assertNotEmpty($overridebackup);
+        $this->assertEquals('DAP-ABCDE07-001', $overridebackup->requestidentifier);
+
+        // Process deleted DAP event with empty EC data.
+        $deletedmessage = file_get_contents(__DIR__ . '/../fixtures/deleted_dap_event_data.json');
+        $this->setup_mock_manager_with_empty_ec();
+        $result = $method->invoke($processor, ['Message' => $deletedmessage]);
+
+        // Verify override was deleted and backup marked as restored.
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $result['status']);
+        $this->assertFalse($DB->get_record('assign_overrides', ['assignid' => $assign->id, 'userid' => $this->student1->id]));
+
+        $overridebackup = $DB->get_record('local_sitsgradepush_overrides', [
+            'mapid' => $this->mappingid,
+            'userid' => $this->student1->id,
+            'extensiontype' => extensionmanager::EXTENSION_EC,
+        ]);
+
+        // Verify restored fields are set.
+        $this->assertNotEmpty($overridebackup->restored_by);
+        $this->assertNotEmpty($overridebackup->timerestored);
+    }
+
+    /**
+     * Setup mock manager with optional student data.
+     *
+     * @param array|null $studentdata Student data to return, null loads from fixture
+     * @return void
+     */
+    private function setup_mock_manager(?array $studentdata = null): void {
+        if ($studentdata === null) {
+            $studentdata = json_decode(file_get_contents(__DIR__ . '/../fixtures/ec_test_students.json'), true);
+        }
+
+        $manager = $this->getMockBuilder(manager::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['get_students_from_sits'])
+            ->getMock();
+        $manager->method('get_students_from_sits')
+            ->willReturn([$studentdata]);
+
+        $this->set_manager_instance($manager);
+    }
+
+    /**
+     * Setup mock manager with empty EC data (for deleted DAP events).
+     *
+     * @return void
+     */
+    private function setup_mock_manager_with_empty_ec(): void {
+        $this->setup_mock_manager(['moodleuserid' => $this->student1->id, 'extenuating_circumstance' => []]);
+    }
+
+    /**
+     * Setup common test data including mock manager and mapping
+     *
+     * @param string $type Activity type (assign/quiz)
+     * @return object The activity object
+     */
+    private function setup_common_test_data(string $type = 'assign'): object {
+        global $DB;
+        $this->setup_mock_manager();
+
+        $mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
+        $activity = $type === 'assign' ? $this->assign1 : $this->quiz1;
+        $this->mappingid = $this->insert_mapping($mab1->id, $this->course1->id, $activity, $type);
+
+        return $activity;
+    }
+
+    /**
+     * Get override table details for a given activity type
+     *
+     * @param string $type Activity type (assign/quiz)
+     * @return array Table details containing table name, date field, and activity field
+     */
+    private static function get_override_table_details(string $type): array {
+        return $type === 'assign' ?
+            ['table' => 'assign_overrides', 'datefield' => 'duedate', 'activityfield' => 'assignid'] :
+            ['table' => 'quiz_overrides', 'datefield' => 'timeclose', 'activityfield' => 'quiz'];
+    }
+
+    /**
+     * Verify override exists with expected date
+     *
+     * @param object $activity The activity object
+     * @param string $type Activity type
+     * @param int|null $expecteddate Expected date timestamp (null to expect no override)
+     * @return void
+     */
+    private function verify_override(object $activity, string $type, ?int $expecteddate): void {
+        global $DB;
+        $details = $this->get_override_table_details($type);
+        $conditions = [$details['activityfield'] => $activity->id, 'userid' => $this->student1->id];
+        $override = $DB->get_record($details['table'], $conditions);
+
+        if ($expecteddate === null) {
+            $this->assertFalse($override);
+        } else {
+            $this->assertEquals($expecteddate, $override->{$details['datefield']});
+        }
+    }
+
+    /**
+     * Get accessible method from an object.
+     *
+     * @param object $object The object to get method from
+     * @param string $methodname The method name
+     * @return \ReflectionMethod The accessible method
+     */
+    private function get_accessible_method(object $object, string $methodname): \ReflectionMethod {
+        $reflection = new \ReflectionClass($object);
+        $method = $reflection->getMethod($methodname);
+        $method->setAccessible(true);
+        return $method;
+    }
+
+    /**
+     * Set manager singleton instance via reflection.
+     *
+     * @param manager|null $manager The manager instance to set
+     * @return void
+     */
+    private function set_manager_instance(?manager $manager): void {
+        $managerreflection = new \ReflectionClass(manager::class);
+        $instance = $managerreflection->getProperty('instance');
+        $instance->setAccessible(true);
+        $instance->setValue(null, $manager);
+    }
+
+    /**
+     * Reset manager singleton instance.
+     *
+     * @return void
+     */
+    private function reset_manager_instance(): void {
+        $this->set_manager_instance(null);
     }
 }

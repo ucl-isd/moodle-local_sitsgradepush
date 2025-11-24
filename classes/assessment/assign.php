@@ -169,8 +169,19 @@ class assign extends activity {
             $ec->get_userid()
         );
 
+        // Get the EC/DAP request identifier.
+        $requestidentifier = $ec->get_latest_identifier() ?: null;
+
         // Save override record in marks transfer overrides table.
-        $this->save_override($this->sitsmappingid, $ec->get_userid(), $mtoverride, $assignoverride, $preexistingoverride);
+        $this->save_override(
+            $this->sitsmappingid,
+            $ec->get_userid(),
+            $mtoverride,
+            $assignoverride,
+            $preexistingoverride,
+            null,
+            $requestidentifier
+        );
     }
 
     /**

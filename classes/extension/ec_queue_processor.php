@@ -140,6 +140,11 @@ class ec_queue_processor extends aws_queue_processor {
         $eventdata = $ec->get_event_data();
         $ecs = $eventdata->extenuating_circumstances;
 
+        // Special handling for deleted DAP events.
+        if ($ec->is_deleted_dap_event()) {
+            return $ec->is_deleted_dap_processable() ? false : 'Deleted DAP is not processable';
+        }
+
         // Ignore EC event for the following conditions:
         // 1. The request status is not COMPLETE.
         // 2. The decision type is not DECISION.
