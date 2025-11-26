@@ -17,6 +17,8 @@
 namespace local_sitsgradepush;
 
 use context_course;
+use core\clock;
+use core\di;
 use core_course\customfield\course_handler;
 use DirectoryIterator;
 use local_sitsgradepush\api\client_factory;
@@ -1827,6 +1829,78 @@ class manager {
         }
 
         return $customfields['course_year'];
+    }
+
+    /**
+     * Get student exams.
+     *
+     * @param int $userid User ID.
+     * @param int|null $daysahead Number of days ahead to look for exams (null = get all exam quizzes).
+     * @param int $limitnum Maximum number of records to return (0 = no limit).
+     * @return array Array of quiz exam records.
+     */
+    public function get_student_exams(int $userid, ?int $daysahead = null, bool $activeonly = true, int $limitnum = 0): array {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/quiz/lib.php');
+
+        // Get all active courses the user is enrolled in, excluding hidden courses.
+        $courseids = array_keys(enrol_get_users_courses($userid, $activeonly));
+
+        // No active courses found.
+        if (empty($courseids)) {
+            return [];
+        }
+
+        // Get exam AST codes from config and convert to array.
+        $examastcodesarray = ["EC03", "EC04", "EC05", "ED03", "ED04", "ED05", "MD01", "ND01"];
+
+        // Prepare SQL active courses IN clauses.
+        [$insqlcourse, $inparamscourse] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'course');
+
+        // Prepare SQL exam AST codes IN clauses.
+        [$insqlast, $inparamsast] = $DB->get_in_or_equal($examastcodesarray, SQL_PARAMS_NAMED, 'ast');
+
+        // Get quizzes that are mapped to exam AST codes in the active courses the user is enrolled in.
+        $sql = "SELECT q.id, q.name, q.timeopen, q.timeclose, q.timelimit,
+                cm.id AS cmid, cm.course AS courseid, c.fullname AS coursename
+                FROM {local_sitsgradepush_mapping} mapping
+                JOIN {local_sitsgradepush_mab} mab ON mab.id = mapping.componentgradeid
+                JOIN {course_modules} cm ON cm.id = mapping.sourceid AND cm.visible = 1
+                JOIN {course} c ON c.id = cm.course
+                JOIN {quiz} q ON q.id = cm.instance
+                WHERE mapping.courseid $insqlcourse
+                AND mapping.sourcetype = 'mod'
+                AND mapping.moduletype = 'quiz'
+                AND mab.astcode $insqlast";
+
+        $params = array_merge($inparamscourse, $inparamsast);
+
+        // Filter quizzes by open time if daysahead is provided.
+        if ($daysahead !== null) {
+            $currenttime = di::get(clock::class)->time();
+            $endtime = $currenttime + ($daysahead * DAYSECS);
+            $sql .= " AND q.timeopen > :currenttime AND q.timeopen <= :endtime";
+            $params['currenttime'] = $currenttime;
+            $params['endtime'] = $endtime;
+        }
+        $sql .= " GROUP BY q.id";
+        $sql .= " ORDER BY q.timeopen ASC";
+        $results = $DB->get_records_sql($sql, $params, 0, $limitnum);
+
+        // Apply user overrides and filter out quizzes which user doesn't have permission to attempt.
+        foreach ($results as $result) {
+            $quiz = assessmentfactory::get_assessment('mod', $result->cmid);
+            if ($activeonly && !$quiz->is_user_a_participant($userid)) {
+                unset($results[$result->id]);
+                continue;
+            }
+            $quizinstance = quiz_update_effective_access($quiz->get_source_instance(), $userid);
+            $result->timeopen = $quizinstance->timeopen;
+            $result->timeclose = $quizinstance->timeclose;
+            $result->timelimit = $quizinstance->timelimit;
+        }
+
+        return $results;
     }
 
     /**
