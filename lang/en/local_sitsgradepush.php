@@ -30,6 +30,7 @@ $string['cachedef_candidatenumbers'] = 'Student candidate numbers related data';
 $string['cachedef_componentgrades'] = 'SITS assessment components';
 $string['cachedef_mappingmabinfo'] = 'SITS Mapping and MAB information';
 $string['cachedef_markingschemes'] = 'SITS marking schemes';
+$string['cachedef_studentexams'] = 'Student exams data';
 $string['cachedef_studentspr'] = 'Student\'s SPR code per SITS assessment pattern';
 $string['confirmmodal:body:partone'] = '
 <p>After a student mark has been transferred to SITS, it cannot be recalled or overwritten.</p>
@@ -272,6 +273,8 @@ $string['settings:enableextension'] = 'Enable assessment extension';
 $string['settings:enableextension:desc'] = 'Allow extension (EC/DAP/RAA) to be applied to assessments automatically';
 $string['settings:enablesublogpush'] = 'Enable Submission Log transfer';
 $string['settings:enablesublogpush:desc'] = 'Enable submission log transfer to SITS';
+$string['settings:examastcodes'] = 'Exam Assessment Type Codes';
+$string['settings:examastcodes:desc'] = 'Assessment type codes that represent exams (e.g., ED03,ED04). Only quizzes mapped to these AST codes will appear in the exams block. Separated by comma.';
 $string['settings:extension_support_page_url'] = 'URL for extension support page';
 $string['settings:extension_support_page_url:desc'] = 'URL for extension support page';
 $string['settings:fetch_scn_enabled'] = 'Enable fetching candidate numbers';

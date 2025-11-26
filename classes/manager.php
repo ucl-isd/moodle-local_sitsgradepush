@@ -17,6 +17,8 @@
 namespace local_sitsgradepush;
 
 use context_course;
+use core\clock;
+use core\di;
 use core_course\customfield\course_handler;
 use DirectoryIterator;
 use local_sitsgradepush\api\client_factory;
@@ -1827,6 +1829,90 @@ class manager {
         }
 
         return $customfields['course_year'];
+    }
+
+    /**
+     * Get student exams.
+     *
+     * @param int $userid User ID.
+     * @param int|null $daysahead Number of days ahead to look for exams (null = get all exam quizzes).
+     * @param int $limitnum Maximum number of records to return (0 = no limit).
+     * @return array Array of quiz exam records.
+     */
+    public function get_student_exams(int $userid, ?int $daysahead = null, int $limitnum = 0): array {
+        global $DB;
+
+        // Generate cache key based on parameters.
+        $daysaheadkey = $daysahead ?? 'null';
+        $cachekey = "studentexams_{$userid}_{$daysaheadkey}_{$limitnum}";
+
+        // Try to get cached result.
+        $cache = cachemanager::get_cache('studentexams', $cachekey);
+        if ($cache) {
+            return $cache;
+        }
+
+        // Get all active courses the user is enrolled in, excluding hidden courses.
+        $courseids = array_keys(enrol_get_users_courses($userid, true));
+
+        // No active courses found.
+        if (empty($courseids)) {
+            return [];
+        }
+
+        // Get exam AST codes from config and convert to array.
+        $examastcodes = get_config('local_sitsgradepush', 'exam_ast_codes');
+        $examastcodesarray = !empty($examastcodes) ? array_map('trim', explode(',', $examastcodes)) : [];
+        if (empty($examastcodesarray)) {
+            return [];
+        }
+
+        // Prepare SQL active courses IN clauses.
+        [$insqlcourse, $inparamscourse] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'course');
+
+        // Prepare SQL exam AST codes IN clauses.
+        [$insqlast, $inparamsast] = $DB->get_in_or_equal($examastcodesarray, SQL_PARAMS_NAMED, 'ast');
+
+        // Get quizzes that are mapped to exam AST codes in the active courses the user is enrolled in.
+        $sql = "SELECT q.id, q.name, q.timeopen, q.timeclose,
+                cm.id AS cmid, cm.course AS courseid,
+                mapping.id AS mappingid,
+                mab.astcode, mab.mabname
+                FROM {local_sitsgradepush_mapping} mapping
+                JOIN {local_sitsgradepush_mab} mab ON mab.id = mapping.componentgradeid
+                JOIN {course_modules} cm ON cm.id = mapping.sourceid AND cm.visible = 1
+                JOIN {quiz} q ON q.id = cm.instance
+                WHERE mapping.courseid $insqlcourse
+                AND mapping.sourcetype = 'mod'
+                AND mapping.moduletype = 'quiz'
+                AND mab.astcode $insqlast";
+
+        $params = array_merge($inparamscourse, $inparamsast);
+
+        // Filter quizzes by open time if daysahead is provided.
+        if ($daysahead !== null) {
+            $currenttime = di::get(clock::class)->time();
+            $endtime = $currenttime + ($daysahead * DAYSECS);
+            $sql .= " AND q.timeopen > :currenttime AND q.timeopen <= :endtime";
+            $params['currenttime'] = $currenttime;
+            $params['endtime'] = $endtime;
+        }
+        $sql .= " GROUP BY q.id";
+        $sql .= " ORDER BY q.timeopen ASC";
+        $results = $DB->get_records_sql($sql, $params, 0, $limitnum);
+
+        // Filter out quizzes which user doesn't have the permission to attempt the quiz, e.g. user is not a student.
+        foreach ($results as $result) {
+            $quiz = assessmentfactory::get_assessment('mod', $result->cmid);
+            if (!$quiz->is_user_a_participant($userid)) {
+                unset($results[$result->id]);
+            }
+        }
+
+        // Cache the results for 10 minutes.
+        cachemanager::set_cache('studentexams', $cachekey, $results, 10 * MINSECS);
+
+        return $results;
     }
 
     /**
