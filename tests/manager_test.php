@@ -20,6 +20,8 @@ use assign;
 use cache;
 use context_course;
 use context_module;
+use core\clock;
+use core\di;
 use local_sitsgradepush\api\client_factory;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
@@ -1661,5 +1663,53 @@ final class manager_test extends base_test_class {
         $assign->update_grade($grade);
 
         return $assignmodule1;
+    }
+
+    /**
+     * Test the get student exams method.
+     *
+     * @covers \local_sitsgradepush\manager::get_student_exams
+     * @return void
+     */
+    public function test_get_student_exams(): void {
+        global $DB;
+
+        // Set exam AST codes.
+        set_config('exam_ast_codes', 'ED05, EC03', 'local_sitsgradepush');
+
+        // Set up the testing environment.
+        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->quiz1->cmid));
+
+        // Update the quiz to have open time in 3 days and 1 hour.
+        $opentime = di::get(clock::class)->time() + (3 * DAYSECS) + HOURSECS;
+        $closetime = $opentime + (2 * HOURSECS);
+        $DB->set_field('quiz', 'timeopen', $opentime, ['id' => $this->quiz1->id]);
+        $DB->set_field('quiz', 'timeclose', $closetime, ['id' => $this->quiz1->id]);
+        $DB->set_field('quiz', 'timelimit', HOURSECS, ['id' => $this->quiz1->id]);
+
+        // Test no exams are returned when component grade is not mapped to exam AST code.
+        // Currently mapped to 'ED03' which is not set in exam AST code.
+        $exams = $this->manager->get_student_exams($this->student1->id, 7);
+        $this->assertEmpty($exams);
+
+        // Update component grade to exam AST code.
+        $DB->set_field('local_sitsgradepush_mab', 'astcode', 'EC03', ['id' => $this->mab1->id]);
+
+        // Test exam is not returned when daysahead is 2 (exam is in 3 days and 1 hour).
+        $exams = $this->manager->get_student_exams($this->student1->id, 2);
+        $this->assertEmpty($exams);
+
+        // Test exam is returned when daysahead is 3 (exam is in 3 days, includes the whole 3rd day).
+        $exams = $this->manager->get_student_exams($this->student1->id, 3);
+        $this->assertCount(1, $exams);
+
+        // Test exam is correct.
+        $exam = reset($exams);
+        $this->assertEquals($this->quiz1->id, $exam->id);
+
+        // Verify result is from cache (should return same result even after changing data).
+        $DB->set_field('quiz', 'name', 'Changed Name', ['id' => $this->quiz1->id]);
+        $exams2 = $this->manager->get_student_exams($this->student1->id, 3);
+        $this->assertEquals($exams, $exams2);
     }
 }

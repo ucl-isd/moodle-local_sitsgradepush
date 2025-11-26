@@ -103,6 +103,14 @@ if ($hassiteconfig) {
             'EXAMMDLE'
         ));
 
+        // Set exam assessment type codes, separated by comma.
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/exam_ast_codes',
+            get_string('settings:examastcodes', 'local_sitsgradepush'),
+            get_string('settings:examastcodes:desc', 'local_sitsgradepush'),
+            ''
+        ));
+
         // Set the concurrent running ad-hoc tasks.
         $settings->add(new admin_setting_configtext(
             'local_sitsgradepush/concurrent_running_tasks',

@@ -51,4 +51,9 @@ $definitions = [
         'simplekeys' => true,
         'simpledata' => true,
     ],
+    'studentexams' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => false,
+    ],
 ];
