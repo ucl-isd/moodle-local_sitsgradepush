@@ -17,6 +17,8 @@
 namespace local_sitsgradepush;
 
 use context_course;
+use core\clock;
+use core\di;
 use core_course\customfield\course_handler;
 use DirectoryIterator;
 use local_sitsgradepush\api\client_factory;
@@ -25,7 +27,6 @@ use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\assessment\unknownassessment;
-use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\output\pushrecord;
 use local_sitsgradepush\submission\submissionfactory;
 
@@ -1179,7 +1180,7 @@ class manager {
         $lsaendateplusweekdelay = $lsaenddate + \block_lifecycle\manager::get_weeks_delay_in_seconds();
 
         // Course is not current academic year course.
-        if (time() > $lsaendateplusweekdelay) {
+        if (di::get(clock::class)->time() > $lsaendateplusweekdelay) {
             return false;
         }
 

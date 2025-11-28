@@ -109,8 +109,8 @@ class sora extends extension {
             $newgroup->picture = 0;
             $newgroup->visibility = GROUPS_VISIBILITY_OWN;
             $newgroup->hidepicture = 0;
-            $newgroup->timecreated = time();
-            $newgroup->timemodified = time();
+            $newgroup->timecreated = $this->clock->time();
+            $newgroup->timemodified = $this->clock->time();
             $groupid = groups_create_group($newgroup);
         }
 
@@ -253,6 +253,9 @@ class sora extends extension {
                 if (!$assessment->can_assessment_apply_sora($this, $mapping->id)) {
                     continue;
                 }
+
+                // Set the SITS mapping ID for the assessment.
+                $assessment->set_sits_mapping_id($mapping->id);
 
                 // Apply the extension to the assessment.
                 $assessment->apply_extension($this);

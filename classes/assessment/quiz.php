@@ -143,11 +143,8 @@ class quiz extends activity {
      * @return void
      */
     protected function apply_ec_extension(ec $ec): void {
-        // EC is using a new deadline without time. Extract the time part from the original deadline.
-        $time = date('H:i:s', $this->get_end_date());
-
-        // Get the new date and time.
-        $newduedate = strtotime($ec->get_new_deadline() . ' ' . $time);
+        // Calculate the new due date.
+        $newduedate = $this->calculate_ec_new_duedate($ec);
 
         // Pre-existing override.
         $preexistingoverride = $this->get_override_record($ec->get_userid());
@@ -170,26 +167,19 @@ class quiz extends activity {
         // Get the updated quiz's override record.
         $quizoverride = $this->get_override_record($ec->get_userid());
 
-        // Get active EC override for the student if any.
-        $mtoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
-            $this->sitsmappingid,
-            $this->get_id(),
-            extensionmanager::EXTENSION_EC,
-            $ec->get_userid()
-        );
-
-        // Get the EC/DAP request identifier.
-        $requestidentifier = $ec->get_latest_identifier() ?: null;
+        // Get active EC override for the student if any using the helper method.
+        $mtoverride = $this->get_active_ec_override($ec->get_userid());
 
         // Save override record in marks transfer overrides table.
         $this->save_override(
+            extensionmanager::EXTENSION_EC,
             $this->sitsmappingid,
             $ec->get_userid(),
             $mtoverride,
             $quizoverride,
             $preexistingoverride,
             null,
-            $requestidentifier
+            $ec->get_latest_identifier() ?: null
         );
     }
 
@@ -248,7 +238,7 @@ class quiz extends activity {
      * @return array
      * @throws \dml_exception
      */
-    protected function get_assessment_sora_overrides() {
+    protected function get_assessment_sora_overrides(): array {
         global $DB;
         // Find all the group overrides for the quiz.
         $sql = 'SELECT qo.* FROM {quiz_overrides} qo

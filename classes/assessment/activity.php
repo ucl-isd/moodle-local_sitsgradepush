@@ -18,6 +18,8 @@ namespace local_sitsgradepush\assessment;
 
 use core\context\module;
 use grade_item;
+use local_sitsgradepush\extension\ec;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use moodle_exception;
 use moodle_url;
@@ -246,6 +248,33 @@ abstract class activity extends assessment {
     }
 
     /**
+     * Calculate the new due date for an EC extension by combining the EC deadline with the original assessment time.
+     *
+     * @param ec $ec The EC extension object.
+     * @return int The new due date as a Unix timestamp.
+     */
+    protected function calculate_ec_new_duedate(ec $ec): int {
+        $originalduedate = $this->get_end_date();
+        $time = date('H:i:s', $originalduedate);
+        return strtotime($ec->get_new_deadline() . ' ' . $time);
+    }
+
+    /**
+     * Get the active EC override for a specific user from the marks transfer overrides table.
+     *
+     * @param int $userid The Moodle user ID.
+     * @return mixed The active EC override record or false if not found.
+     */
+    protected function get_active_ec_override(int $userid): mixed {
+        return extensionmanager::get_active_user_mt_overrides_by_mapid(
+            $this->sitsmappingid,
+            $this->get_id(),
+            extensionmanager::EXTENSION_EC,
+            $userid
+        );
+    }
+
+    /**
      * Set the module instance.
      * @return void
      * @throws \dml_exception
@@ -330,5 +359,25 @@ abstract class activity extends assessment {
                 groups_delete_group($override->groupid);
             }
         }
+    }
+
+    /**
+     * Delete RAA overrides for a user.
+     * Override this method in activity subclasses if not support override groups for that activity.
+     *
+     * @param int $userid User ID.
+     * @return void
+     */
+    protected function delete_raa_overrides(int $userid): void {
+        $this->remove_user_from_previous_sora_groups($userid);
+    }
+
+    /**
+     * Get all SORA override groups for the assessment.
+     *
+     * @return array
+     */
+    protected function get_assessment_sora_overrides(): array {
+        return [];
     }
 }

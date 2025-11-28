@@ -44,7 +44,7 @@ class extension_common extends base_test_class {
     /** @var \stdClass Default test quiz 1*/
     protected \stdClass $quiz1;
 
-    /** @var \stdClass Default test coursework 1*/
+    /** @var \stdClass|null Default test coursework 1*/
     protected ?\stdClass $coursework1;
 
     /** @var clock $clock */
@@ -118,7 +118,8 @@ class extension_common extends base_test_class {
         $courseworkpluginexists = \core_component::get_component_directory('mod_coursework');
         // Create test coursework 1 if coursework is installed.
         $this->coursework1 = $courseworkpluginexists
-            ? $dg->create_module('coursework',
+            ? $dg->create_module(
+                'coursework',
                 [
                     'name' => 'Test Coursework 1',
                     'course' => $this->course1->id,
