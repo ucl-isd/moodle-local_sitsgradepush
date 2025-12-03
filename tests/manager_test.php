@@ -227,7 +227,7 @@ final class manager_test extends base_test_class {
         $apiclientproperty->setValue($this->manager, $this->get_apiclient_for_testing(false, $componentgradesdata));
         $this->manager->fetch_component_grades_from_sits([$modocc]);
         $mabs = $DB->get_records('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF']);
-        $this->assertCount(2, $mabs);
+        $this->assertCount(3, $mabs);
 
         // Test api is not called again if the data is already cached.
         $DB->delete_records('local_sitsgradepush_mab');
@@ -256,8 +256,8 @@ final class manager_test extends base_test_class {
         $apiclientproperty = $this->reflectionmanager->getProperty('apiclient');
         $apiclientproperty->setValue($this->manager, $this->get_apiclient_for_testing(true));
 
-        // Two component grades exist at the beginning.
-        $this->assertCount(2, $DB->get_records('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF']));
+        // Three component grades exist at the beginning.
+        $this->assertCount(3, $DB->get_records('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF']));
 
         $modocc = new \stdClass();
         $modocc->mod_code = 'LAWS0024';
@@ -275,6 +275,9 @@ final class manager_test extends base_test_class {
 
         // Verify component grade 002 is deleted as it is not mapped.
         $this->assertEmpty($DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002'], 'id'));
+
+        // Verify component grade 003 is deleted as it is not mapped.
+        $this->assertEmpty($DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '003'], 'id'));
     }
 
     /**
@@ -387,7 +390,7 @@ final class manager_test extends base_test_class {
         // Set up the test environment.
         $this->setup_testing_environment();
 
-        // This module occurrence has two component grades.
+        // This module occurrence has three component grades.
         $modocc = new \stdClass();
         $modocc->mod_code = 'LAWS0024';
         $modocc->mod_occ_name = 'Family Law';
@@ -395,7 +398,7 @@ final class manager_test extends base_test_class {
         $modocc->mod_occ_psl_code = 'T1/2';
         $modocc->mod_occ_year_code = '2023';
 
-        $this->assertCount(2, $this->manager->get_local_component_grades([$modocc])[0]->componentgrades);
+        $this->assertCount(3, $this->manager->get_local_component_grades([$modocc])[0]->componentgrades);
 
         // Test unsupported component grade.
         $modocc->mod_code = 'CCME0158';
@@ -465,7 +468,7 @@ final class manager_test extends base_test_class {
      */
     public function test_save_component_grades(): void {
         global $DB;
-        // Two component grades to save.
+        // Three component grades to save.
         $sitscomponentgrades = tests_data_provider::get_sits_component_grades_data();
 
         // Get the module occurrence data from the MABs.
@@ -480,7 +483,7 @@ final class manager_test extends base_test_class {
         $mabs = $DB->get_records('local_sitsgradepush_mab');
 
         // Test that the component grades have been saved.
-        $this->assertCount(2, $mabs);
+        $this->assertCount(3, $mabs);
 
         // Modify the component grades.
         $sitscomponentgrades[0]['MAB_NAME'] = 'Test update';
@@ -490,11 +493,12 @@ final class manager_test extends base_test_class {
         $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
         $this->assertEquals('Test update', $mab->mabname);
 
-        // Simulate only component grade 001 returned from SITS, because 002 is not mapped so it can be deleted.
+        // Simulate only component grade 001 returned from SITS, because 002 and 003 are not mapped so it can be deleted.
         $this->manager->save_component_grades([$firstmab], $occ);
 
-        // Verify 002 is deleted.
+        // Verify 002 and 003 are deleted.
         $this->assertFalse($DB->record_exists('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']));
+        $this->assertFalse($DB->record_exists('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '003']));
     }
 
     /**

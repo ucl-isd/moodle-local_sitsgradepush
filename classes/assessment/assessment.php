@@ -95,9 +95,9 @@ abstract class assessment implements iassessment {
         if ($extension instanceof ec) {
             $this->apply_ec_extension($extension);
         } else if ($extension instanceof sora) {
-            // Remove user from all SORA groups in this assessment.
+            // Remove RAA override for this student if time extension is 0.
             if ($extension->get_time_extension() == 0) {
-                $this->remove_user_from_previous_sora_groups($extension->get_userid());
+                $this->delete_raa_overrides($extension->get_userid());
                 return;
             }
 
@@ -328,6 +328,7 @@ abstract class assessment implements iassessment {
     /**
      * Save override to marks transfer overrides table.
      *
+     * @param string $extensiontype
      * @param int $mapid SITS mapping ID.
      * @param int $userid Moodle user ID.
      * @param \stdClass|false $mtoverride Marks transfer override record.
@@ -341,6 +342,7 @@ abstract class assessment implements iassessment {
      * @throws \moodle_exception
      */
     public function save_override(
+        string $extensiontype,
         int $mapid,
         int $userid,
         \stdClass|false $mtoverride,
@@ -365,8 +367,6 @@ abstract class assessment implements iassessment {
         if ($requestidentifier !== null) {
             $data['requestidentifier'] = $requestidentifier;
         }
-
-        $extensiontype = ($groupid) ? extensionmanager::EXTENSION_SORA : extensionmanager::EXTENSION_EC;
 
         // Update existing record without updating original override data field.
         if ($mtoverride) {

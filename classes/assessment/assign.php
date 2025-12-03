@@ -144,13 +144,9 @@ class assign extends activity {
     protected function apply_ec_extension(ec $ec): void {
         global $CFG;
         require_once($CFG->dirroot . '/mod/assign/locallib.php');
-        $originalduedate = $this->get_end_date();
 
-        // EC is using a new deadline without time. Extract the time part of the original due date.
-        $time = date('H:i:s', $originalduedate);
-
-        // Get the new date and time.
-        $newduedate = strtotime($ec->get_new_deadline() . ' ' . $time);
+        // Calculate the new due date.
+        $newduedate = $this->calculate_ec_new_duedate($ec);
 
         // Pre-existing override.
         $preexistingoverride = $this->get_override_record($ec->get_userid());
@@ -162,25 +158,18 @@ class assign extends activity {
         $assignoverride = $this->get_override_record($ec->get_userid());
 
         // Get active EC override for the student if any.
-        $mtoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
-            $this->sitsmappingid,
-            $this->get_id(),
-            extensionmanager::EXTENSION_EC,
-            $ec->get_userid()
-        );
-
-        // Get the EC/DAP request identifier.
-        $requestidentifier = $ec->get_latest_identifier() ?: null;
+        $mtoverride = $this->get_active_ec_override($ec->get_userid());
 
         // Save override record in marks transfer overrides table.
         $this->save_override(
+            extensionmanager::EXTENSION_EC,
             $this->sitsmappingid,
             $ec->get_userid(),
             $mtoverride,
             $assignoverride,
             $preexistingoverride,
             null,
-            $requestidentifier
+            $ec->get_latest_identifier() ?: null
         );
     }
 

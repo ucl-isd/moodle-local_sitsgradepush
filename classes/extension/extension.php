@@ -30,7 +30,7 @@ use local_sitsgradepush\manager;
  */
 abstract class extension implements iextension {
     /** @var array Supported module types */
-    const SUPPORTED_MODULE_TYPES = ['assign', 'quiz'];
+    const SUPPORTED_MODULE_TYPES = ['assign', 'quiz', 'coursework'];
 
     /** @var string AWS datasource */
     const DATASOURCE_AWS = 'aws';
