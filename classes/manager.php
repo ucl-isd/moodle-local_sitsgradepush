@@ -1831,6 +1831,47 @@ class manager {
     }
 
     /**
+     * Get MAB options for assessment wizard - unmapped component grades (MABs).
+     *
+     * @param int $courseid
+     * @return array
+     */
+    public function get_mab_options_for_assessment_wizard(int $courseid): array {
+        global $DB;
+
+        $modoccs = $this->get_component_grade_options($courseid);
+        if (empty($modoccs)) {
+            return [];
+        }
+
+        // Extract all mab IDs.
+        $mabids = [];
+        foreach ($modoccs as $modocc) {
+            foreach ($modocc->componentgrades as $mab) {
+                // Skip MAB that is not valid for mapping.
+                if (!$mab->available) {
+                    continue;
+                }
+                $mabids[] = $mab->id;
+            }
+        }
+
+        if (empty($mabids)) {
+            return [];
+        }
+
+        // Get all unmapped mabs.
+        [$insql, $inparams] = $DB->get_in_or_equal($mabids, SQL_PARAMS_NAMED);
+        $sql = "SELECT mab.*
+                FROM {" . self::TABLE_COMPONENT_GRADE . "} mab
+                LEFT JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} amap ON amap.componentgradeid = mab.id
+                WHERE mab.id $insql AND amap.componentgradeid IS NULL
+                ORDER BY mab.mapcode, mab.mabseq";
+
+        return $DB->get_records_sql($sql, $inparams);
+    }
+
+    /**
      * Delete unmapped local component grades (MABs).
      *
      * @param \stdClass $occ

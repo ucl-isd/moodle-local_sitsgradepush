@@ -366,6 +366,33 @@ final class manager_test extends base_test_class {
     }
 
     /**
+     * Test the get mab options for assessment wizard method.
+     *
+     * @covers \local_sitsgradepush\manager::get_mab_options_for_assessment_wizard
+     * @return void
+     */
+    public function test_get_mab_options_for_assessment_wizard(): void {
+        global $DB;
+
+        // Set up the test environment with 1 mapped component grade.
+        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
+
+        // Test returns unmapped mabs for course1.
+        $mabs = $this->manager->get_mab_options_for_assessment_wizard($this->course1->id);
+        $this->assertNotEmpty($mabs);
+
+        // Verify only unmapped mabs are returned.
+        foreach ($mabs as $mab) {
+            $mapped = $DB->record_exists('local_sitsgradepush_mapping', ['componentgradeid' => $mab->id]);
+            $this->assertFalse($mapped);
+        }
+
+        // Test returns empty array for course with no module occurrence mappings.
+        $mabs = $this->manager->get_mab_options_for_assessment_wizard($this->course2->id);
+        $this->assertEmpty($mabs);
+    }
+
+    /**
      * Test the get decoded mod occ mav method.
      *
      * @covers \local_sitsgradepush\manager::get_decoded_mod_occ_mav
