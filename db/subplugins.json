@@ -1,5 +1,8 @@
 {
   "plugintypes" : {
-    "sitsapiclient" : "local\/sitsgradepush\/apiclients"
+    "sitsapiclient" : "local/sitsgradepush/apiclients"
+  },
+  "subplugintypes" : {
+    "sitsapiclient" : "apiclients"
   }
 }
