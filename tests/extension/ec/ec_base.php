@@ -69,12 +69,12 @@ class ec_base extends extension_common {
     }
 
     /**
-     * Setup mock manager with empty EC data (for deleted DAP events).
-     *
+     * Setup mock manager with empty EC data.
+     * @param int $studentid The student ID to setup
      * @return void
      */
-    protected function setup_mock_manager_with_empty_ec(): void {
-        $this->setup_mock_manager(['moodleuserid' => $this->student1->id, 'extenuating_circumstance' => []]);
+    protected function setup_mock_manager_with_empty_ec(int $studentid): void {
+        $this->setup_mock_manager(['moodleuserid' => $studentid, 'extenuating_circumstance' => []]);
     }
 
     /**

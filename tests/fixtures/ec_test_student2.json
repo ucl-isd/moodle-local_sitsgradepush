@@ -1,0 +1,70 @@
+{
+  "identifier": "BCDEA08",
+  "forename": "Peter",
+  "display_name": null,
+  "surname": "Parker",
+  "userid": "BCDEFGH",
+  "ucl_email": null,
+  "association": {
+    "identifier": "87654321/1",
+    "type": {
+      "name": "U",
+      "code": "Undergraduate"
+    },
+    "supplementary": {
+      "student_code": "87654321",
+      "student_programme_route_code": "87654321/1",
+      "candidate_number": "KKTNQ8",
+      "exam_centre_code": "MAIN"
+    },
+    "organisation_unit": {
+      "code": "COMPS_ENG",
+      "name": "Department Of Computer Science",
+      "type": "Department",
+      "link": {
+        "code": "ENG",
+        "name": "Faculty Of Engineering Sciences",
+        "type": "Faculty"
+      }
+    }
+  },
+  "student_assessment": {
+    "identifier ": null,
+    "resit_number": "0",
+    "start_datetime": null,
+    "end_datetime": null,
+    "duration": null,
+    "submission_datetime": null,
+    "marker": null,
+    "actual_mark": null,
+    "actual_grade": null,
+    "agreed_mark": null,
+    "agreed_grade": null,
+    "sora": {
+      "extra_duration": null,
+      "rest_duration": null
+    }
+  },
+  "extenuating_circumstance": [
+    {
+      "identifier": "EC-BCDEA08-005",
+      "module_code": "COMP0101",
+      "record_type": "A",
+      "sequence_number": "1",
+      "cor_due_dt": null,
+      "new_due_date": "2025-03-20",
+      "original_due_date": "2025-03-05",
+      "approved_mitigation": "298"
+    },
+    {
+      "identifier": "DAP-BCDEA08-002",
+      "module_code": "COMP0101",
+      "record_type": "A",
+      "sequence_number": "1",
+      "cor_due_dt": "2025-03-05",
+      "new_due_date": "2025-03-10",
+      "original_due_date": "2025-03-05",
+      "approved_mitigation": "128"
+    }
+  ]
+}
