@@ -1,0 +1,25 @@
+{
+  "identifier": "466e0cc9-2345-6789-0b12-406d4g258911",
+  "timestamp": "20251103T173857.105986UTC",
+  "event": {
+    "name": "student_extenuating_circumstances",
+    "operation": "update",
+    "source": "sits"
+  },
+  "changes": [
+    {
+      "attribute": "extenuating_circumstances.process_status",
+      "from": "I",
+      "to": "D"
+    }
+  ],
+  "entity": {
+    "student_extenuating_circumstances": {
+      "extenuating_circumstances": {
+        "request": {
+          "identifier": "EC-BCDEA08-005"
+        }
+      }
+    }
+  }
+}

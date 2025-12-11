@@ -79,14 +79,12 @@ final class ec_general_test extends ec_base {
     /**
      * Test deleted DAP event processing.
      *
-     * @covers \local_sitsgradepush\extension\ec::is_deleted_dap_event
-     * @covers \local_sitsgradepush\extension\ec::handle_deleted_dap_event
+     * @covers \local_sitsgradepush\extension\ec::is_deleted_event
+     * @covers \local_sitsgradepush\extension\ec::handle_deleted_event
      * @covers \local_sitsgradepush\extension\ec::set_properties_from_aws_message
      * @covers \local_sitsgradepush\extension\ec::process_extension
      * @covers \local_sitsgradepush\extension\ec_queue_processor::process_message
      * @return void
-     * @throws \dml_exception
-     * @throws \moodle_exception
      */
     public function test_deleted_dap_event(): void {
         global $DB;
@@ -112,7 +110,7 @@ final class ec_general_test extends ec_base {
 
         // Process deleted DAP event with empty EC data.
         $deletedmessage = file_get_contents(__DIR__ . '/../../fixtures/deleted_dap_event_data.json');
-        $this->setup_mock_manager_with_empty_ec();
+        $this->setup_mock_manager_with_empty_ec($this->student1->id);
         $result = $method->invoke($processor, ['Message' => $deletedmessage]);
 
         // Verify override was deleted and backup marked as restored.
@@ -122,6 +120,61 @@ final class ec_general_test extends ec_base {
         $overridebackup = $DB->get_record('local_sitsgradepush_overrides', [
             'mapid' => $this->mappingid,
             'userid' => $this->student1->id,
+            'extensiontype' => extensionmanager::EXTENSION_EC,
+        ]);
+
+        // Verify restored fields are set.
+        $this->assertNotEmpty($overridebackup->restored_by);
+        $this->assertNotEmpty($overridebackup->timerestored);
+    }
+
+    /**
+     * Test deleted EC event processing.
+     *
+     * @covers \local_sitsgradepush\extension\ec::is_deleted_event
+     * @covers \local_sitsgradepush\extension\ec::handle_deleted_event
+     * @covers \local_sitsgradepush\extension\ec::set_properties_from_aws_message
+     * @covers \local_sitsgradepush\extension\ec::process_extension
+     * @covers \local_sitsgradepush\extension\ec_queue_processor::process_message
+     * @return void
+     */
+    public function test_deleted_ec_event(): void {
+        global $DB;
+        $assign = $this->setup_common_test_data();
+
+        // Set student2 in mock manager.
+        $this->setup_mock_manager(json_decode(file_get_contents(__DIR__ . '/../../fixtures/ec_test_student2.json'), true));
+
+        // Process initial EC extension message.
+        $eceventdata = file_get_contents(__DIR__ . '/../../fixtures/ec_event_data_ec_identifier.json');
+        $processor = new ec_queue_processor();
+        $method = $this->get_accessible_method($processor, 'process_message');
+        $result = $method->invoke($processor, ['Message' => $eceventdata]);
+
+        // Verify override was created with EC identifier.
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $result['status']);
+        $this->assertNotEmpty($DB->get_record('assign_overrides', ['assignid' => $assign->id, 'userid' => $this->student2->id]));
+
+        $overridebackup = $DB->get_record('local_sitsgradepush_overrides', [
+            'mapid' => $this->mappingid,
+            'userid' => $this->student2->id,
+            'extensiontype' => extensionmanager::EXTENSION_EC,
+        ]);
+        $this->assertNotEmpty($overridebackup);
+        $this->assertEquals('EC-BCDEA08-005', $overridebackup->requestidentifier);
+
+        // Process deleted EC event with empty EC data.
+        $deletedecmessage = file_get_contents(__DIR__ . '/../../fixtures/deleted_ec_event_data.json');
+        $this->setup_mock_manager_with_empty_ec($this->student2->id);
+        $result = $method->invoke($processor, ['Message' => $deletedecmessage]);
+
+        // Verify override was deleted and backup marked as restored.
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $result['status']);
+        $this->assertFalse($DB->get_record('assign_overrides', ['assignid' => $assign->id, 'userid' => $this->student2->id]));
+
+        $overridebackup = $DB->get_record('local_sitsgradepush_overrides', [
+            'mapid' => $this->mappingid,
+            'userid' => $this->student2->id,
             'extensiontype' => extensionmanager::EXTENSION_EC,
         ]);
 

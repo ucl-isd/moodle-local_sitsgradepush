@@ -1,0 +1,58 @@
+{
+  "identifier": "1fdb5b6c-d82c-5c10-9956-d046e650d62g",
+  "timestamp": "20250602T114615.363303UTC",
+  "event":
+  {
+    "name": "student_extenuating_circumstances",
+    "operation": "update",
+    "source": "sits"
+  },
+  "changes": [
+    {
+      "attribute":"period_slot_code",
+      "from":"",
+      "to":"T1"
+    }
+  ],
+  "entity":
+  {
+    "student_extenuating_circumstances":
+    {
+      "extenuating_circumstances":
+      {
+        "request":
+        {
+          "identifier": "EC-BCDEA08-005",
+          "status": "COMPLETE",
+          "decision": "AR",
+          "decision_type": "DECISION",
+          "approved_mitigation": "298"
+        },
+        "record_type":
+        {
+          "code": "A",
+          "name": "Student Assessment"
+        },
+        "original_due_date": "2024-12-11",
+        "new_due_date": "20/Mar/2025",
+        "process_status": "P",
+        "process_status_detail": "Processed"
+      },
+      "student":
+      {
+        "identifier": "GFEDC01",
+        "student_code": "87654321",
+        "userid": "GFEDCBA"
+      },
+      "assessment_component":
+      {
+        "identifier": "LAWS0024A6UF-001"
+      },
+      "student_assessment ":
+      {
+        "identifier ": "87654321_1-2024-T1-0",
+        "reassessment_sequence": "0"
+      }
+    }
+  }
+}

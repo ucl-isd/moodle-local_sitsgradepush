@@ -38,6 +38,9 @@ class extension_common extends base_test_class {
     /** @var \stdClass Default test student 1 */
     protected \stdClass $student1;
 
+    /** @var \stdClass Default test student 2 */
+    protected \stdClass $student2;
+
     /** @var \stdClass Default test assignment 1 */
     protected \stdClass $assign1;
 
@@ -87,8 +90,13 @@ class extension_common extends base_test_class {
                 ['shortname' => 'course_year', 'value' => $this->clock->now()->format('Y')],
             ]]
         );
+
+        // Create test students and enrol them in course 1.
         $this->student1 = $dg->create_user(['idnumber' => '12345678']);
         $dg->enrol_user($this->student1->id, $this->course1->id, 'student');
+
+        $this->student2 = $dg->create_user(['idnumber' => '87654321']);
+        $dg->enrol_user($this->student2->id, $this->course1->id, 'student');
 
         $assessmentstartdate = strtotime('2025-02-17 09:00:00'); // Start date: 2025-02-17 09:00:00.
         $assessmentenddate = strtotime('2025-02-17 12:00:00'); // End date: 2025-02-17 12:00:00.
