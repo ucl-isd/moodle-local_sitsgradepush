@@ -40,8 +40,11 @@ class ec extends extension {
     /** @var string Identifier for the EC/DAP request which has latest new due date */
     protected string $latestidentifier = '';
 
-    /** @var bool Indicate if it is a processable deleted DAP event */
-    protected bool $deleteddapprocessable = false;
+    /** @var bool Indicate if it is a processable deleted event */
+    protected bool $deletedeventprocessable = false;
+
+    /** @var string Reason why deleted event is not processable */
+    protected string $deletedeventnotprocessablereason = '';
 
     /**
      * Returns the new deadline.
@@ -138,26 +141,25 @@ class ec extends extension {
         // Set event data.
         $this->eventdata = $studentec;
 
-        // Check if this is a deleted DAP event.
-        if ($this->is_deleted_dap_event()) {
-            // Handle deleted DAP event by looking up override record.
-            if ($this->handle_deleted_dap_event()) {
+        // Check if this is a deleted event.
+        if ($this->is_deleted_event()) {
+            // Handle deleted event by looking up override record.
+            if ($this->handle_deleted_event()) {
                 // Set data source and mark data as set.
                 $this->datasource = self::DATASOURCE_AWS;
                 $this->dataisset = true;
-                $this->deleteddapprocessable = true;
-                return;
+                $this->deletedeventprocessable = true;
             }
+        } else {
+            // Normal EC message processing.
+            $this->mabidentifier = $studentec->assessment_component->identifier ?? '';
+            $this->studentcode = $studentec->student->student_code;
+            $this->set_userid($this->studentcode);
+
+            // Set data source.
+            $this->datasource = self::DATASOURCE_AWS;
+            $this->dataisset = true;
         }
-
-        // Normal EC message processing.
-        $this->mabidentifier = $studentec->assessment_component->identifier;
-        $this->studentcode = $studentec->student->student_code;
-        $this->set_userid($this->studentcode);
-
-        // Set data source.
-        $this->datasource = self::DATASOURCE_AWS;
-        $this->dataisset = true;
     }
 
     /**
@@ -194,12 +196,21 @@ class ec extends extension {
     }
 
     /**
-     * Check if this is a processable deleted DAP event.
+     * Check if this is a processable deleted event.
      *
      * @return bool True if this is a processable deleted DAP event, false otherwise.
      */
-    public function is_deleted_dap_processable(): bool {
-        return $this->deleteddapprocessable;
+    public function is_deleted_event_processable(): bool {
+        return $this->deletedeventprocessable;
+    }
+
+    /**
+     * Get the reason why deleted event is not processable.
+     *
+     * @return string
+     */
+    public function get_deleted_event_not_processable_reason(): string {
+        return $this->deletedeventnotprocessablereason;
     }
 
     /**
@@ -237,11 +248,11 @@ class ec extends extension {
     }
 
     /**
-     * Check if this is a deleted DAP event.
+     * Check if this is a deleted event.
      *
-     * @return bool True if this is a deleted DAP event.
+     * @return bool True if this is a deleted event.
      */
-    public function is_deleted_dap_event(): bool {
+    public function is_deleted_event(): bool {
         // Check if process_status changed to 'D'.
         $statusdeleted = false;
         if (!empty($this->extensionchanges)) {
@@ -253,28 +264,21 @@ class ec extends extension {
             }
         }
 
-        // Not a deleted event.
-        if (!$statusdeleted) {
-            return false;
-        }
-
-        // Check if request identifier starts with "DAP-".
-        $identifier = $this->eventdata->extenuating_circumstances->request->identifier ?? '';
-        return str_starts_with($identifier, 'DAP-');
+        return $statusdeleted;
     }
 
     /**
      * Handle deleted DAP event by looking up override record and setting EC properties.
      *
      * @return bool True if properties were set successfully, false otherwise.
-     * @throws \dml_exception
      */
-    protected function handle_deleted_dap_event(): bool {
+    protected function handle_deleted_event(): bool {
         global $DB;
 
         // Get the DAP request identifier.
         $identifier = $this->eventdata->extenuating_circumstances->request->identifier ?? '';
         if (empty($identifier)) {
+            $this->deletedeventnotprocessablereason = 'Request identifier is empty';
             return false;
         }
 
@@ -286,12 +290,20 @@ class ec extends extension {
         ]);
 
         if (!$override) {
+            $this->deletedeventnotprocessablereason = sprintf(
+                'No active override found for request identifier: %s',
+                $identifier
+            );
             return false;
         }
 
         // Get user's idnumber from user table.
         $user = $DB->get_record('user', ['id' => $override->userid], 'idnumber');
         if (!$user) {
+            $this->deletedeventnotprocessablereason = sprintf(
+                'User idnumber not found for user ID: %d',
+                $override->userid
+            );
             return false;
         }
 
@@ -301,6 +313,10 @@ class ec extends extension {
         // Get MAB info from mapping id.
         $mapping = manager::get_manager()->get_mab_and_map_info_by_mapping_id($override->mapid);
         if (empty($mapping)) {
+            $this->deletedeventnotprocessablereason = sprintf(
+                'Mapping not found for mapping ID: %d',
+                $override->mapid
+            );
             return false;
         }
 
