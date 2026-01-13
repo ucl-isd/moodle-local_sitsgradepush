@@ -16,7 +16,10 @@
 
 namespace local_sitsgradepush;
 
+use grade_category;
 use local_sitsgradepush\assessment\assessmentfactory;
+use mod_coursework\models\coursework;
+use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -31,26 +34,26 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_pro
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class assesstype_test extends \advanced_testcase {
-    /** @var \stdClass Test course */
-    private \stdClass $course;
+    /** @var stdClass Test course */
+    private stdClass $course;
 
-    /** @var \stdClass Test grade category */
-    private \stdClass $gradecategory;
+    /** @var stdClass Test grade category */
+    private stdClass $gradecategory;
 
-    /** @var \stdClass Test grade item */
-    private \stdClass $gradeitem;
+    /** @var stdClass Test grade item */
+    private stdClass $gradeitem;
 
-    /** @var \stdClass Test assignment */
-    private \stdClass $assign;
+    /** @var stdClass Test assignment */
+    private stdClass $assign;
 
-    /** @var \stdClass Test quiz */
-    private \stdClass $quiz;
+    /** @var stdClass Test quiz */
+    private stdClass $quiz;
 
-    /** @var \stdClass Test coursework */
-    private \stdClass $coursework;
+    /** @var ?stdClass Test coursework */
+    private ?stdClass $coursework;
 
-    /** @var \grade_category Course root grade category */
-    private \grade_category $coursegradecategory;
+    /** @var grade_category Course root grade category */
+    private grade_category $coursegradecategory;
 
     /** @var array Component grade records */
     private array $mabs = [];
@@ -111,12 +114,19 @@ final class assesstype_test extends \advanced_testcase {
         $this->quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $this->course->id]);
 
         $courseworkpluginexists = \core_component::get_component_directory('mod_coursework');
-        $this->coursework = $courseworkpluginexists
+        $coursework = $courseworkpluginexists
             ? $this->getDataGenerator()->create_module('coursework', ['course' => $this->course->id])
             : null;
 
+        // Convert coursework to stdClass.
+        if ($coursework instanceof coursework) {
+            $this->coursework = base_test_class::convert_coursework_to_stdclass($coursework);
+        } else {
+            $this->coursework = null;
+        }
+
         // Get course root category.
-        $this->coursegradecategory = \grade_category::fetch(['courseid' => $this->course->id, 'parent' => null, 'depth' => 1]);
+        $this->coursegradecategory = grade_category::fetch(['courseid' => $this->course->id, 'parent' => null, 'depth' => 1]);
 
         // Add items to grade category.
         $this->add_item_to_category($this->gradeitem->id, $this->gradecategory->id);
@@ -128,7 +138,7 @@ final class assesstype_test extends \advanced_testcase {
 
         // Create assessment mapping.
         $mab = reset($this->mabs);
-        $mapping = new \stdClass();
+        $mapping = new stdClass();
         $mapping->courseid = $this->course->id;
         $mapping->sourcetype = assessmentfactory::SOURCETYPE_GRADE_CATEGORY;
         $mapping->sourceid = $this->gradecategory->id;
@@ -141,9 +151,9 @@ final class assesstype_test extends \advanced_testcase {
     /**
      * Create a grade item.
      *
-     * @return \stdClass
+     * @return stdClass
      */
-    private function create_grade_item(): \stdClass {
+    private function create_grade_item(): stdClass {
         return $this->getDataGenerator()->create_grade_item([
             'courseid' => $this->course->id,
             'itemname' => 'Grade item',
@@ -185,9 +195,9 @@ final class assesstype_test extends \advanced_testcase {
      *
      * @param int $categoryid Category ID.
      * @param array $itemsforcalc Items to include in calculation.
-     * @return \stdClass
+     * @return stdClass
      */
-    private function create_calculated_item(int $categoryid, array $itemsforcalc = []): \stdClass {
+    private function create_calculated_item(int $categoryid, array $itemsforcalc = []): stdClass {
         // Create a manual grade item with a calculation.
         $calculateditem = $this->getDataGenerator()->create_grade_item([
             'courseid' => $this->course->id,
@@ -222,20 +232,20 @@ final class assesstype_test extends \advanced_testcase {
      * @param int $sourceid Source ID.
      * @param string $sourcetype Source type.
      * @param int $mabindex Index of the mab to use (0-based).
-     * @return \stdClass
+     * @return stdClass
      */
     private function create_mapping(
         int $sourceid,
         string $sourcetype = assessmentfactory::SOURCETYPE_GRADE_ITEM,
         int $mabindex = 1
-    ): \stdClass {
+    ): stdClass {
         global $DB;
 
         // Get a different mab for each mapping.
         $mabs = array_values($this->mabs);
         $mab = $mabs[$mabindex];
 
-        $mapping = new \stdClass();
+        $mapping = new stdClass();
         $mapping->courseid = $this->course->id;
         $mapping->sourcetype = $sourcetype;
         $mapping->sourceid = $sourceid;
@@ -283,9 +293,9 @@ final class assesstype_test extends \advanced_testcase {
      *
      * @param string $sourcetype Source type.
      * @param int $sourceid Source ID.
-     * @return \stdClass
+     * @return stdClass
      */
-    private function get_mapping(string $sourcetype, int $sourceid): \stdClass {
+    private function get_mapping(string $sourcetype, int $sourceid): stdClass {
         global $DB;
 
         return $DB->get_record(
@@ -306,7 +316,7 @@ final class assesstype_test extends \advanced_testcase {
      */
     public function test_items_under_mapped_category(): void {
         // Get category's grade item.
-        $category = \grade_category::fetch(['id' => $this->gradecategory->id]);
+        $category = grade_category::fetch(['id' => $this->gradecategory->id]);
         $categorygradeitem = $category->load_grade_item();
 
         // Verify all items are locked.

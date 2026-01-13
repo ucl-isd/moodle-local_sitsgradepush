@@ -493,7 +493,7 @@ final class raa_coursework_test extends raa_base {
         // Enrol the student to the course.
         $this->getDataGenerator()->enrol_user($this->student1->id, $courseid, 'student');
 
-        return $coursework;
+        return self::convert_coursework_to_stdclass($coursework);
     }
 
     /**

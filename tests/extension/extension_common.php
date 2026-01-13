@@ -17,6 +17,7 @@
 namespace local_sitsgradepush;
 
 use core\clock;
+use mod_coursework\models\coursework;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -125,7 +126,7 @@ class extension_common extends base_test_class {
 
         $courseworkpluginexists = \core_component::get_component_directory('mod_coursework');
         // Create test coursework 1 if coursework is installed.
-        $this->coursework1 = $courseworkpluginexists
+        $coursework1 = $courseworkpluginexists
             ? $dg->create_module(
                 'coursework',
                 [
@@ -137,6 +138,14 @@ class extension_common extends base_test_class {
                 ]
             )
             : null;
+
+        // Convert coursework1 to stdClass if it exists.
+        if ($coursework1 instanceof coursework) {
+            // Convert coursework to stdClass.
+            $this->coursework1 = self::convert_coursework_to_stdclass($coursework1);
+        } else {
+            $this->coursework1 = null;
+        }
 
         // Set up the SITS grade push.
         $this->setup_sitsgradepush();
