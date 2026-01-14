@@ -1840,9 +1840,6 @@ class manager {
         global $DB;
 
         $modoccs = $this->get_component_grade_options($courseid);
-        if (empty($modoccs)) {
-            return [];
-        }
 
         // Extract all mab IDs.
         $mabids = [];
@@ -1862,7 +1859,7 @@ class manager {
 
         // Get all unmapped mabs.
         [$insql, $inparams] = $DB->get_in_or_equal($mabids, SQL_PARAMS_NAMED);
-        $sql = "SELECT mab.*
+        $sql = "SELECT mab.id, mab.mapcode, mab.mabseq, mab.mabname, mab.mabperc
                 FROM {" . self::TABLE_COMPONENT_GRADE . "} mab
                 LEFT JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} amap ON amap.componentgradeid = mab.id
                 WHERE mab.id $insql AND amap.componentgradeid IS NULL

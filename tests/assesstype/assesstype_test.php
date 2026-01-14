@@ -84,6 +84,7 @@ final class assesstype_test extends \advanced_testcase {
     private function setup_test_data(): void {
         global $CFG, $DB;
         require_once($CFG->libdir . '/gradelib.php');
+        require_once(__DIR__ . '/../base_test_class.php');
 
         // Import test data.
         tests_data_provider::import_sitsgradepush_grade_components();
