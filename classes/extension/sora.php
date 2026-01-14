@@ -16,9 +16,13 @@
 
 namespace local_sitsgradepush\extension;
 
+use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extension\models\raa_event_message;
+use local_sitsgradepush\extension\models\raa_required_provisions;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
+use local_sitsgradepush\manager;
 
 /**
  * Class for Summary of Reasonable Adjustments (SORA).
@@ -32,23 +36,20 @@ class sora extends extension {
     /** @var string Prefix used to create RAA groups */
     const SORA_GROUP_PREFIX = 'RAA-Activity-';
 
-    /** @var string SORA message type - New code to replace the old EXAM type code */
-    const SORA_MESSAGE_TYPE_RAPXR = 'RAPXR';
+    /** @var string RAA record type - AAA record type that links to ARP records with extension data for each assessment type */
+    const RAA_MESSAGE_TYPE_RAPAS = 'RAPAS';
 
-    /** @var string Empty time extension in HH:MM format */
-    const EMPTY_EXTENSION = '00:00';
-
-    /** @var int Extra duration in minutes per hour */
-    protected int $extraduration;
-
-    /** @var int Rest duration in minutes per hour */
-    protected int $restduration;
+    /** @var string RAA status: approved. */
+    const RAA_STATUS_APPROVED = '5';
 
     /** @var int Time extension in seconds, including extra and rest duration */
     protected int $timeextension;
 
-    /** @var string|null SORA message type */
-    protected ?string $soramessagetype;
+    /** @var raa_event_message|null RAA event message model */
+    protected ?raa_event_message $raaeventmsg = null;
+
+    /** @var raa_required_provisions|null RAA required provisions model */
+    public ?raa_required_provisions $raarequiredprovisions = null;
 
     /**
      * Return the whole time extension in seconds, including extra and rest duration.
@@ -57,24 +58,6 @@ class sora extends extension {
      */
     public function get_time_extension(): int {
         return $this->timeextension;
-    }
-
-    /**
-     * Return the extra duration in minutes.
-     *
-     * @return int
-     */
-    public function get_extra_duration(): int {
-        return $this->extraduration;
-    }
-
-    /**
-     * Return the rest duration in minutes.
-     *
-     * @return int
-     */
-    public function get_rest_duration(): int {
-        return $this->restduration;
     }
 
     /**
@@ -176,31 +159,14 @@ class sora extends extension {
         // Decode the JSON message body.
         $messagedata = $this->parse_event_json($messagebody);
 
-        // Set datasource.
+        // Set datasource and create event message model.
         $this->datasource = self::DATASOURCE_AWS;
+        $this->raaeventmsg = new raa_event_message($messagedata);
+        $this->studentcode = $this->raaeventmsg->get_student_code();
+        $this->raarequiredprovisions = $this->raaeventmsg->get_required_provisions();
 
-        // Set SORA message type.
-        $this->soramessagetype = $messagedata->entity->person_sora->type->code ?? null;
-
-        // Set SORA changes.
-        $this->extensionchanges = $messagedata->changes ?? null;
-
-        // Check the message is valid and set student code.
-        $studentcode = $messagedata->entity->person_sora->person->student_code ?? null;
-        if (!empty($studentcode)) {
-            $this->studentcode = $studentcode;
-            $this->set_userid($studentcode);
-            $this->extraduration = $this->convert_time_to_minutes(
-                $messagedata->entity->person_sora->extra_duration ?? self::EMPTY_EXTENSION
-            );
-            $this->restduration = $this->convert_time_to_minutes(
-                $messagedata->entity->person_sora->rest_duration ?? self::EMPTY_EXTENSION
-            );
-            $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
-        } else {
-            throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
-        }
-
+        // Set user ID and mark data as set.
+        $this->set_userid($this->studentcode);
         $this->dataisset = true;
     }
 
@@ -217,16 +183,13 @@ class sora extends extension {
         // Set datasource.
         $this->datasource = self::DATASOURCE_API;
 
-        // Set properties.
-        $this->extraduration = $this->convert_time_to_minutes(
-            $student['student_assessment']['sora']['extra_duration'] ?? self::EMPTY_EXTENSION
-        );
-        $this->restduration = $this->convert_time_to_minutes(
-            $student['student_assessment']['sora']['rest_duration'] ?? self::EMPTY_EXTENSION
-        );
-
-        // Calculate and set the time extension in seconds.
-        $this->timeextension = $this->calculate_time_extension($this->get_extra_duration(), $this->get_rest_duration());
+        // Set RAA required provisions data.
+        $requiredprovisions = $student['student_assessment']['required_provisions'] ?? null;
+        if (empty($requiredprovisions)) {
+            throw new \moodle_exception('error:missing_required_provisions', 'local_sitsgradepush');
+        }
+        $this->raarequiredprovisions = new raa_required_provisions($requiredprovisions);
+        $this->timeextension = $this->calculate_time_extension();
         $this->dataisset = true;
     }
 
@@ -257,6 +220,24 @@ class sora extends extension {
                 // Set the SITS mapping ID for the assessment.
                 $assessment->set_sits_mapping_id($mapping->id);
 
+                // For status change events from AWS, update SORA extensions for the student.
+                if ($this->datasource === self::DATASOURCE_AWS && $this->get_raa_event_message()->has_status_changed()) {
+                    // RAA status from non-approved to approved, update SORA extensions.
+                    $raastatus = $this->get_raa_event_message()->raastatus;
+                    if ($raastatus === self::RAA_STATUS_APPROVED) {
+                        extensionmanager::update_sora_for_mapping(
+                            $mapping,
+                            manager::get_manager()->get_students_from_sits($mapping, true, 2, $this->get_student_code())
+                        );
+                    }
+
+                    // RAA status changed to non-approved, remove any existing SORA extension for the student.
+                    if ($raastatus !== self::RAA_STATUS_APPROVED && in_array($this->get_userid(), $assessment->raauserids)) {
+                        $assessment->delete_raa_overrides($this->get_userid());
+                    }
+                    continue;
+                }
+
                 // Apply the extension to the assessment.
                 $assessment->apply_extension($this);
             } catch (\Exception $e) {
@@ -266,104 +247,33 @@ class sora extends extension {
     }
 
     /**
-     * Get the SORA message type.
-     *
-     * @return string|null
-     */
-    public function get_sora_message_type(): ?string {
-        return $this->soramessagetype;
-    }
-
-    /**
-     * Get the extension tier.
-     *
-     * @return string|null
-     */
-    public function get_ref_extension_tier(): ?string {
-        global $DB;
-
-        // Get the extension tier from the database based on extra and rest duration.
-        $record = $DB->get_record(extensionmanager::TABLE_EXTENSION_TIERS, [
-            'assessmenttype' => 'TIERREF',
-            'extensionvalue' => $this->get_extra_duration(),
-            'breakvalue' => $this->get_rest_duration(),
-        ]);
-
-        return $record ? $record->tier : null;
-    }
-
-    /**
-     * Calculate total extension time in seconds based on tier configuration.
-     *
-     * @param \stdClass $tier Extension tier configuration.
-     * @param int|null $duration Duration in seconds (required for time_per_hour type).
-     * @return int Total extension time in seconds.
-     * @throws \coding_exception If invalid extension type or missing required duration.
-     */
-    public function calculate_total_extension_time(\stdClass $tier, ?int $duration = null): int {
-        switch ($tier->extensiontype) {
-            case extensionmanager::RAA_EXTENSION_TYPE_TIME_PER_HOUR:
-                if ($duration === null) {
-                    throw new \coding_exception(get_string('error:extensiondurationrequired', 'local_sitsgradepush'));
-                }
-                // Calculate total minutes per hour (extension + break), multiply by hours, convert to seconds.
-                $totalhours = $duration / HOURSECS;
-                $minutesperhour = $tier->extensionvalue + $tier->breakvalue;
-                return (int) ($totalhours * $minutesperhour * MINSECS);
-
-            case extensionmanager::RAA_EXTENSION_TYPE_TIME:
-                return match ($tier->extensionunit) {
-                    extensionmanager::RAA_EXTENSION_UNIT_MINUTES => (int) ($tier->extensionvalue * MINSECS),
-                    extensionmanager::RAA_EXTENSION_UNIT_HOURS => (int) ($tier->extensionvalue * HOURSECS),
-                    default => throw new \coding_exception(
-                        get_string('error:extensioninvalidunit', 'local_sitsgradepush', $tier->extensionunit)
-                    ),
-                };
-
-            case extensionmanager::RAA_EXTENSION_TYPE_DAYS:
-                return (int) ($tier->extensionvalue * DAYSECS);
-
-            default:
-                throw new \coding_exception(
-                    get_string('error:extensionunsupportedtype', 'local_sitsgradepush', $tier->extensiontype)
-                );
-        }
-    }
-
-    /**
      * Calculate extension details (new due date and extension time) based on tier configuration.
      *
-     * @param \stdClass $tier The assessment extension tier configuration.
-     * @param int $enddate The original assessment end date timestamp.
-     * @param int|null $duration Optional duration in seconds (required for time_per_hour type).
+     * @param assessment $assessment The assessment object.
      * @return array Array with 'newduedate' and 'extensioninsecs' keys.
-     * @throws \coding_exception If tier is invalid or missing required duration.
+     * @throws \coding_exception If extension type is invalid or unsupported.
      */
-    public function calculate_extension_details(\stdClass $tier, int $enddate, ?int $duration = null): array {
-        switch ($tier->extensiontype) {
-            case extensionmanager::RAA_EXTENSION_TYPE_TIME_PER_HOUR:
-                if ($duration === null) {
-                    throw new \coding_exception(get_string('error:extensiondurationrequired', 'local_sitsgradepush'));
-                }
-                $extensioninsecs = $this->calculate_total_extension_time($tier, $duration);
-                $newduedate = $enddate + $extensioninsecs;
-                break;
+    public function calculate_extension_details(assessment $assessment): array {
+        $extensiontype = $this->raarequiredprovisions->get_extension_type();
+        $enddate = $assessment->get_end_date();
 
-            case extensionmanager::RAA_EXTENSION_TYPE_TIME:
-                $extensioninsecs = $this->calculate_total_extension_time($tier);
-                $newduedate = $enddate + $extensioninsecs;
-                break;
+        $extensioninsecs = match ($extensiontype) {
+            raa_required_provisions::EXTENSION_TIME_PER_HOUR => (int) (
+                ($assessment->get_assessment_duration() / HOURSECS) *
+                $this->raarequiredprovisions->get_time_per_hour_extension() *
+                MINSECS
+            ),
+            raa_required_provisions::EXTENSION_HOURS => $this->raarequiredprovisions->get_hours_extension() * HOURSECS,
+            raa_required_provisions::EXTENSION_DAYS => $this->raarequiredprovisions->get_days_extension() * DAYSECS,
+            default => throw new \coding_exception(
+                get_string('error:extensionunsupportedtype', 'local_sitsgradepush', $extensiontype)
+            ),
+        };
 
-            case extensionmanager::RAA_EXTENSION_TYPE_DAYS:
-                $extensioninsecs = $this->calculate_total_extension_time($tier);
-                $newduedate = $this->get_new_duedate($tier, $enddate);
-                break;
-
-            default:
-                throw new \coding_exception(
-                    get_string('error:extensionunsupportedtype', 'local_sitsgradepush', $tier->extensiontype)
-                );
-        }
+        // Days extension uses working days calculation, others simply add to end date.
+        $newduedate = ($extensiontype === raa_required_provisions::EXTENSION_DAYS)
+            ? $this->get_new_duedate($enddate)
+            : $enddate + $extensioninsecs;
 
         return [
             'newduedate' => $newduedate,
@@ -393,15 +303,14 @@ class sora extends extension {
     /**
      * Get new due date for RAA extension.
      *
-     * @param \stdClass $tier The assessment extension tier, e.g. tier record from extension_tiers table for an assessment type.
      * @param int $enddate The original assessment end date timestamp.
      * @return int The new due date timestamp.
      * @throws \coding_exception If the extension type is not days.
      * @throws \moodle_exception If the feedback tracker plugin is not installed.
      */
-    public function get_new_duedate(\stdClass $tier, int $enddate): int {
+    public function get_new_duedate(int $enddate): int {
         // Only works for days extension type.
-        if ($tier->extensiontype !== extensionmanager::RAA_EXTENSION_TYPE_DAYS) {
+        if ($this->raarequiredprovisions->get_extension_type() !== raa_required_provisions::EXTENSION_DAYS) {
             throw new \coding_exception(get_string('error:extensionnewtduedatedaysonly', 'local_sitsgradepush'));
         }
 
@@ -411,7 +320,7 @@ class sora extends extension {
         }
 
         $closuredays = \report_feedback_tracker\local\helper::get_closuredays();
-        $daystoextend = (int) $tier->extensionvalue;
+        $daystoextend = $this->raarequiredprovisions->get_days_extension();
         $newduedate = $enddate;
         $daysadded = 0;
 
@@ -431,54 +340,63 @@ class sora extends extension {
     }
 
     /**
-     * Pre-process extension checks.
+     * Get the RAA event message model.
      *
-     * @param array $mappings
-     * @return bool
+     * @return raa_event_message|null
      */
-    protected function pre_process_extension_checks(array $mappings): bool {
-        // API is only use to set the initial SoRA extension via new mapping or new student enrollment.
-        // If the SoRA extension is not set, do not process the extension.
-        if ($this->get_data_source() === self::DATASOURCE_API && $this->get_time_extension() === 0) {
-            return false;
-        }
-
-        // Common pre-process extension checks.
-        return parent::pre_process_extension_checks($mappings);
+    public function get_raa_event_message(): ?raa_event_message {
+        return $this->raaeventmsg;
     }
 
     /**
-     * Convert time string in HH:MM format to total minutes.
+     * Pre-process extension checks.
      *
-     * @param string $time Time string in HH:MM format (e.g., "00:15", "01:30").
-     * @return int Total minutes.
+     * @param array $mappings
+     * @return bool true if the checks pass, false otherwise
      */
-    private function convert_time_to_minutes(string $time): int {
-        // Handle empty or invalid input.
-        if (empty($time)) {
-            return 0;
+    protected function pre_process_extension_checks(array $mappings): bool {
+        // Basic extension checks from parent if it is AWS message with status change.
+        if ($this->datasource === self::DATASOURCE_AWS && $this->get_raa_event_message()->has_status_changed()) {
+            return parent::pre_process_extension_checks($mappings);
         }
 
-        // Split the time string by colon.
-        $parts = explode(':', $time);
-        if (count($parts) !== 2) {
-            return 0;
+        // Below checks for normal SORA extension processing, i.e. update on single assessment type.
+        // Check required provisions exist.
+        if ($this->raarequiredprovisions === null) {
+            return false;
         }
 
-        $hours = (int) $parts[0];
-        $minutes = (int) $parts[1];
+        // Check if the assessment type code is eligible for RAA.
+         $astcode = $this->raarequiredprovisions->get_assessment_type_code();
+        if (empty($astcode) || !extensionmanager::is_ast_code_eligible_for_raa($astcode)) {
+            return false;
+        }
 
-        return ($hours * HOURMINS) + $minutes;
+        return parent::pre_process_extension_checks($mappings);
     }
 
     /**
      * Calculate the time extension in seconds.
      *
-     * @param int $extraduration Extra duration in minutes.
-     * @param int $restduration Rest duration in minutes.
      * @return int
+     * @throws \moodle_exception If required provisions are missing.
      */
-    private function calculate_time_extension(int $extraduration, int $restduration): int {
-        return ($extraduration + $restduration) * MINSECS;
+    private function calculate_time_extension(): int {
+        // Check required provisions exist.
+        if ($this->raarequiredprovisions === null) {
+            throw new \moodle_exception('error:missing_required_provisions', 'local_sitsgradepush');
+        }
+
+        if (!$this->raarequiredprovisions->has_extension()) {
+            return 0;
+        }
+
+        return match ($this->raarequiredprovisions->get_extension_type()) {
+            raa_required_provisions::EXTENSION_DAYS => $this->raarequiredprovisions->get_days_extension() * DAYSECS,
+            raa_required_provisions::EXTENSION_HOURS => $this->raarequiredprovisions->get_hours_extension() * HOURSECS,
+            raa_required_provisions::EXTENSION_TIME_PER_HOUR => $this->raarequiredprovisions->get_time_per_hour_extension() *
+                MINSECS,
+            default => 0,
+        };
     }
 }

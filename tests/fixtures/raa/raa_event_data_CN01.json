@@ -1,0 +1,69 @@
+{
+  "identifier": "a4e7c219-8b3d-4f6a-9c52-1e8d0f7a3b9c",
+  "timestamp": "20260120T160800.793830UTC",
+  "event":
+  {
+    "name": "person_sora",
+    "operation": "update",
+    "source": "sits"
+  },
+  "primary_keys": [
+    {
+      "asmnt_type_code": "CN01",
+      "modulecode": "CASA0001"
+    }
+  ],
+  "changes":
+  [
+    {
+      "attribute": "person_sora.required_provisions.no_dys_ext",
+      "from": "10",
+      "to": "5"
+    }
+  ],
+  "entity":
+  {
+    "person_sora":
+    {
+      "identifier": "ABCED12",
+      "type":
+      {
+        "code": "RAPAS",
+        "name": "Reasonable Adjustments: Assessments"
+      },
+      "arrangement_record_sequence_number": "000100",
+      "accessibility_assessment_arrangement_sequence_number": "1",
+      "approved_indicator": null,
+      "extra_duration": null,
+      "rest_duration": null,
+      "note": null,
+      "post_deadline_details": null,
+      "expiry_date": null,
+      "last_updated": null,
+      "person":
+      {
+        "identifier": "ABCED12",
+        "student_code": "12345678",
+        "userid": "ABCDEFG"
+      },
+      "required_provisions": [
+        {
+          "provision_tier": "TIER1",
+          "no_dys_ext": "5",
+          "no_hrs_ext": null,
+          "add_exam_time": null,
+          "rest_brk_add_time": null,
+          "asmnt_type_code": "CN01"
+        }
+      ],
+      "required_room_facility": {
+        "required_provision_detail": "Extension: 5 working days",
+        "required_adjustments": "RAPAS0032",
+        "assessment_type_code": "CN01",
+        "rest_breaks_additional_time": null,
+        "required_provision_notes": null
+      },
+      "accessibility_assessment_status": "5"
+    }
+  }
+}

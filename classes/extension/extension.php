@@ -143,10 +143,11 @@ abstract class extension implements iextension {
      * Get all the assessment mappings by user ID.
      *
      * @param int $userid
+     * @param string|null $astcode
      * @return array
      * @throws \dml_exception|\coding_exception
      */
-    public function get_mappings_by_userid(int $userid): array {
+    public function get_mappings_by_userid(int $userid, ?string $astcode = ''): array {
         global $DB;
 
         // Find all enrolled courses for the student.
@@ -171,10 +172,16 @@ abstract class extension implements iextension {
         $params = array_merge($courseinparam, $modinparams);
 
         // Find all mapped moodle assessments for the student.
-        $sql = "SELECT am.*, mab.mapcode, mab.mabseq
+        $sql = "SELECT am.*, mab.mapcode, mab.mabseq, mab.astcode
                 FROM {" . manager::TABLE_ASSESSMENT_MAPPING . "} am
                 JOIN {" . manager::TABLE_COMPONENT_GRADE . "} mab ON am.componentgradeid = mab.id
                 WHERE am.courseid $courseinsql AND am.moduletype $modinsql AND am.enableextension = 1";
+
+        // Filter by assessment code if provided.
+        if (!empty($astcode)) {
+            $sql .= " AND mab.astcode = :astcode";
+            $params['astcode'] = $astcode;
+        }
 
         $mappings = $DB->get_records_sql($sql, $params);
 

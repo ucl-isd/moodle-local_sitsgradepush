@@ -176,34 +176,51 @@ class tests_data_provider {
      * @return string
      */
     public static function get_ec_event_data(): string {
-        return file_get_contents(__DIR__ . "/ec_event_data.json");
+        return file_get_contents(__DIR__ . "/ec/ec_event_data.json");
     }
 
     /**
      * Get the SORA event data.
      *
+     * @param string $astcode
      * @return string
      */
-    public static function get_sora_event_data(): string {
-        return file_get_contents(__DIR__ . "/sora_event_data.json");
+    public static function get_sora_event_data(string $astcode = 'CN01'): string {
+        return file_get_contents(__DIR__ . "/raa/raa_event_data_{$astcode}.json");
+    }
+
+    /**
+     * Get the SORA event data with non-approved status.
+     * This event is received when a RAA status changed from approved to non-approved.
+     *
+     * @param bool $approved
+     * @return string
+     */
+    public static function get_sora_event_data_status(bool $approved): string {
+        if ($approved) {
+            return file_get_contents(__DIR__ . "/raa/raa_event_data_status_approved.json");
+        }
+        return file_get_contents(__DIR__ . "/raa/raa_event_data_status_non_approved.json");
     }
 
     /**
      * Get the SORA testing student data.
      *
+     * @param string $assessmenttype
      * @return array
      */
-    public static function get_sora_testing_student_data(): array {
-        return json_decode(file_get_contents(__DIR__ . "/sora_test_students.json"), true);
+    public static function get_sora_testing_student_data(string $assessmenttype = 'CN01'): array {
+        return json_decode(file_get_contents(__DIR__ . "/raa/raa_test_students_{$assessmenttype}.json"), true);
     }
 
     /**
      * Get the EC testing student data.
      *
+     * @param string $stdnum
      * @return array
      */
-    public static function get_ec_testing_student_data(): array {
-        return json_decode(file_get_contents(__DIR__ . "/ec_test_students.json"), true);
+    public static function get_ec_testing_student_data(string $stdnum = ''): array {
+        return json_decode(file_get_contents(__DIR__ . "/ec/ec_test_students{$stdnum}.json"), true);
     }
 
     /**

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/sitsgradepush/db" VERSION="20251124" COMMENT="XMLDB file for Moodle local/sits_grade_push"
+<XMLDB PATH="local/sitsgradepush/db" VERSION="20260127" COMMENT="XMLDB file for Moodle local/sits_grade_push"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -119,6 +119,7 @@
         <FIELD NAME="queuename" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="AWS queue name"/>
         <FIELD NAME="messageid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="AWS SQS Message ID"/>
         <FIELD NAME="studentcode" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Student code from message"/>
+        <FIELD NAME="astcode" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Assessment type code from message"/>
         <FIELD NAME="eventtimestamp" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="AWS message timestamp"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Process status"/>
         <FIELD NAME="attempts" TYPE="int" LENGTH="2" NOTNULL="true" SEQUENCE="false"/>
@@ -136,8 +137,9 @@
         <INDEX NAME="timemodified" UNIQUE="false" FIELDS="timemodified"/>
         <INDEX NAME="idx_queuename" UNIQUE="false" FIELDS="queuename"/>
         <INDEX NAME="idx_studentcode" UNIQUE="false" FIELDS="studentcode"/>
+        <INDEX NAME="idx_astcode" UNIQUE="false" FIELDS="astcode"/>
         <INDEX NAME="idx_eventtimestamp" UNIQUE="false" FIELDS="eventtimestamp"/>
-        <INDEX NAME="idx_queue_student_ts" UNIQUE="false" FIELDS="queuename, studentcode, eventtimestamp"/>
+        <INDEX NAME="idx_queue_student_ast_ts" UNIQUE="false" FIELDS="queuename, studentcode, astcode, eventtimestamp"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_sitsgradepush_enrol" COMMENT="Store user enrolment events for assessment extension processing">
@@ -210,27 +212,6 @@
       <INDEXES>
         <INDEX NAME="idx_student" UNIQUE="false" FIELDS="student_code"/>
         <INDEX NAME="idx_academic_year" UNIQUE="false" FIELDS="academic_year"/>
-      </INDEXES>
-    </TABLE>
-    <TABLE NAME="local_sitsgradepush_ext_tiers" COMMENT="Extension tier configuration for different assessment types">
-      <FIELDS>
-        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="assessmenttype" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="AST code from SITS"/>
-        <FIELD NAME="tier" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="Tier level: 1, 2, or 3"/>
-        <FIELD NAME="extensiontype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="time, time_per_hour, or days"/>
-        <FIELD NAME="extensionvalue" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Extension value (nullable)"/>
-        <FIELD NAME="extensionunit" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="minutes, hours, or days"/>
-        <FIELD NAME="breakvalue" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Break value in minutes (time_per_hour only)"/>
-        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Whether this tier config is enabled"/>
-        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-      </FIELDS>
-      <KEYS>
-        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-      </KEYS>
-      <INDEXES>
-        <INDEX NAME="idx_assessmenttype" UNIQUE="false" FIELDS="assessmenttype"/>
-        <INDEX NAME="idx_assessmenttype_tier" UNIQUE="true" FIELDS="assessmenttype, tier"/>
       </INDEXES>
     </TABLE>
   </TABLES>

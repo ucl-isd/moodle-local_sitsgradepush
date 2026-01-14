@@ -104,9 +104,12 @@ final class raa_coursework_test extends raa_base {
      */
     public function test_raa_process_extension_from_aws(): void {
         // Process the extension by passing the JSON event data.
-        $sora = new sora();
-        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
-        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
+        // Test with ED03, CN01 and HD05 assessment types.
+        foreach ($this->testassessmenttypes as $astcode) {
+            $sora = new sora();
+            $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data($astcode));
+            $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), $astcode));
+        }
 
         // Verify all coursework overrides were created correctly.
         $this->assert_all_coursework_overrides();
@@ -126,9 +129,10 @@ final class raa_coursework_test extends raa_base {
         $sink = $this->redirectEvents();
 
         // Process the extension by passing the JSON event data.
+        $astcode = 'HD05';
         $sora = new sora();
-        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
-        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
+        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data($astcode));
+        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), $astcode));
 
         $events = $sink->get_events();
         $sink->close();
@@ -162,25 +166,27 @@ final class raa_coursework_test extends raa_base {
      * @throws \moodle_exception
      */
     public function test_extension_updated_event_triggered(): void {
+        $astcode = 'HD05';
+
         // First, create initial overrides.
-        $sora = new sora();
-        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
-        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid()));
+        $student = tests_data_provider::get_sora_testing_student_data($astcode);
+        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
+        foreach ($mappings as $mapping) {
+            if ($mapping->astcode === $astcode) {
+                extensionmanager::update_sora_for_mapping($mapping, [$student]);
+            }
+        }
 
         // Now update the override with a different extension.
         $sink = $this->redirectEvents();
 
-        // Create a modified student data with different extension times.
-        $student = tests_data_provider::get_sora_testing_student_data();
-        $student['moodleuserid'] = $this->student1->id;
-        $student['student_assessment']['sora']['extra_duration'] = '00:15';
-        $student['student_assessment']['sora']['rest_duration'] = '00:15';
+        $sora = new sora();
+        $eventdata = json_decode(tests_data_provider::get_sora_event_data($astcode), true);
+        $eventdata['entity']['person_sora']['required_provisions'][0]['provision_tier'] = 'TIER2';
+        $eventdata['entity']['person_sora']['required_provisions'][0]['no_hrs_ext'] = '16';
 
-        // Process RAA for all mappings with modified student data.
-        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
-        foreach ($mappings as $mapping) {
-            extensionmanager::update_sora_for_mapping($mapping, [$student]);
-        }
+        $sora->set_properties_from_aws_message(json_encode($eventdata));
+        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), $astcode));
 
         $events = $sink->get_events();
         $sink->close();
@@ -263,6 +269,90 @@ final class raa_coursework_test extends raa_base {
     }
 
     /**
+     * Test RAA override is added when RAA status changed to approved event received.
+     *
+     * @covers \local_sitsgradepush\extension\sora::process_extension
+     * @covers \local_sitsgradepush\assessment\assessment::apply_extension
+     * @covers \local_sitsgradepush\extension\models\raa_required_provisions::has_extension
+     * @return void
+     */
+    public function test_raa_override_added_when_status_changed_to_approved(): void {
+        global $DB;
+        // Verify no override exists initially.
+        $this->assertEmpty($DB->get_records('coursework_extensions'));
+
+        // Process event with status approved.
+        $eventdata = json_decode(tests_data_provider::get_sora_event_data_status(true), true);
+        $sora = new sora();
+        $sora->set_properties_from_aws_message(json_encode($eventdata));
+        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), null));
+
+        // Verify override was created.
+        $this->assertNotEmpty($DB->get_records('coursework_extensions'));
+    }
+
+    /**
+     * Test RAA override is removed when RAA status changed to not approved event received.
+     *
+     * @covers \local_sitsgradepush\extension\sora::process_extension
+     * @covers \local_sitsgradepush\assessment\assessment::apply_extension
+     * @covers \local_sitsgradepush\extension\models\raa_required_provisions::has_extension
+     * @return void
+     */
+    public function test_raa_override_removed_when_status_not_approved(): void {
+        global $DB;
+        // Process all mappings for SORA to create override.
+        $this->process_all_mappings_for_sora();
+
+        // Verify override was created.
+        $this->assertNotEmpty($DB->get_records('coursework_extensions'));
+
+        // Process event with status not approved.
+        $eventdata = json_decode(tests_data_provider::get_sora_event_data_status(false), true);
+
+        $sora = new sora();
+        $sora->set_properties_from_aws_message(json_encode($eventdata));
+        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), null));
+
+        // Verify override was removed.
+        $this->assertEmpty($DB->get_records('coursework_extensions'));
+    }
+
+    /**
+     * Test RAA override is removed when all extension fields are empty.
+     *
+     * @covers \local_sitsgradepush\extension\sora::process_extension
+     * @covers \local_sitsgradepush\assessment\assessment::apply_extension
+     * @covers \local_sitsgradepush\extension\models\raa_required_provisions::has_extension
+     * @return void
+     */
+    public function test_raa_override_removed_when_all_extension_fields_empty(): void {
+        global $DB;
+
+        // Process all mappings for SORA to create override.
+        $this->process_all_mappings_for_sora();
+
+        // Verify override was created.
+        $this->assertNotEmpty($DB->get_records('coursework_extensions'));
+
+        // Process event with all extension fields set to None.
+        foreach ($this->testassessmenttypes as $astcode) {
+            $eventdata = json_decode(tests_data_provider::get_sora_event_data($astcode), true);
+            $eventdata['entity']['person_sora']['required_provisions'][0]['no_dys_ext'] = null;
+            $eventdata['entity']['person_sora']['required_provisions'][0]['no_hrs_ext'] = null;
+            $eventdata['entity']['person_sora']['required_provisions'][0]['add_exam_time'] = null;
+            $eventdata['entity']['person_sora']['required_provisions'][0]['rest_brk_add_time'] = null;
+
+            $sora = new sora();
+            $sora->set_properties_from_aws_message(json_encode($eventdata));
+            $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), $astcode));
+        }
+
+        // Verify override was removed.
+        $this->assertEmpty($DB->get_records('coursework_extensions'));
+    }
+
+    /**
      * Test the update RAA extension for students in a mapping with extension off.
      *
      * @covers \local_sitsgradepush\extensionmanager::update_sora_for_mapping
@@ -303,7 +393,7 @@ final class raa_coursework_test extends raa_base {
 
         // Test update RAA from aws can handle reassessment.
         $sora = new sora();
-        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data());
+        $sora->set_properties_from_aws_message(tests_data_provider::get_sora_event_data('ED03'));
         $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($course->id);
         $sora->process_extension($mappings);
 
@@ -311,89 +401,6 @@ final class raa_coursework_test extends raa_base {
         $this->assert_coursework_override_exists(
             $coursework,
             $this->clock->now()->modify('2025-02-11 14:00:00')->getTimestamp()
-        );
-    }
-
-    /**
-     * Data provider for fallback extension tier tests.
-     *
-     * @return array Test data for each tier scenario.
-     */
-    public static function fallback_tier_provider(): array {
-        return [
-            'tier 1 (10 mins < 25)' => [
-                'extra' => '00:05',
-                'rest' => '00:05',
-                'ed03extension' => 1800,
-                'ed03endtime' => '2025-02-11 13:30:00',
-                'hd05extension' => 14 * HOURSECS,
-                'hd05endtime' => '2025-02-19 04:00:00',
-            ],
-            'tier 2 (30 mins >= 25 and < 40)' => [
-                'extra' => '00:15',
-                'rest' => '00:15',
-                'ed03extension' => 5400,
-                'ed03endtime' => '2025-02-11 14:30:00',
-                'hd05extension' => 16 * HOURSECS,
-                'hd05endtime' => '2025-02-19 06:00:00',
-            ],
-            'tier 3 (40 mins >= 40)' => [
-                'extra' => '00:20',
-                'rest' => '00:20',
-                'ed03extension' => 7200,
-                'ed03endtime' => '2025-02-11 15:00:00',
-                'hd05extension' => 18 * HOURSECS,
-                'hd05endtime' => '2025-02-19 08:00:00',
-            ],
-        ];
-    }
-
-    /**
-     * Test RAA fallback extension when RAA data doesn't match any TIERREF.
-     * Determines provision tier based on raw extension value and uses it for calculation.
-     *
-     * @dataProvider fallback_tier_provider
-     * @covers \local_sitsgradepush\assessment\assessment::can_assessment_apply_sora
-     * @covers \local_sitsgradepush\assessment\coursework::apply_sora_extension
-     * @param string $extra Extra duration in HH:MM format.
-     * @param string $rest Rest duration in HH:MM format.
-     * @param int $ed03extension Expected ED03 extension in seconds.
-     * @param string $ed03endtime Expected ED03 end time.
-     * @param int $hd05extension Expected HD05 extension in seconds.
-     * @param string $hd05endtime Expected HD05 end time.
-     * @return void
-     * @throws \dml_exception
-     */
-    public function test_fallback_extension_for_non_matching_tierref(
-        string $extra,
-        string $rest,
-        int $ed03extension,
-        string $ed03endtime,
-        int $hd05extension,
-        string $hd05endtime
-    ): void {
-        // Create RAA data that doesn't match any TIERREF.
-        $student = tests_data_provider::get_sora_testing_student_data();
-        $student['moodleuserid'] = $this->student1->id;
-        $student['student_assessment']['sora']['extra_duration'] = $extra;
-        $student['student_assessment']['sora']['rest_duration'] = $rest;
-
-        // Process RAA for all mappings with modified student data.
-        $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
-        foreach ($mappings as $mapping) {
-            extensionmanager::update_sora_for_mapping($mapping, [$student]);
-        }
-
-        // Verify override was created for ED03 coursework.
-        $this->assert_coursework_override_exists(
-            $this->raacoursework1,
-            $this->clock->now()->modify($ed03endtime)->getTimestamp()
-        );
-
-        // Verify override was created for HD05 coursework.
-        $this->assert_coursework_override_exists(
-            $this->raacoursework3,
-            $this->clock->now()->modify($hd05endtime)->getTimestamp()
         );
     }
 

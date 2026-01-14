@@ -19,6 +19,8 @@ namespace local_sitsgradepush\extension\raa;
 use local_sitsgradepush\extension\aws_queue_processor;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extension\sora_queue_processor;
+use local_sitsgradepush\extensionmanager;
+use local_sitsgradepush\tests_data_provider;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -65,16 +67,26 @@ final class raa_general_test extends raa_base {
     public function test_earlier_message_ignored_when_later_already_processed(): void {
         global $DB;
 
+        $astcode = 'CN01';
+
         // Create and process later message first (T2).
-        $messaget2 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->latertimestamp);
+        $messaget2 = $this->create_sora_aws_message_for_ordering(
+            $this->student1->idnumber,
+            $this->latertimestamp,
+            $astcode
+        );
         $processor = new sora_queue_processor();
         $resultt2 = $this->call_process_message($processor, $messaget2);
 
         // Save the result to database (simulate full flow).
         $this->save_message_to_aws_log($messaget2, $resultt2);
 
-        // Create and process earlier message (T1).
-        $messaget1 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->earliertimestamp);
+        // Create and process earlier message (T1) with same assessment type.
+        $messaget1 = $this->create_sora_aws_message_for_ordering(
+            $this->student1->idnumber,
+            $this->earliertimestamp,
+            $astcode
+        );
         $resultt1 = $this->call_process_message($processor, $messaget1);
 
         // Save the result to database.
@@ -83,7 +95,7 @@ final class raa_general_test extends raa_base {
         // Assertions.
         $records = $DB->get_records(
             'local_sitsgradepush_aws_log',
-            ['studentcode' => $this->student1->idnumber],
+            ['studentcode' => $this->student1->idnumber, 'astcode' => $astcode],
             'eventtimestamp ASC'
         );
 
@@ -93,11 +105,13 @@ final class raa_general_test extends raa_base {
         $t1 = array_shift($records);
         $this->assertEquals($this->earliertimestamp, $t1->eventtimestamp);
         $this->assertEquals(aws_queue_processor::STATUS_IGNORED, $t1->status);
+        $this->assertEquals($astcode, $t1->astcode);
 
         // T2 (later) should be processed.
         $t2 = array_shift($records);
         $this->assertEquals($this->latertimestamp, $t2->eventtimestamp);
         $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $t2->status);
+        $this->assertEquals($astcode, $t2->astcode);
     }
 
     /**
@@ -113,16 +127,26 @@ final class raa_general_test extends raa_base {
     public function test_later_message_processed_when_earlier_already_processed(): void {
         global $DB;
 
+        $astcode = 'CN01';
+
         // Create and process earlier message first (T1).
-        $messaget1 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->earliertimestamp);
+        $messaget1 = $this->create_sora_aws_message_for_ordering(
+            $this->student1->idnumber,
+            $this->earliertimestamp,
+            $astcode
+        );
         $processor = new sora_queue_processor();
         $resultt1 = $this->call_process_message($processor, $messaget1);
 
         // Save the result to database (simulate full flow).
         $this->save_message_to_aws_log($messaget1, $resultt1);
 
-        // Create and process later message (T2).
-        $messaget2 = $this->create_sora_aws_message_for_ordering($this->student1->idnumber, $this->latertimestamp);
+        // Create and process later message (T2) with same assessment type.
+        $messaget2 = $this->create_sora_aws_message_for_ordering(
+            $this->student1->idnumber,
+            $this->latertimestamp,
+            $astcode
+        );
         $resultt2 = $this->call_process_message($processor, $messaget2);
 
         // Save the result to database.
@@ -131,7 +155,7 @@ final class raa_general_test extends raa_base {
         // Assertions.
         $records = $DB->get_records(
             'local_sitsgradepush_aws_log',
-            ['studentcode' => $this->student1->idnumber],
+            ['studentcode' => $this->student1->idnumber, 'astcode' => $astcode],
             'eventtimestamp ASC'
         );
 
@@ -141,32 +165,115 @@ final class raa_general_test extends raa_base {
         $t1 = array_shift($records);
         $this->assertEquals($this->earliertimestamp, $t1->eventtimestamp);
         $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $t1->status);
+        $this->assertEquals($astcode, $t1->astcode);
 
         // T2 (later) should also be processed.
         $t2 = array_shift($records);
         $this->assertEquals($this->latertimestamp, $t2->eventtimestamp);
         $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $t2->status);
+        $this->assertEquals($astcode, $t2->astcode);
+    }
+
+    /**
+     * Test that messages for different assessment types are processed independently.
+     *
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::process_message
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::is_message_out_of_order
+     * @return void
+     */
+    public function test_different_assessment_types_processed_independently(): void {
+        global $DB;
+
+        $astcode1 = 'CN01';
+        $astcode2 = 'ED03';
+        $processor = new sora_queue_processor();
+
+        // Process later message for assessment type 1 (T2).
+        $messaget2ast1 = $this->create_sora_aws_message_for_ordering(
+            $this->student1->idnumber,
+            $this->latertimestamp,
+            $astcode1
+        );
+        $resultt2ast1 = $this->call_process_message($processor, $messaget2ast1);
+        $this->save_message_to_aws_log($messaget2ast1, $resultt2ast1);
+
+        // Process earlier message for assessment type 2 (T1) - should be processed, not ignored.
+        $messaget1ast2 = $this->create_sora_aws_message_for_ordering(
+            $this->student1->idnumber,
+            $this->earliertimestamp,
+            $astcode2
+        );
+        $resultt1ast2 = $this->call_process_message($processor, $messaget1ast2);
+        $this->save_message_to_aws_log($messaget1ast2, $resultt1ast2);
+
+        // Assertions for assessment type 2 - should be processed even though it has earlier timestamp.
+        $recordsast2 = $DB->get_records(
+            'local_sitsgradepush_aws_log',
+            ['studentcode' => $this->student1->idnumber, 'astcode' => $astcode2],
+            'eventtimestamp ASC'
+        );
+        $this->assertCount(1, $recordsast2);
+
+        $t1ast2 = reset($recordsast2);
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $t1ast2->status);
+    }
+
+    /**
+     * Test that RAA is not processed for ineligible assessment types.
+     *
+     * @covers \local_sitsgradepush\extensionmanager::update_sora_for_mapping
+     * @covers \local_sitsgradepush\extensionmanager::is_ast_code_eligible_for_raa
+     * @return void
+     */
+    public function test_raa_not_processed_for_ineligible_ast_code(): void {
+        global $DB;
+
+        $astcode = 'CN01';
+
+        // Set CN01 as ineligible for RAA extension.
+        set_config('raa_ineligible_ast_codes', $astcode, 'local_sitsgradepush');
+
+        // Create a mapping for the assignment with the ineligible AST code.
+        $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
+        $this->insert_mapping($mab->id, $this->course1->id, $this->assign1, 'assign');
+        $this->setup_test_student_data($mab);
+
+        // Process all mappings for SORA.
+        $this->process_all_mappings_for_sora();
+
+        // Verify no override was created.
+        $this->assertEmpty($DB->get_records('assign_overrides'));
     }
 
     /**
      * Create AWS SORA message array for testing message ordering.
      *
-     * @param string $studentcode
-     * @param int $timestamp Unix timestamp
-     * @return array AWS message structure
+     * @param string $studentcode Student code.
+     * @param int $timestamp Unix timestamp.
+     * @param string $astcode Assessment type code.
+     * @return array AWS message structure.
      */
-    private function create_sora_aws_message_for_ordering(string $studentcode, int $timestamp): array {
+    private function create_sora_aws_message_for_ordering(string $studentcode, int $timestamp, string $astcode): array {
         return [
             'Message' => json_encode([
                 'entity' => [
                     'person_sora' => [
                         'person' => ['student_code' => $studentcode],
-                        'type' => ['code' => sora::SORA_MESSAGE_TYPE_RAPXR],
-                        'extra_duration' => '00:35',
-                        'rest_duration' => '00:00',
+                        'type' => ['code' => sora::RAA_MESSAGE_TYPE_RAPAS],
+                        'required_provisions' => [
+                            [
+                                'provision_tier' => 'TIER1',
+                                'no_dys_ext' => '5',
+                                'no_hrs_ext' => null,
+                                'add_exam_time' => null,
+                                'rest_brk_add_time' => null,
+                                'asmnt_type_code' => $astcode,
+                                'accessibility_assessment_status' => '5',
+                            ],
+                        ],
                     ],
                 ],
-                'changes' => ['extra_duration'],
+                'changes' => ['no_dys_ext'],
             ]),
             'Timestamp' => $this->clock->now()->setTimestamp($timestamp)->format('Y-m-d\TH:i:s\Z'),
         ];
@@ -190,8 +297,8 @@ final class raa_general_test extends raa_base {
     /**
      * Simulate saving message result to AWS log database.
      *
-     * @param array $message AWS message
-     * @param array $result Processing result
+     * @param array $message AWS message.
+     * @param array $result Processing result.
      * @return void
      * @throws \dml_exception
      */
@@ -206,6 +313,7 @@ final class raa_general_test extends raa_base {
         $record->queuename = 'SORA';
         $record->messageid = 'test-message-' . uniqid();
         $record->studentcode = $studentcode;
+        $record->astcode = $result['astcode'] ?? null;
         $record->eventtimestamp = $timestamp;
         $record->status = $result['status'];
         $record->attempts = 1;

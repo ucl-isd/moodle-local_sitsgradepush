@@ -186,7 +186,7 @@ class coursework extends activity {
      * @param int|null $userid
      * @return void
      */
-    protected function delete_raa_overrides(?int $userid = null): void {
+    public function delete_raa_overrides(?int $userid = null): void {
         // Get active RAA override for this user.
         if ($userid !== null) {
             // Get active RAA override for specific user.
@@ -215,6 +215,28 @@ class coursework extends activity {
 
         // Process all RAA overrides.
         $this->process_overrides_deletion($soraoverrides);
+    }
+
+    /**
+     * Get user IDs who have RAA overrides for this assessment.
+     * Coursework does not use override groups, so query the marks transfer overrides table.
+     *
+     * @return int[] Array of user IDs.
+     */
+    protected function get_users_with_raa_overrides(): array {
+        $conditions = [
+            'cmid' => $this->get_id(),
+            'extensiontype' => extensionmanager::EXTENSION_SORA,
+            'restored_by' => null,
+        ];
+        $overrides = extensionmanager::get_mt_overrides($conditions);
+
+        $userids = [];
+        foreach ($overrides as $override) {
+            $userids[$override->userid] = $override->userid;
+        }
+
+        return array_values($userids);
     }
 
     /**
@@ -309,7 +331,7 @@ class coursework extends activity {
         );
 
         // Calculate extension details.
-        $extensiondetails = $this->calculate_sora_extension_details($sora);
+        $extensiondetails = $sora->calculate_extension_details($this);
         $newduedate = $extensiondetails['newduedate'];
 
         // Get existing user extension if any.

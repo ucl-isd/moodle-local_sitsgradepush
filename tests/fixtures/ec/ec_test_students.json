@@ -43,6 +43,14 @@
     "sora": {
       "extra_duration": null,
       "rest_duration": null
+    },
+    "required_provisions": {
+      "provision_tier": null,
+      "no_dys_ext": null,
+      "no_hrs_ext": null,
+      "add_exam_time": null,
+      "rest_brk_add_time": null,
+      "asmnt_type_code": null
     }
   },
   "extenuating_circumstance": [

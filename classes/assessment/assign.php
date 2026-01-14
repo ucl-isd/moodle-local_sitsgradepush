@@ -185,7 +185,7 @@ class assign extends activity {
         require_once($CFG->dirroot . '/group/lib.php');
 
         // Calculate extension details.
-        $extensiondetails = $this->calculate_sora_extension_details($sora);
+        $extensiondetails = $sora->calculate_extension_details($this);
         $extensioninsecs = $extensiondetails['extensioninsecs'];
         $newduedate = $extensiondetails['newduedate'];
 

@@ -35,25 +35,17 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_pro
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class raa_base extends extension_common {
-    /**
-     * Set up the test.
-     *
-     * @return void
-     */
-    protected function setUp(): void {
-        parent::setUp();
-
-        // Setup extension tiers.
-        $this->create_extension_tiers();
-    }
+    /** @var array Test assessment types */
+    public array $testassessmenttypes = ['CN01', 'HD05', 'ED03'];
 
     /**
      * Get test student data with Moodle user ID.
      *
+     * @param string $astcode The AST code.
      * @return array The test student data.
      */
-    protected function get_test_student_data(): array {
-        $student = tests_data_provider::get_sora_testing_student_data();
+    protected function get_test_student_data(string $astcode = 'CN01'): array {
+        $student = tests_data_provider::get_sora_testing_student_data($astcode);
         $student['moodleuserid'] = $this->student1->id;
         return $student;
     }
@@ -68,7 +60,7 @@ class raa_base extends extension_common {
         $manager = manager::get_manager();
 
         // Set API client with test student data.
-        $apiclient = $this->get_apiclient_for_testing(false, [$this->get_test_student_data()]);
+        $apiclient = $this->get_apiclient_for_testing(false, [$this->get_test_student_data($mab->astcode)]);
         tests_data_provider::set_protected_property($manager, 'apiclient', $apiclient);
 
         // This will cache the student data for the MAB.
@@ -146,9 +138,9 @@ class raa_base extends extension_common {
      */
     protected function process_all_mappings_for_sora(): void {
         $mappings = manager::get_manager()->get_assessment_mappings_by_courseid($this->course1->id);
-        $student = $this->get_test_student_data();
 
         foreach ($mappings as $mapping) {
+            $student = $this->get_test_student_data($mapping->astcode);
             extensionmanager::update_sora_for_mapping($mapping, [$student]);
         }
     }
@@ -170,40 +162,5 @@ class raa_base extends extension_common {
      */
     protected function is_feedback_tracker_installed(): bool {
         return class_exists('report_feedback_tracker\local\helper');
-    }
-
-    /**
-     * Load and insert extension tier records from JSON fixture file.
-     *
-     * @param string|null $assessmenttype Optional filter to only load tiers for specific assessment type.
-     * @return void
-     * @throws \dml_exception
-     */
-    protected function create_extension_tiers(?string $assessmenttype = null): void {
-        global $DB, $CFG;
-
-        $jsonfile = $CFG->dirroot . '/local/sitsgradepush/tests/fixtures/extension_tiers.json';
-        $jsondata = file_get_contents($jsonfile);
-        $tiers = json_decode($jsondata, true);
-
-        foreach ($tiers as $tierdata) {
-            // Skip if filtering by assessment type and this tier doesn't match.
-            if ($assessmenttype !== null && $tierdata['assessmenttype'] !== $assessmenttype) {
-                continue;
-            }
-
-            $tier = new \stdClass();
-            $tier->assessmenttype = $tierdata['assessmenttype'];
-            $tier->tier = $tierdata['tier'];
-            $tier->extensiontype = $tierdata['extensiontype'];
-            $tier->extensionvalue = $tierdata['extensionvalue'];
-            $tier->extensionunit = $tierdata['extensionunit'];
-            $tier->breakvalue = $tierdata['breakvalue'];
-            $tier->enabled = $tierdata['enabled'];
-            $tier->timecreated = $this->clock->time();
-            $tier->timemodified = $this->clock->time();
-
-            $DB->insert_record('local_sitsgradepush_ext_tiers', $tier);
-        }
     }
 }

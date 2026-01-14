@@ -20,6 +20,7 @@ use local_sitsgradepush\extension\aws_queue_processor;
 use local_sitsgradepush\extension\ec_queue_processor;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
+use local_sitsgradepush\tests_data_provider;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -46,7 +47,7 @@ final class ec_general_test extends ec_base {
         global $DB;
 
         $assign = $this->setup_common_test_data();
-        $eventdata = file_get_contents(__DIR__ . '/../../fixtures/ec_event_data.json');
+        $eventdata = tests_data_provider::get_ec_event_data();
         $processor = new ec_queue_processor();
         $method = $this->get_accessible_method($processor, 'process_message');
 
@@ -77,6 +78,46 @@ final class ec_general_test extends ec_base {
     }
 
     /**
+     * Test failed record is saved when student code is null in EC event data.
+     *
+     * @covers \local_sitsgradepush\extension\ec_queue_processor::process_messages
+     * @covers \local_sitsgradepush\extension\ec::set_properties_from_aws_message
+     * @return void
+     */
+    public function test_failed_record_saved_when_student_code_null(): void {
+        global $DB;
+
+        $this->setup_common_test_data();
+        $eventdata = json_decode(tests_data_provider::get_ec_event_data(), true);
+        $eventdata['entity']['student_extenuating_circumstances']['student']['student_code'] = null;
+
+        $messageid = 'test-missing-student-code-01';
+        $testmessage = [
+            'MessageId' => $messageid,
+            'ReceiptHandle' => 'test-receipt-handle',
+            'Body' => json_encode(['Message' => json_encode($eventdata)]),
+        ];
+
+        // Create a partial mock to inject our test message and skip SQS operations.
+        $mockprocessor = $this->getMockBuilder(ec_queue_processor::class)
+            ->onlyMethods(['fetch_messages', 'delete_message', 'get_queue_url'])
+            ->getMock();
+        $mockprocessor->method('fetch_messages')->willReturnOnConsecutiveCalls([$testmessage], []);
+
+        // Expect output from mtrace() calls in process_messages.
+        $this->expectOutputRegex('/Processing batch.*Completed processing/s');
+
+        // Process messages - the exception should be caught and a failed record saved.
+        $mockprocessor->execute();
+
+        // Verify a failed record was saved.
+        $failedrecord = $DB->get_record('local_sitsgradepush_aws_log', ['messageid' => $messageid]);
+        $this->assertNotEmpty($failedrecord);
+        $this->assertEquals(aws_queue_processor::STATUS_FAILED, $failedrecord->status);
+        $this->assertNotEmpty($failedrecord->error_message);
+    }
+
+    /**
      * Test deleted DAP event processing.
      *
      * @covers \local_sitsgradepush\extension\ec::is_deleted_event
@@ -91,7 +132,7 @@ final class ec_general_test extends ec_base {
         $assign = $this->setup_common_test_data();
 
         // Process initial DAP extension message.
-        $eventdata = file_get_contents(__DIR__ . '/../../fixtures/ec_event_data.json');
+        $eventdata = tests_data_provider::get_ec_event_data();
         $processor = new ec_queue_processor();
         $method = $this->get_accessible_method($processor, 'process_message');
         $result = $method->invoke($processor, ['Message' => $eventdata]);
@@ -143,10 +184,10 @@ final class ec_general_test extends ec_base {
         $assign = $this->setup_common_test_data();
 
         // Set student2 in mock manager.
-        $this->setup_mock_manager(json_decode(file_get_contents(__DIR__ . '/../../fixtures/ec_test_student2.json'), true));
+        $this->setup_mock_manager(tests_data_provider::get_ec_testing_student_data('2'));
 
         // Process initial EC extension message.
-        $eceventdata = file_get_contents(__DIR__ . '/../../fixtures/ec_event_data_ec_identifier.json');
+        $eceventdata = file_get_contents(__DIR__ . '/../../fixtures/ec/ec_event_data_ec_identifier.json');
         $processor = new ec_queue_processor();
         $method = $this->get_accessible_method($processor, 'process_message');
         $result = $method->invoke($processor, ['Message' => $eceventdata]);

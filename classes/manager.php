@@ -1567,7 +1567,7 @@ class manager {
         } else {
             $extensionenabledonlysql = '';
         }
-        $sql = "SELECT am.*, cg.mapcode, cg.mabseq
+        $sql = "SELECT am.*, cg.mapcode, cg.mabseq, cg.astcode
                 FROM {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                 JOIN {" . self::TABLE_COMPONENT_GRADE . "} cg ON am.componentgradeid = cg.id
                 WHERE courseid = :courseid $extensionenabledonlysql";

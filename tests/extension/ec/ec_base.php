@@ -18,6 +18,7 @@ namespace local_sitsgradepush\extension\ec;
 
 use local_sitsgradepush\extension_common;
 use local_sitsgradepush\manager;
+use local_sitsgradepush\tests_data_provider;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -55,7 +56,7 @@ class ec_base extends extension_common {
      */
     protected function setup_mock_manager(?array $studentdata = null): void {
         if ($studentdata === null) {
-            $studentdata = json_decode(file_get_contents(__DIR__ . '/../../fixtures/ec_test_students.json'), true);
+            $studentdata = tests_data_provider::get_ec_testing_student_data();
         }
 
         $manager = $this->getMockBuilder(manager::class)

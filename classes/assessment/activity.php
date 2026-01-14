@@ -368,7 +368,7 @@ abstract class activity extends assessment {
      * @param int $userid User ID.
      * @return void
      */
-    protected function delete_raa_overrides(int $userid): void {
+    public function delete_raa_overrides(int $userid): void {
         $this->remove_user_from_previous_sora_groups($userid);
     }
 
@@ -379,5 +379,28 @@ abstract class activity extends assessment {
      */
     protected function get_assessment_sora_overrides(): array {
         return [];
+    }
+
+    /**
+     * Get user IDs who have RAA overrides for this assessment.
+     * Override this method in activity subclasses that do not use override groups.
+     *
+     * @return int[] Array of user IDs.
+     */
+    protected function get_users_with_raa_overrides(): array {
+        global $CFG;
+        require_once($CFG->dirroot . '/group/lib.php');
+
+        $userids = [];
+        $overrides = $this->get_assessment_sora_overrides();
+
+        foreach ($overrides as $override) {
+            $members = groups_get_members($override->groupid, 'u.id');
+            foreach ($members as $member) {
+                $userids[$member->id] = $member->id;
+            }
+        }
+
+        return array_values($userids);
     }
 }

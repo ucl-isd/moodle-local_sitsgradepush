@@ -296,11 +296,12 @@ abstract class aws_queue_processor {
                 'messageid' => $message['MessageId'],
                 'status' => $result['status'],
                 'error_message' => $error,
-                'timemodified' => time(),
+                'timemodified' => $this->clock->time(),
                 'queuename' => $queuename,
                 'payload' => $message['Body'],
                 'attempts' => $record ? $record->attempts + 1 : 1,
                 'studentcode' => $result['studentcode'] ?? null,
+                'astcode' => $result['astcode'] ?? null,
                 'eventtimestamp' => $result['eventtimestamp'] ?? null,
                 'ignore_reason' => $result['ignore_reason'] ?? null,
             ];
