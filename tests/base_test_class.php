@@ -19,7 +19,9 @@ namespace local_sitsgradepush;
 use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\client;
 use local_sitsgradepush\api\irequest;
+use mod_coursework\models\coursework;
 use moodle_exception;
+use stdClass;
 
 /**
  * Base test class to provide common methods for testing.
@@ -58,5 +60,19 @@ abstract class base_test_class extends \advanced_testcase {
                 ->willReturn($response);
         }
         return $apiclient;
+    }
+
+    /**
+     * Convert coursework model to stdClass.
+     *
+     * @param coursework $coursework
+     * @return stdClass
+     */
+    public static function convert_coursework_to_stdclass(coursework $coursework): stdClass {
+        global $DB;
+
+        $record = $DB->get_record('coursework', ['id' => $coursework->id], '*', MUST_EXIST);
+        $record->cmid = $coursework->get_coursemodule_id();
+        return $record;
     }
 }
