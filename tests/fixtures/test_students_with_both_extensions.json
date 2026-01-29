@@ -1,0 +1,160 @@
+[
+  {
+    "identifier": "ABCDE07",
+    "forename": "Tony",
+    "display_name": null,
+    "surname": "Stark",
+    "userid": "ABCDERF",
+    "ucl_email": null,
+    "association": {
+      "identifier": "12345678/1",
+      "type": {
+        "name": "P",
+        "code": "Postgraduate"
+      },
+      "supplementary": {
+        "student_code": "12345678",
+        "student_programme_route_code": "12345678/1",
+        "candidate_number": "JJSNS7",
+        "exam_centre_code": "MAIN"
+      },
+      "organisation_unit": {
+        "code": "HEINF_PHS",
+        "name": "Institute Of Health Informatics",
+        "type": "Department",
+        "link": {
+          "code": "PHS",
+          "name": "Faculty Of Population Health Sciences",
+          "type": "Faculty"
+        }
+      }
+    },
+    "student_assessment": {
+      "identifier ": null,
+      "resit_number": "0",
+      "start_datetime": null,
+      "end_datetime": null,
+      "duration": null,
+      "submission_datetime": null,
+      "marker": null,
+      "actual_mark": null,
+      "actual_grade": null,
+      "agreed_mark": null,
+      "agreed_grade": null,
+      "sora": {
+        "extra_duration": null,
+        "rest_duration": null
+      },
+      "required_provisions": {
+        "provision_tier": "TIER1",
+        "no_dys_ext": "5",
+        "no_hrs_ext": null,
+        "add_exam_time": null,
+        "rest_brk_add_time": null,
+        "asmnt_type_code": "CN01",
+        "accessibility_assessment_status": "5"
+      }
+    },
+    "extenuating_circumstance": [
+      {
+        "identifier": "EC-ABCDE07-009",
+        "module_code": "LAWS0024",
+        "record_type": "A",
+        "sequence_number": "1",
+        "cor_due_dt": null,
+        "new_due_date": "2025-02-22",
+        "original_due_date": "2025-02-17",
+        "approved_mitigation": "298"
+      },
+      {
+        "identifier": "DAP-ABCDE07-001",
+        "module_code": "LAWS0024",
+        "record_type": "A",
+        "sequence_number": "1",
+        "cor_due_dt": "2025-02-22",
+        "new_due_date": "2025-02-27",
+        "original_due_date": "2025-02-22",
+        "approved_mitigation": "128"
+      }
+    ]
+  },
+  {
+    "identifier": "BCDEA08",
+    "forename": "Peter",
+    "display_name": null,
+    "surname": "Parker",
+    "userid": "BCDEFGH",
+    "ucl_email": null,
+    "association": {
+      "identifier": "87654321/1",
+      "type": {
+        "name": "U",
+        "code": "Undergraduate"
+      },
+      "supplementary": {
+        "student_code": "87654321",
+        "student_programme_route_code": "87654321/1",
+        "candidate_number": "KKTNQ8",
+        "exam_centre_code": "MAIN"
+      },
+      "organisation_unit": {
+        "code": "COMPS_ENG",
+        "name": "Department Of Computer Science",
+        "type": "Department",
+        "link": {
+          "code": "ENG",
+          "name": "Faculty Of Engineering Sciences",
+          "type": "Faculty"
+        }
+      }
+    },
+    "student_assessment": {
+      "identifier ": null,
+      "resit_number": "0",
+      "start_datetime": null,
+      "end_datetime": null,
+      "duration": null,
+      "submission_datetime": null,
+      "marker": null,
+      "actual_mark": null,
+      "actual_grade": null,
+      "agreed_mark": null,
+      "agreed_grade": null,
+      "sora": {
+        "extra_duration": null,
+        "rest_duration": null
+      },
+      "required_provisions": {
+        "provision_tier": "TIER2",
+        "no_dys_ext": "10",
+        "no_hrs_ext": null,
+        "add_exam_time": null,
+        "rest_brk_add_time": null,
+        "asmnt_type_code": "CN01",
+        "accessibility_assessment_status": "5"
+      }
+    },
+    "extenuating_circumstance": [
+      {
+        "identifier": "EC-BCDEA08-005",
+        "module_code": "COMP0101",
+        "record_type": "A",
+        "sequence_number": "1",
+        "cor_due_dt": null,
+        "new_due_date": "2025-03-20",
+        "original_due_date": "2025-03-05",
+        "approved_mitigation": "298"
+      },
+      {
+        "identifier": "DAP-BCDEA08-002",
+        "module_code": "COMP0101",
+        "record_type": "A",
+        "sequence_number": "1",
+        "cor_due_dt": "2025-03-05",
+        "new_due_date": "2025-03-10",
+        "original_due_date": "2025-03-05",
+        "approved_mitigation": "128"
+      }
+    ]
+  }
+]
