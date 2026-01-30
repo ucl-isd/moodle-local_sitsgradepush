@@ -1,7 +1,0 @@
-Assessment Type,Tier,Extension Type,Extension Value,Extension Unit,Break Value,Enabled
-CN01,1,days,5,,,1
-CN01,2,days,10,,,1
-EC03,1,time_per_hour,15,,5,1
-EC03,2,time_per_hour,15,,10,1
-HD02,1,time,2,hours,,1
-HD02,2,time,4,hours,,1

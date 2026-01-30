@@ -37,6 +37,9 @@ class getstudentsv2 extends request {
     /** @var int limit */
     const LIMIT = 2000;
 
+    /** @var string AAA record type that links with RAA extension ARP records */
+    const AAA_TYPE = 'RAPAS';
+
     /**
      * Constructor.
      *
@@ -126,11 +129,12 @@ class getstudentsv2 extends request {
      */
     public function get_endpoint_url_with_params(): string {
         return sprintf(
-            '%s/%s-%s/student%s?limit=%d',
+            '%s/%s-%s/student%s?type=%s&limit=%d',
             $this->endpointurl,
             $this->paramsdata['MAP_CODE'],
             $this->paramsdata['MAB_SEQ'],
             !empty($this->data->studentcode) ? '/' . $this->data->studentcode : '',
+            self::AAA_TYPE,
             self::LIMIT
         );
     }

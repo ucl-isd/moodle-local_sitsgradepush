@@ -54,11 +54,8 @@ abstract class assessment implements iassessment {
     /** @var int SITS mapping id */
     protected int $sitsmappingid = 0;
 
-    /** @var \stdClass|null Assessment extension tier, the extension that will be applied, e.g. CN01 Tier 1. */
-    protected ?\stdClass $assessmentextensiontier = null;
-
-    /** @var int|null Fallback extension in seconds when no tier match found but mapped MAB uses time_per_hour. */
-    protected ?int $fallbackextension = null;
+    /** @var array User IDs who have RAA overrides for this assessment */
+    public array $raauserids = [];
 
     /**
      * Constructor.
@@ -71,6 +68,11 @@ abstract class assessment implements iassessment {
         $this->type = $sourcetype;
         $this->clock = di::get(clock::class);
         $this->set_instance();
+
+        // Get RAA user IDs if extension is supported.
+        if ($this->is_extension_supported()) {
+            $this->raauserids = $this->get_users_with_raa_overrides();
+        }
     }
 
     /**
@@ -95,9 +97,11 @@ abstract class assessment implements iassessment {
         if ($extension instanceof ec) {
             $this->apply_ec_extension($extension);
         } else if ($extension instanceof sora) {
-            // Remove RAA override for this student if time extension is 0.
-            if ($extension->get_time_extension() == 0) {
-                $this->delete_raa_overrides($extension->get_userid());
+            if (!$extension->raarequiredprovisions->has_extension()) {
+                // Remove RAA override if student has existing RAA override.
+                if (in_array($extension->get_userid(), $this->raauserids)) {
+                    $this->delete_raa_overrides($extension->get_userid());
+                }
                 return;
             }
 
@@ -427,31 +431,6 @@ abstract class assessment implements iassessment {
             return false;
         }
 
-        // Get MAB info first.
-        $mab = manager::get_manager()->get_mab_and_map_info_by_mapping_id($mappingid);
-
-        // Try to identify the extension's tier from the SORA info.
-        $refextensiontier = $sora->get_ref_extension_tier();
-
-        // The RAA info does not match any reference extension tier.
-        if (is_null($refextensiontier)) {
-            return $this->determine_fallback_tier($sora, $mab);
-        }
-
-        // Find enabled assessment extension tier from the MAB AST code and reference extension tier.
-        // This is the extension tier that will be applied for the student, e.g. CN01 Tier 1.
-        $this->assessmentextensiontier = extensionmanager::get_extension_tier_by_assessment_and_tier(
-            $mab->astcode,
-            $refextensiontier,
-            1
-        );
-
-        // No enabled extension tier found for the assessment.
-        // For example, there is no extension tier defined for the assessment or the extension tier is disabled.
-        if (is_null($this->assessmentextensiontier)) {
-            return false;
-        }
-
         return true;
     }
 
@@ -561,109 +540,6 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Get the assessment extension tier object.
-     * The extension that will be applied, e.g. CN01 Tier 1.
-     *
-     * @return \stdClass|null
-     */
-    protected function get_assessment_extension_tier(): ?\stdClass {
-        return $this->assessmentextensiontier;
-    }
-
-    /**
-     * Get the fallback extension in seconds.
-     *
-     * @return int|null The fallback extension in seconds or null if not set.
-     */
-    protected function get_fallback_extension(): ?int {
-        return $this->fallbackextension;
-    }
-
-    /**
-     * Determine fallback tier when SORA data doesn't match any TIERREF.
-     *
-     * @param sora $sora The SORA extension object.
-     * @param \stdClass $mab The MAB object.
-     * @return bool True if fallback tier was determined, false otherwise.
-     */
-    protected function determine_fallback_tier(sora $sora, \stdClass $mab): bool {
-        // Get raw extension value in minutes (timeextension is in seconds).
-        $rawextension = $sora->get_time_extension() / MINSECS;
-
-        // Get all TIERREF records and build threshold array.
-        $tierrefs = extensionmanager::get_all_extension_tiers(['assessmenttype' => 'TIERREF']);
-        $thresholds = [];
-        foreach ($tierrefs as $tierref) {
-            $thresholds[$tierref->tier] = $tierref->extensionvalue + $tierref->breakvalue;
-        }
-
-        // Determine provision tier based on raw extension value.
-        if ($rawextension >= $thresholds[3]) {
-            $provisiontier = 3;
-        } else if ($rawextension >= $thresholds[2]) {
-            $provisiontier = 2;
-        } else {
-            $provisiontier = 1;
-        }
-
-        // Get the tier record for the MAB's AST code.
-        $tier = extensionmanager::get_extension_tier_by_assessment_and_tier(
-            $mab->astcode,
-            $provisiontier,
-            1
-        );
-
-        if (is_null($tier)) {
-            return false;
-        }
-
-        // Set extension based on extension type.
-        if ($tier->extensiontype === extensionmanager::RAA_EXTENSION_TYPE_TIME_PER_HOUR) {
-            // Use raw extension value for time_per_hour.
-            $duration = $this->get_assessment_duration();
-            $totalhours = $duration / HOURSECS;
-            $this->fallbackextension = (int) ($totalhours * $sora->get_time_extension());
-        } else {
-            // Use tier's configured values.
-            $this->assessmentextensiontier = $tier;
-        }
-
-        return true;
-    }
-
-    /**
-     * Calculate extension details for RAA.
-     * Returns the extension in seconds and the new due date.
-     *
-     * @param sora $sora The SORA extension object.
-     * @return array Array with 'extensioninsecs' and 'newduedate' keys.
-     * @throws \moodle_exception
-     */
-    protected function calculate_sora_extension_details(sora $sora): array {
-        // Check if fallback extension was calculated (when no tier match found).
-        $fallbackextension = $this->get_fallback_extension();
-        if ($fallbackextension !== null) {
-            return [
-                'extensioninsecs' => $fallbackextension,
-                'newduedate' => $this->get_end_date() + $fallbackextension,
-            ];
-        }
-
-        // Uses the matched assessment extension tier to calculate extension details.
-        $tier = $this->get_assessment_extension_tier();
-        if (!$tier) {
-            throw new \moodle_exception('error:assessmentextensiontiernotset', 'local_sitsgradepush');
-        }
-
-        // Calculate extension details (duration for time_per_hour type).
-        $duration = $tier->extensiontype === extensionmanager::RAA_EXTENSION_TYPE_TIME_PER_HOUR
-            ? $this->get_assessment_duration()
-            : null;
-
-        return $sora->calculate_extension_details($tier, $this->get_end_date(), $duration);
-    }
-
-    /**
      * Get all participants for the assessment.
      *
      * @return array
@@ -677,7 +553,7 @@ abstract class assessment implements iassessment {
      *
      * @return int The duration in seconds.
      */
-    protected function get_assessment_duration(): int {
+    public function get_assessment_duration(): int {
         if ($this->get_type() !== assessmentfactory::SOURCETYPE_MOD) {
             return 0;
         }

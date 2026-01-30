@@ -843,5 +843,45 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025112400, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2026012700) {
+        // Define field astcode to be added to local_sitsgradepush_aws_log.
+        $table = new xmldb_table('local_sitsgradepush_aws_log');
+        $field = new xmldb_field('astcode', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'studentcode');
+
+        // Conditionally launch add field astcode.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index idx_astcode (not unique) to be added to local_sitsgradepush_aws_log.
+        $index = new xmldb_index('idx_astcode', XMLDB_INDEX_NOTUNIQUE, ['astcode']);
+
+        // Conditionally launch add index idx_astcode.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Define composite index for efficient out-of-order queries.
+        $index = new xmldb_index(
+            'idx_queue_student_ast_ts',
+            XMLDB_INDEX_NOTUNIQUE,
+            ['queuename', 'studentcode', 'astcode', 'eventtimestamp']
+        );
+
+        // Conditionally launch add index idx_queue_student_ast_ts.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Drop the extension tiers table as it is no longer needed.
+        $table = new xmldb_table('local_sitsgradepush_ext_tiers');
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2026012700, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

@@ -1,0 +1,67 @@
+{
+  "identifier": "aaafbbbb-c888-8383-b333-12345gt5678u",
+  "timestamp": "20260127T121237.960712UTC",
+  "event": {
+    "name": "person_sora",
+    "operation": "update",
+    "source": "sits"
+  },
+  "changes": [
+    {
+      "attribute": "person_sora.accessibility_assessment_status",
+      "from": "5",
+      "to": "4"
+    }
+  ],
+  "primary_keys": [
+    {
+      "person_sora.identifier": "ABCDE12",
+      "person_sora.accessibility_assessment_arrangement_sequence_number": "<GOLD_STAR>",
+      "person_sora.arrangement_record_sequence_number": "000001"
+    }
+  ],
+  "entity": {
+    "person_sora": {
+      "identifier": "ABCDE12",
+      "type": {
+        "code": "RAPXR",
+        "name": "Reasonable Adjustments: Exam and Exam Room"
+      },
+      "arrangement_record_sequence_number": "000001",
+      "accessibility_assessment_arrangement_sequence_number": "3",
+      "approved_indicator": null,
+      "extra_duration": "00:15",
+      "rest_duration": "00:05",
+      "note": null,
+      "post_deadline_details": null,
+      "expiry_date": null,
+      "last_updated": null,
+      "person": {
+        "identifier": "ABCDE12",
+        "student_code": "12345678",
+        "userid": "CDEFG12"
+      },
+      "required_provisions": [
+        {
+          "provision_tier": null,
+          "no_dys_ext": null,
+          "no_hrs_ext": null,
+          "add_exam_time": null,
+          "rest_brk_add_time": null,
+          "asmnt_type_code": null,
+          "required_provision_sqn": null
+        }
+      ],
+      "required_room_facility": [
+        {
+          "required_provision_detail": null,
+          "required_adjustments": null,
+          "assessment_type_code": null,
+          "rest_breaks_additional_time": null,
+          "required_provision_notes": null
+        }
+      ],
+      "accessibility_assessment_status": "4"
+    }
+  }
+}

@@ -37,43 +37,11 @@ class extensionmanager {
     /** @var string DB table for storing overrides */
     const TABLE_OVERRIDES = 'local_sitsgradepush_overrides';
 
-    /** @var string DB table for storing extension tiers */
-    const TABLE_EXTENSION_TIERS = 'local_sitsgradepush_ext_tiers';
-
     /** @var string Extension name for SORA */
     const EXTENSION_SORA = 'SORA';
 
     /** @var string Extension name for EC */
     const EXTENSION_EC = 'EC';
-
-    /** @var array CSV headers for extension tiers */
-    const EXTENSION_TIERS_CSV_HEADERS = [
-        'Assessment Type',
-        'Tier',
-        'Extension Type',
-        'Extension Value',
-        'Extension Unit',
-        'Break Value',
-        'Enabled',
-    ];
-
-    /** @var string RAA extension type for time per hour */
-    const RAA_EXTENSION_TYPE_TIME_PER_HOUR = 'time_per_hour';
-
-    /** @var string RAA extension type for time */
-    const RAA_EXTENSION_TYPE_TIME = 'time';
-
-    /** @var string RAA extension type for days */
-    const RAA_EXTENSION_TYPE_DAYS = 'days';
-
-    /** @var string RAA extension unit for minutes */
-    const RAA_EXTENSION_UNIT_MINUTES = 'minutes';
-
-    /** @var string RAA extension unit for hours */
-    const RAA_EXTENSION_UNIT_HOURS = 'hours';
-
-    /** @var string RAA extension unit for days */
-    const RAA_EXTENSION_UNIT_DAYS = 'days';
 
     /**
      * Update SORA extension for students in a mapping using the SITS get students API as the data source.
@@ -94,7 +62,12 @@ class extensionmanager {
             return;
         }
 
-        // Process SORA extension for each student or the specified student if user id is provided.
+        // Check if the AST code is eligible for RAA extension.
+        if (!self::is_ast_code_eligible_for_raa($mapping->astcode)) {
+            return;
+        }
+
+        // Process SORA extension for each student.
         foreach ($students as $student) {
             try {
                 $sora = new sora();
@@ -148,6 +121,22 @@ class extensionmanager {
      */
     public static function is_extension_enabled(): bool {
         return get_config('local_sitsgradepush', 'extension_enabled') == '1';
+    }
+
+    /**
+     * Check if the AST code is eligible for RAA extension.
+     *
+     * @param string $astcode AST code.
+     * @return bool
+     */
+    public static function is_ast_code_eligible_for_raa(string $astcode): bool {
+        $ineligible = get_config('local_sitsgradepush', 'raa_ineligible_ast_codes');
+        if (empty($ineligible)) {
+            return true;
+        }
+
+        $codes = array_map('trim', explode(',', $ineligible));
+        return !in_array($astcode, $codes);
     }
 
     /**
@@ -302,287 +291,5 @@ class extensionmanager {
             'extensiontype' => $extensiontype,
         ];
         return $DB->get_record_sql($sql, $params);
-    }
-
-    /**
-     * Parse and validate CSV content for extension tiers.
-     *
-     * @param string $content CSV file content.
-     * @return array Validated tier data.
-     * @throws \moodle_exception
-     */
-    public static function parse_extension_tiers_csv(string $content): array {
-        // Check if content is empty.
-        if (empty($content)) {
-            throw new \moodle_exception('tier:error:emptycsvfile', 'local_sitsgradepush');
-        }
-
-        // Create CSV reader.
-        $importid = \csv_import_reader::get_new_iid('sitsgradepush_extension_tiers');
-        $csvreader = new \csv_import_reader($importid, 'sitsgradepush_extension_tiers');
-
-        // Load CSV content.
-        $readcount = $csvreader->load_csv_content($content, 'utf-8', 'comma');
-
-        if ($readcount === false) {
-            $error = $csvreader->get_error();
-            throw new \moodle_exception('tier:error:csvloadfailed', 'local_sitsgradepush', '', $error);
-        }
-
-        // Initialize CSV reader.
-        $csvreader->init();
-
-        // Get and validate headers.
-        $headers = $csvreader->get_columns();
-        $expectedheaders = self::EXTENSION_TIERS_CSV_HEADERS;
-
-        if ($headers !== $expectedheaders) {
-            $csvreader->close();
-            $actual = implode(', ', $headers);
-            $expected = implode(', ', $expectedheaders);
-            throw new \moodle_exception(
-                'tier:error:invalidcsvheaders',
-                'local_sitsgradepush',
-                '',
-                "Expected: [$expected] but got: [$actual]"
-            );
-        }
-
-        $rows = [];
-        $csvlinenumber = 1;
-
-        // Process each row.
-        while ($row = $csvreader->next()) {
-            $csvlinenumber++;
-
-            // Skip rows where the first column (assessment type) is empty.
-            if (empty($row[0]) || trim($row[0]) === '') {
-                continue;
-            }
-
-            // Convert empty strings to null for proper validation.
-            $data = [
-                'assessmenttype' => trim($row[0]),
-                'tier' => trim($row[1]),
-                'extensiontype' => trim($row[2]),
-                'extensionvalue' => (!empty($row[3]) && trim($row[3]) !== '') ? (int) $row[3] : null,
-                'extensionunit' => (!empty($row[4]) && trim($row[4]) !== '') ? trim($row[4]) : null,
-                'breakvalue' => (!empty($row[5]) && trim($row[5]) !== '') ? (int) $row[5] : null,
-                'enabled' => ($row[6] === '0') ? 0 : 1,
-            ];
-
-            // Validate the row.
-            self::validate_tier_row($data, $csvlinenumber);
-
-            $rows[] = $data;
-        }
-
-        // Close the CSV reader.
-        $csvreader->close();
-
-        if (empty($rows)) {
-            throw new \moodle_exception('tier:error:emptycsvfile', 'local_sitsgradepush');
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Import extension tier data.
-     *
-     * @param array $data Tier data to import.
-     * @param string $mode Import mode ('replace' or 'update').
-     * @return void
-     * @throws \dml_exception
-     */
-    public static function import_extension_tiers(array $data, string $mode): void {
-        global $DB;
-
-        $time = di::get(clock::class)->time();
-
-        if ($mode === 'replace') {
-            // Delete all existing records.
-            $DB->delete_records(self::TABLE_EXTENSION_TIERS);
-        }
-
-        foreach ($data as $row) {
-            $record = new \stdClass();
-            $record->assessmenttype = $row['assessmenttype'];
-            $record->tier = $row['tier'];
-            $record->extensiontype = $row['extensiontype'];
-            $record->extensionvalue = $row['extensionvalue'];
-            $record->extensionunit = $row['extensionunit'];
-            $record->breakvalue = $row['breakvalue'];
-            $record->enabled = $row['enabled'] ?? 1;
-            $record->timemodified = $time;
-
-            if ($mode === 'replace') {
-                $record->timecreated = $time;
-                $DB->insert_record(self::TABLE_EXTENSION_TIERS, $record);
-            } else if ($mode === 'update') {
-                // Check if record exists.
-                $existing = $DB->get_record(self::TABLE_EXTENSION_TIERS, [
-                    'assessmenttype' => $record->assessmenttype,
-                    'tier' => $record->tier,
-                ]);
-
-                if ($existing) {
-                    $record->id = $existing->id;
-                    $record->timecreated = $existing->timecreated;
-                    $DB->update_record(self::TABLE_EXTENSION_TIERS, $record);
-                } else {
-                    $record->timecreated = $time;
-                    $DB->insert_record(self::TABLE_EXTENSION_TIERS, $record);
-                }
-            }
-        }
-    }
-
-    /**
-     * Get all extension tier configurations.
-     *
-     * @param array $filters Optional filters.
-     * @return array
-     * @throws \dml_exception
-     */
-    public static function get_all_extension_tiers(array $filters = []): array {
-        global $DB;
-        return $DB->get_records(self::TABLE_EXTENSION_TIERS, $filters, 'assessmenttype ASC, tier ASC');
-    }
-
-    /**
-     * Export extension tiers to CSV format.
-     *
-     * @return string CSV content.
-     * @throws \dml_exception
-     */
-    public static function export_extension_tiers_csv(): string {
-        $tiers = self::get_all_extension_tiers();
-
-        // Build CSV content.
-        $csvdata = [];
-        $csvdata[] = self::EXTENSION_TIERS_CSV_HEADERS;
-
-        foreach ($tiers as $tier) {
-            $csvdata[] = [
-                $tier->assessmenttype,
-                $tier->tier,
-                $tier->extensiontype,
-                $tier->extensionvalue ?? '',
-                $tier->extensionunit ?? '',
-                $tier->breakvalue ?? '',
-                $tier->enabled,
-            ];
-        }
-
-        // Convert to CSV string.
-        $csvoutput = fopen('php://temp', 'r+');
-        foreach ($csvdata as $row) {
-            fputcsv($csvoutput, $row);
-        }
-        rewind($csvoutput);
-        $csv = stream_get_contents($csvoutput);
-        fclose($csvoutput);
-
-        return $csv;
-    }
-
-    /**
-     * Get extension tier by assessment type and tier number.
-     *
-     * @param string $assessmenttype
-     * @param int $tier
-     * @param int|null $enabled Optional filter by enabled status.
-     * @return \stdClass|null
-     * @throws \dml_exception
-     */
-    public static function get_extension_tier_by_assessment_and_tier(
-        string $assessmenttype,
-        int $tier,
-        ?int $enabled = null
-    ): ?\stdClass {
-        global $DB;
-        $params = [
-            'assessmenttype' => $assessmenttype,
-            'tier' => $tier,
-        ];
-
-        if ($enabled !== null) {
-            $params['enabled'] = $enabled;
-        }
-
-        $tier = $DB->get_record(self::TABLE_EXTENSION_TIERS, $params);
-
-        return !empty($tier) ? $tier : null;
-    }
-
-    /**
-     * Validate a tier row from CSV.
-     *
-     * @param array $data Row data.
-     * @param int $linenumber Line number in CSV.
-     * @return void
-     * @throws \moodle_exception
-     */
-    protected static function validate_tier_row(array &$data, int $linenumber): void {
-        $line = "Line $linenumber: ";
-
-        // Validate assessment type.
-        if (empty($data['assessmenttype'])) {
-            throw new \moodle_exception('tier:error:emptyassessmenttype', 'local_sitsgradepush', '', $line);
-        }
-
-        // Validate tier.
-        if (!in_array($data['tier'], [1, 2, 3])) {
-            throw new \moodle_exception('tier:error:invalidtier', 'local_sitsgradepush', '', $line);
-        }
-
-        // Validate extension type.
-        if (!in_array($data['extensiontype'], ['time', 'time_per_hour', 'days'])) {
-            throw new \moodle_exception('tier:error:invalidextensiontype', 'local_sitsgradepush', '', $line);
-        }
-
-        // Extension type specific validation.
-        switch ($data['extensiontype']) {
-            case 'days':
-                // Must have extension value.
-                if (empty($data['extensionvalue']) || $data['extensionvalue'] <= 0) {
-                    throw new \moodle_exception('tier:error:extensionvaluerequired', 'local_sitsgradepush', '', $line);
-                }
-                // Cannot have break value.
-                if (!empty($data['breakvalue'])) {
-                    throw new \moodle_exception('tier:error:daysnobreak', 'local_sitsgradepush', '', $line);
-                }
-                // Auto-set unit to days.
-                $data['extensionunit'] = 'days';
-                break;
-
-            case 'time':
-                // Must use minutes or hours.
-                if (!in_array($data['extensionunit'], ['minutes', 'hours'])) {
-                    throw new \moodle_exception('tier:error:timeunitinvalid', 'local_sitsgradepush', '', $line);
-                }
-                // Must have extension value.
-                if (empty($data['extensionvalue']) || $data['extensionvalue'] <= 0) {
-                    throw new \moodle_exception('tier:error:extensionvaluerequired', 'local_sitsgradepush', '', $line);
-                }
-                // Cannot have break value.
-                if (!empty($data['breakvalue'])) {
-                    throw new \moodle_exception('tier:error:timenobreak', 'local_sitsgradepush', '', $line);
-                }
-                break;
-
-            case 'time_per_hour':
-                // Must have either extension value or break value.
-                $hasextension = !empty($data['extensionvalue']) && $data['extensionvalue'] > 0;
-                $hasbreak = !empty($data['breakvalue']) && $data['breakvalue'] > 0;
-
-                if (!$hasextension && !$hasbreak) {
-                    throw new \moodle_exception('tier:error:timeperhouronevalue', 'local_sitsgradepush', '', $line);
-                }
-                // Auto-set unit to minutes.
-                $data['extensionunit'] = 'minutes';
-                break;
-        }
     }
 }

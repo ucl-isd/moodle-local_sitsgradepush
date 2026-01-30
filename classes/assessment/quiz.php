@@ -137,6 +137,19 @@ class quiz extends activity {
     }
 
     /**
+     * Get the assessment duration in seconds.
+     * Returns the lesser of time limit and quiz duration, or quiz duration if no time limit.
+     *
+     * @return int Duration in seconds.
+     */
+    public function get_assessment_duration(): int {
+        $quizduration = $this->get_end_date() - $this->get_start_date();
+        $timelimit = $this->get_time_limit();
+
+        return $timelimit ? min($timelimit, $quizduration) : $quizduration;
+    }
+
+    /**
      * Apply EC extension to the quiz.
      *
      * @param ec $ec EC extension object.
@@ -194,7 +207,7 @@ class quiz extends activity {
         global $DB;
 
         // Calculate extension details.
-        $extensiondetails = $this->calculate_sora_extension_details($sora);
+        $extensiondetails = $sora->calculate_extension_details($this);
         $extensioninsecs = $extensiondetails['extensioninsecs'];
         $newduedate = $extensiondetails['newduedate'];
 
@@ -268,18 +281,5 @@ class quiz extends activity {
             $quiz,
             $this->get_module_context()
         );
-    }
-
-    /**
-     * Get the assessment duration in seconds.
-     * Returns the lesser of time limit and quiz duration, or quiz duration if no time limit.
-     *
-     * @return int Duration in seconds.
-     */
-    protected function get_assessment_duration(): int {
-        $quizduration = $this->get_end_date() - $this->get_start_date();
-        $timelimit = $this->get_time_limit();
-
-        return $timelimit ? min($timelimit, $quizduration) : $quizduration;
     }
 }

@@ -153,6 +153,12 @@ class ec extends extension {
         } else {
             // Normal EC message processing.
             $this->mabidentifier = $studentec->assessment_component->identifier ?? '';
+
+            // Check student code cannot be empty.
+            if (empty($studentec->student->student_code)) {
+                throw new \moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
+            }
+
             $this->studentcode = $studentec->student->student_code;
             $this->set_userid($this->studentcode);
 

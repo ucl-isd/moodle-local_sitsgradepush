@@ -1,0 +1,57 @@
+{
+  "identifier": "JGHDH45",
+  "forename": "Peter",
+  "display_name": "Peter Pan",
+  "surname": "Pan",
+  "userid": "JGHDHJF",
+  "ucl_email": null,
+  "association": {
+    "identifier": "12345678/1",
+    "type": {
+      "name": "U",
+      "code": "Undergraduate"
+    },
+    "supplementary": {
+      "student_code": "12345678",
+      "student_programme_route_code": "12345678/1",
+      "candidate_number": "JJSNS7",
+      "exam_centre_code": "EXAMSRM"
+    },
+    "organisation_unit": {
+      "code": "MATHS_MAP",
+      "name": "Mathematics",
+      "type": "Department",
+      "link": {
+        "code": "MAP",
+        "name": "Faculty Of Mathematical And Physical Sciences",
+        "type": "Faculty"
+      }
+    }
+  },
+  "student_assessment": {
+    "identifier ": null,
+    "resit_number": "002",
+    "start_datetime": null,
+    "end_datetime": null,
+    "duration": null,
+    "submission_datetime": null,
+    "marker": null,
+    "actual_mark": null,
+    "actual_grade": null,
+    "agreed_mark": null,
+    "agreed_grade": null,
+    "sora": {
+      "extra_duration": null,
+      "rest_duration": null
+    },
+    "required_provisions": {
+      "provision_tier": "TIER1",
+      "no_dys_ext": null,
+      "no_hrs_ext": null,
+      "add_exam_time": 15,
+      "rest_brk_add_time": 5,
+      "asmnt_type_code": "ED03",
+      "accessibility_assessment_status": "5"
+    }
+  }
+}

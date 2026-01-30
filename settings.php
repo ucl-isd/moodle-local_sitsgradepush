@@ -176,6 +176,14 @@ if ($hassiteconfig) {
             50
         ));
 
+        // Set AST codes not eligible for RAA extension, separated by comma.
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/raa_ineligible_ast_codes',
+            get_string('settings:raaineligibleastcodes', 'local_sitsgradepush'),
+            get_string('settings:raaineligibleastcodes:desc', 'local_sitsgradepush'),
+            'GD01,GN01,GN02,GN03,SD01,TD01,XD01,ZD01,ZN01'
+        ));
+
         // Switch to enable/disable local assessment type update.
         $settings->add(new admin_setting_configcheckbox(
             'local_sitsgradepush/local_assess_type_update_enabled',
@@ -284,17 +292,6 @@ if ($hassiteconfig) {
             10
         ));
     }
-
-    // Add link to manage extension tiers page.
-    $ADMIN->add(
-        'localsitssettings',
-        new admin_externalpage(
-            'local_sitsgradepush_manageextensiontiers',
-            get_string('tier:manageextensiontiers', 'local_sitsgradepush'),
-            new moodle_url('/local/sitsgradepush/manage_extension_tiers.php'),
-            'local/sitsgradepush:manageextensiontiers'
-        )
-    );
 
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
     foreach ($subplugins as $plugin) {
