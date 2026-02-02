@@ -224,6 +224,15 @@ class tests_data_provider {
     }
 
     /**
+     * Get the testing student data with both RAA and EC extensions.
+     *
+     * @return array
+     */
+    public static function get_test_students_with_both_extensions(): array {
+        return json_decode(file_get_contents(__DIR__ . "/test_students_with_both_extensions.json"), true);
+    }
+
+    /**
      * Set a protected property.
      *
      * @param  object|string  $obj

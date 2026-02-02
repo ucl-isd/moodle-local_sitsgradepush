@@ -293,6 +293,15 @@ if ($hassiteconfig) {
         ));
     }
 
+    $ADMIN->add(
+        'localsitssettings',
+        new admin_externalpage(
+            'local_sitsgradepush_process_extensions',
+            get_string('manualprocessextensions', 'local_sitsgradepush'),
+            new moodle_url('/local/sitsgradepush/process_extensions.php')
+        )
+    );
+
     $subplugins = core_plugin_manager::instance()->get_plugins_of_type('sitsapiclient');
     foreach ($subplugins as $plugin) {
         /** @var sitsapiclient $plugin */
