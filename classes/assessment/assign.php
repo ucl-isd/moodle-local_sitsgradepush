@@ -68,6 +68,15 @@ class assign extends activity {
     }
 
     /**
+     * Get the cut-off date of this assessment.
+     *
+     * @return int
+     */
+    public function get_cut_off_date(): int {
+        return $this->sourceinstance->cutoffdate;
+    }
+
+    /**
      * Delete applied EC override and restore original override if any.
      *
      * @param \stdClass $mtsavedoverride - Override record saved in marks transfer overrides table.
@@ -238,14 +247,21 @@ class assign extends activity {
         require_once($CFG->dirroot . '/mod/assign/locallib.php');
         require_once($CFG->dirroot . '/mod/assign/lib.php');
 
+        // Override cut-off date to align new due date if it is set and earlier than new due date.
+        $cutoffdate = null;
+        if ($this->get_cut_off_date() > 0 && $this->get_cut_off_date() < $newduedate) {
+            $cutoffdate = $newduedate;
+        }
+
         // Check if the override already exists.
         $override = $this->get_override_record($userid, $groupid);
         if ($override) {
             // No need to update if the due date is the same.
-            if ($override->duedate == $newduedate) {
+            if ($override->duedate == $newduedate && $override->cutoffdate == $cutoffdate) {
                 return;
             }
             $override->duedate = $newduedate;
+            $override->cutoffdate = $cutoffdate;
             $DB->update_record('assign_overrides', $override);
             $newrecord = false;
         } else {
@@ -253,6 +269,7 @@ class assign extends activity {
             $override = new \stdClass();
             $override->assignid = $this->get_source_instance()->id;
             $override->duedate = $newduedate;
+            $override->cutoffdate = $cutoffdate;
             $override->userid = $groupid ? null : $userid;
             $override->groupid = $groupid ?: null;
             $override->sortorder = $groupid ? 0 : null;

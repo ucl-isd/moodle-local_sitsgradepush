@@ -309,6 +309,85 @@ final class raa_assign_test extends raa_base {
     }
 
     /**
+     * Data provider for cutoff date override tests.
+     *
+     * @return array
+     */
+    public static function cutoff_date_provider(): array {
+        return [
+            'Cutoff earlier than new due date - should be aligned' => [
+                'cutoffdatetime' => '2025-02-25 14:00:00',
+                'expectedcutoffdatetime' => '2025-02-27 14:00:00',
+            ],
+            'Cutoff later than new due date - should not be overridden' => [
+                'cutoffdatetime' => '2025-02-28 14:00:00',
+                'expectedcutoffdatetime' => null,
+            ],
+            'Cutoff not set - should not be overridden' => [
+                'cutoffdatetime' => null,
+                'expectedcutoffdatetime' => null,
+            ],
+        ];
+    }
+
+    /**
+     * Test cutoff date override behaviour with different cutoff date scenarios.
+     * This will cover EC/DAP as it is using the same function to override dates.
+     *
+     * @dataProvider cutoff_date_provider
+     * @covers \local_sitsgradepush\assessment\assign::get_cut_off_date
+     * @covers \local_sitsgradepush\assessment\assign::overrides_due_date
+     * @param string|null $cutoffdatetime The cutoff datetime string or null if not set.
+     * @param string|null $expectedcutoffdatetime The expected cutoff datetime string or null.
+     * @return void
+     */
+    public function test_cutoff_date_override(
+        ?string $cutoffdatetime,
+        ?string $expectedcutoffdatetime
+    ): void {
+        // CN01 assignment only works if feedback tracker is installed because it is extended by days.
+        // Require feedback tracker plugin for working days calculation.
+        if (!$this->is_feedback_tracker_installed()) {
+            $this->markTestSkipped('Feedback tracker plugin is not installed.');
+        }
+
+        global $DB;
+
+        // CN01 Tier 1: 5 working days extension.
+        // Original due date: 2025-02-20 14:00:00, new due date: 2025-02-27 14:00:00.
+        if ($cutoffdatetime !== null) {
+            $cutoffdate = $this->clock->now()
+                ->modify($cutoffdatetime)->getTimestamp();
+            $DB->set_field('assign', 'cutoffdate', $cutoffdate, [
+                'id' => $this->raaassign2->id,
+            ]);
+        }
+
+        // Process all mappings for SORA.
+        $this->process_all_mappings_for_sora();
+
+        // Get the override for the CN01 assignment.
+        $groupname = sora::get_extension_group_name(
+            $this->raaassign2->cmid,
+            5 * DAYSECS
+        );
+        $groupid = $DB->get_field('groups', 'id', ['name' => $groupname]);
+        $override = $DB->get_record('assign_overrides', [
+            'assignid' => $this->raaassign2->id,
+            'groupid' => $groupid,
+        ]);
+
+        // Verify the cutoff date in the override.
+        if ($expectedcutoffdatetime !== null) {
+            $expectedcutoffdate = $this->clock->now()
+                ->modify($expectedcutoffdatetime)->getTimestamp();
+            $this->assertEquals($expectedcutoffdate, $override->cutoffdate);
+        } else {
+            $this->assertNull($override->cutoffdate);
+        }
+    }
+
+    /**
      * Create mapping and setup for RAA testing
      *
      * @param \stdClass $mab The MAB object
