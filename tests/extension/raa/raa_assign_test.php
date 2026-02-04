@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\extension\raa;
 
+use DateTimeImmutable;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\tests_data_provider;
@@ -356,8 +357,7 @@ final class raa_assign_test extends raa_base {
         // CN01 Tier 1: 5 working days extension.
         // Original due date: 2025-02-20 14:00:00, new due date: 2025-02-27 14:00:00.
         if ($cutoffdatetime !== null) {
-            $cutoffdate = $this->clock->now()
-                ->modify($cutoffdatetime)->getTimestamp();
+            $cutoffdate = (new DateTimeImmutable($cutoffdatetime))->getTimestamp();
             $DB->set_field('assign', 'cutoffdate', $cutoffdate, [
                 'id' => $this->raaassign2->id,
             ]);
@@ -379,8 +379,7 @@ final class raa_assign_test extends raa_base {
 
         // Verify the cutoff date in the override.
         if ($expectedcutoffdatetime !== null) {
-            $expectedcutoffdate = $this->clock->now()
-                ->modify($expectedcutoffdatetime)->getTimestamp();
+            $expectedcutoffdate = (new DateTimeImmutable($expectedcutoffdatetime))->getTimestamp();
             $this->assertEquals($expectedcutoffdate, $override->cutoffdate);
         } else {
             $this->assertNull($override->cutoffdate);
