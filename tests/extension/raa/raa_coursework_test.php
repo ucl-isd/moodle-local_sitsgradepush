@@ -16,12 +16,14 @@
 
 namespace local_sitsgradepush\extension\raa;
 
+use local_sitsgradepush\base_test_class;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\tests_data_provider;
 use mod_coursework\event\extension_created;
 use mod_coursework\event\extension_updated;
+use mod_coursework\models\course_module;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -490,6 +492,8 @@ final class raa_coursework_test extends raa_base {
      * @return object The coursework object.
      */
     protected function create_coursework(int $courseid, int $startdate, int $enddate): object {
+        // Clear coursework cm cache to avoid using cached cm which may have old data and cause issues with mapping.
+        self::clear_coursework_cm_cache();
         $coursework = $this->getDataGenerator()->create_module('coursework', [
             'course' => $courseid,
             'name' => 'Test Coursework',
