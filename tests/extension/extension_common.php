@@ -17,6 +17,7 @@
 namespace local_sitsgradepush;
 
 use core\clock;
+use mod_coursework\models\course_module;
 use mod_coursework\models\coursework;
 
 defined('MOODLE_INTERNAL') || die();
@@ -47,6 +48,9 @@ class extension_common extends base_test_class {
 
     /** @var \stdClass Default test quiz 1*/
     protected \stdClass $quiz1;
+
+    /** @var \stdClass Default test lesson 1*/
+    protected \stdClass $lesson1;
 
     /** @var \stdClass|null Default test coursework 1*/
     protected ?\stdClass $coursework1;
@@ -102,6 +106,9 @@ class extension_common extends base_test_class {
         $assessmentstartdate = strtotime('2025-02-17 09:00:00'); // Start date: 2025-02-17 09:00:00.
         $assessmentenddate = strtotime('2025-02-17 12:00:00'); // End date: 2025-02-17 12:00:00.
 
+        // Clear coursework cm cache to avoid using cached cm which may have old data and cause issues with mapping.
+        self::clear_coursework_cm_cache();
+
         // Create test assignment 1.
         $this->assign1 = $dg->create_module(
             'assign',
@@ -121,6 +128,18 @@ class extension_common extends base_test_class {
                 'name' => 'Test Quiz 1',
                 'timeopen' => $assessmentstartdate,
                 'timeclose' => $assessmentenddate,
+            ]
+        );
+
+        // Create test lesson 1.
+        $this->lesson1 = $dg->create_module(
+            'lesson',
+            [
+                'course' => $this->course1->id,
+                'name' => 'Test Lesson 1',
+                'available' => $assessmentstartdate,
+                'deadline' => $assessmentenddate,
+                'practice' => 0,
             ]
         );
 

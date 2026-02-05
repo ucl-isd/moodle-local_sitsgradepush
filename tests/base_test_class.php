@@ -19,6 +19,7 @@ namespace local_sitsgradepush;
 use local_sitsgradepush\api\iclient;
 use local_sitsgradepush\api\client;
 use local_sitsgradepush\api\irequest;
+use mod_coursework\models\course_module;
 use mod_coursework\models\coursework;
 use moodle_exception;
 use stdClass;
@@ -74,5 +75,17 @@ abstract class base_test_class extends \advanced_testcase {
         $record = $DB->get_record('coursework', ['id' => $coursework->id], '*', MUST_EXIST);
         $record->cmid = $coursework->get_coursemodule_id();
         return $record;
+    }
+
+    /**
+     * Clear coursework course module cache.
+     *
+     * This is necessary to prevent pollution from previously created modules in coursework tests.
+     */
+    public static function clear_coursework_cm_cache(): void {
+        // Clear coursework static cache to prevent pollution from previously created modules.
+        if (class_exists('mod_coursework\\models\\course_module')) {
+            course_module::$pool = [];
+        }
     }
 }
