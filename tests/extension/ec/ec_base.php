@@ -95,6 +95,8 @@ class ec_base extends extension_common {
             $activity = $this->assign1;
         } else if ($type === 'quiz') {
             $activity = $this->quiz1;
+        } else if ($type === 'lesson') {
+            $activity = $this->lesson1;
         } else {
             $activity = $this->coursework1;
         }
@@ -115,6 +117,8 @@ class ec_base extends extension_common {
             return ['table' => 'assign_overrides', 'datefield' => 'duedate', 'activityfield' => 'assignid'];
         } else if ($type === 'quiz') {
             return ['table' => 'quiz_overrides', 'datefield' => 'timeclose', 'activityfield' => 'quiz'];
+        } else if ($type === 'lesson') {
+            return ['table' => 'lesson_overrides', 'datefield' => 'deadline', 'activityfield' => 'lessonid'];
         } else {
             return ['table' => 'coursework_extensions', 'datefield' => 'extended_deadline', 'activityfield' => 'courseworkid'];
         }

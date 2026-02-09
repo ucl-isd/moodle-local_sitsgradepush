@@ -114,6 +114,31 @@ class raa_base extends extension_common {
     }
 
     /**
+     * Create a test lesson.
+     *
+     * @param int $courseid The course ID.
+     * @param int $startdate The start date timestamp.
+     * @param int $enddate The end date timestamp.
+     * @param int|null $timelimit The time limit in seconds.
+     * @return object The lesson object.
+     */
+    protected function create_lesson(int $courseid, int $startdate, int $enddate, ?int $timelimit = null): object {
+        $lesson = $this->getDataGenerator()->create_module('lesson', [
+            'course' => $courseid,
+            'name' => 'Test Lesson',
+            'available' => $startdate,
+            'deadline' => $enddate,
+            'timelimit' => $timelimit,
+            'practice' => 0,
+        ]);
+
+        // Enrol the student to the course.
+        $this->getDataGenerator()->enrol_user($this->student1->id, $courseid, 'student');
+
+        return $lesson;
+    }
+
+    /**
      * Create a past year course.
      *
      * @return object The course object.
