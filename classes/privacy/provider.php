@@ -70,6 +70,24 @@ class provider implements
             'info' => 'privacy:metadata:local_sitsgradepush_tasks:info',
         ], 'privacy:metadata:local_sitsgradepush_tasks');
 
+        $collection->add_database_table('local_sitsgradepush_mapping', [
+            'userid' => 'privacy:metadata:local_sitsgradepush_mapping:userid',
+        ], 'privacy:metadata:local_sitsgradepush_mapping');
+
+        $collection->add_database_table('local_sitsgradepush_enrol', [
+            'userid' => 'privacy:metadata:local_sitsgradepush_enrol:userid',
+        ], 'privacy:metadata:local_sitsgradepush_enrol');
+
+        $collection->add_database_table('local_sitsgradepush_overrides', [
+            'userid' => 'privacy:metadata:local_sitsgradepush_overrides:userid',
+        ], 'privacy:metadata:local_sitsgradepush_overrides');
+
+        $collection->add_database_table('local_sitsgradepush_scn', [
+            'userid' => 'privacy:metadata:local_sitsgradepush_scn:userid',
+            'student_code' => 'privacy:metadata:local_sitsgradepush_scn:student_code',
+            'candidate_number' => 'privacy:metadata:local_sitsgradepush_scn:candidate_number',
+        ], 'privacy:metadata:local_sitsgradepush_scn');
+
         return $collection;
     }
 }

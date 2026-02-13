@@ -99,6 +99,12 @@ class assesstype {
     private static function apply_assessment_type(\stdClass|\grade_item $gradeitem, int $action, bool $bypass = false): void {
         // Skip unlock if the grade item is not summative and locked, it is not set by marks transfer.
         [$cmid, $gradeitemid] = self::get_ids_from_grade_item($gradeitem);
+
+        // Grade item type not recognised or no course module found for mod item, skip processing.
+        if (is_null($cmid) && is_null($gradeitemid)) {
+            return;
+        }
+
         if ($action === self::ACTION_UNLOCK) {
             // Skip this check as it is already checked by the function calling this.
             if (!$bypass) {
@@ -406,6 +412,12 @@ class assesstype {
                     $gradeitem->iteminstance,
                     $gradeitem->courseid
                 );
+
+                // If no course module found, return nulls to skip this grade item.
+                if (!$cm) {
+                    return [null, null];
+                }
+
                 $cmid = $cm->id;
                 break;
             case 'category':

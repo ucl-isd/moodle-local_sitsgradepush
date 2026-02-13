@@ -114,9 +114,9 @@ if ($hassiteconfig) {
         ));
 
         // Set the user profile field for export staff's source.
-        $options = [];
         $manager = manager::get_manager();
         $fields = $manager->get_user_profile_fields();
+        $options = ['' => get_string('none')];
         if (!empty($fields)) {
             foreach ($fields as $field) {
                 $options[$field->id] = $field->name;
