@@ -292,6 +292,10 @@ $string['settings:awssoraqueueurl'] = 'AWS Reasonable Academic Adjustments (RAAs
 $string['settings:awssoraqueueurl:desc'] = 'URL for receiving Reasonable Academic Adjustments (RAAs) SQS messages';
 $string['settings:concurrenttasks'] = 'Number of concurrent tasks allowed';
 $string['settings:concurrenttasks:desc'] = 'Number of concurrent ad-hoc tasks allowed';
+$string['settings:deadlinegroupprefix'] = 'Deadline group prefix';
+$string['settings:deadlinegroupprefix:desc'] = 'Prefix used to identify teacher-created deadline groups for RAA extensions.' .
+    ' Groups with this prefix will have their overwritten dates used as the base for RAA extension calculations.' .
+    ' Leave empty to disable this feature and use the assessment\'s original deadline.';
 $string['settings:debug_error_logging'] = 'Enable debug error logging';
 $string['settings:enable'] = 'Enable Marks Transfer';
 $string['settings:enable:desc'] = 'Enable Marks Transfer to SITS';

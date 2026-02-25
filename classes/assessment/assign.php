@@ -18,7 +18,6 @@ namespace local_sitsgradepush\assessment;
 
 use cache;
 use local_sitsgradepush\extension\ec;
-use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
 
 /**
@@ -123,25 +122,9 @@ class assign extends activity {
      * @param int|null $groupid Moodle group ID
      *
      * @return mixed
-     * @throws \dml_exception
      */
     public function get_override_record(int $userid, ?int $groupid = null): mixed {
-        global $DB;
-        if ($groupid) {
-            $sql = 'SELECT * FROM {assign_overrides} WHERE assignid = :assignid AND groupid = :groupid AND userid IS NULL';
-            $params = [
-                'assignid' => $this->get_source_instance()->id,
-                'groupid' => $groupid,
-            ];
-        } else {
-            $sql = 'SELECT * FROM {assign_overrides} WHERE assignid = :assignid AND userid = :userid';
-            $params = [
-                'assignid' => $this->get_source_instance()->id,
-                'userid' => $userid,
-            ];
-        }
-
-        return $DB->get_record_sql($sql, $params);
+        return $this->find_override_record('assign_overrides', 'assignid', $this->get_source_instance()->id, $userid, $groupid);
     }
 
     /**
@@ -183,33 +166,71 @@ class assign extends activity {
     }
 
     /**
-     * Apply SORA extension to the assessment.
+     * Check if the assignment has any teacher-created deadline group overrides.
+     * Returns false if the deadline group prefix setting is empty.
      *
-     * @param sora $sora The SORA extension.
-     * @return void
-     * @throws \moodle_exception
+     * @return bool
      */
-    protected function apply_sora_extension(sora $sora): void {
-        global $CFG;
-        require_once($CFG->dirroot . '/group/lib.php');
+    protected function has_deadline_group_overrides(): bool {
+        return $this->check_deadline_group_overrides('assign_overrides', 'assignid', $this->get_source_instance()->id);
+    }
 
-        // Calculate extension details.
-        $extensiondetails = $sora->calculate_extension_details($this);
-        $extensioninsecs = $extensiondetails['extensioninsecs'];
-        $newduedate = $extensiondetails['newduedate'];
+    /**
+     * Get the start and end dates from the highest-priority deadline group override for a user.
+     * Assign uses sortorder to determine priority: the lowest sortorder value wins.
+     * Falls back to the assessment's original dates if the override does not set them.
+     * Returns null if the user is not in any deadline group with an override on this assignment.
+     *
+     * @param int $userid The Moodle user ID.
+     * @return array|null Array with startdate and enddate keys, or null if not in any deadline group.
+     */
+    protected function get_user_deadline_group_dates(int $userid): ?array {
+        global $DB;
+        $prefix = extensionmanager::get_deadline_group_prefix();
+        if ($prefix === '') {
+            return null;
+        }
+        $sql = "SELECT ao.duedate, ao.allowsubmissionsfromdate
+                FROM {assign_overrides} ao
+                JOIN {groups} g ON ao.groupid = g.id
+                JOIN {groups_members} gm ON g.id = gm.groupid
+                WHERE ao.assignid = :assignid AND ao.userid IS NULL
+                  AND gm.userid = :userid AND g.name LIKE :prefix
+                ORDER BY ao.sortorder ASC";
+        $record = $DB->get_record_sql($sql, [
+            'assignid' => $this->get_source_instance()->id,
+            'userid' => $userid,
+            'prefix' => $DB->sql_like_escape($prefix) . '%',
+        ], IGNORE_MULTIPLE);
+        if (!$record) {
+            return null;
+        }
+        return [
+            'startdate' => $record->allowsubmissionsfromdate !== null
+                ? (int)$record->allowsubmissionsfromdate : (int)$this->get_start_date(),
+            'enddate' => $record->duedate !== null
+                ? (int)$record->duedate : (int)$this->get_end_date(),
+        ];
+    }
 
-        // Get or create SORA group and add user to it.
-        $groupid = $sora->get_or_create_sora_group(
-            $this->get_course_id(),
-            $this->get_coursemodule_id(),
-            $extensioninsecs
-        );
-
-        // Remove user from previous SORA groups.
-        $this->remove_user_from_previous_sora_groups($sora->get_userid(), $groupid);
-
-        // Apply the new due date override.
-        $this->overrides_due_date($newduedate, $sora->get_userid(), $groupid);
+    /**
+     * Apply the assignment RAA group override.
+     *
+     * @param int $newduedate The new due date timestamp.
+     * @param int $extensioninsecs The extension duration in seconds.
+     * @param int $groupid The RAA group ID.
+     * @param int $userid The Moodle user ID.
+     * @param int|null $startdate The DLG start date to carry forward.
+     * @return void
+     */
+    protected function apply_raa_group_override(
+        int $newduedate,
+        int $extensioninsecs,
+        int $groupid,
+        int $userid,
+        ?int $startdate = null
+    ): void {
+        $this->overrides_due_date($newduedate, $userid, $groupid, $startdate);
     }
 
     /**
@@ -219,19 +240,7 @@ class assign extends activity {
      * @throws \dml_exception
      */
     protected function get_assessment_sora_overrides(): array {
-        global $DB;
-        // Find all the group overrides for the assignment.
-        $sql = 'SELECT ao.* FROM {assign_overrides} ao
-                JOIN {groups} g ON ao.groupid = g.id
-                WHERE ao.assignid = :assignid AND ao.userid IS NULL AND g.name LIKE :name';
-
-        $params = [
-            'assignid' => $this->sourceinstance->id,
-            'name' => sora::SORA_GROUP_PREFIX . $this->get_id() . '%',
-        ];
-
-        // Get all sora group overrides.
-        return $DB->get_records_sql($sql, $params);
+        return $this->find_assessment_raa_overrides('assign_overrides', 'assignid', $this->sourceinstance->id);
     }
 
     /**
@@ -240,9 +249,15 @@ class assign extends activity {
      * @param int $newduedate The new due date.
      * @param int $userid The user id.
      * @param int|null $groupid The group id.
+     * @param int|null $startdate The DLG start date to carry forward.
      * @return void
      */
-    private function overrides_due_date(int $newduedate, int $userid, ?int $groupid = null): void {
+    private function overrides_due_date(
+        int $newduedate,
+        int $userid,
+        ?int $groupid = null,
+        ?int $startdate = null
+    ): void {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/mod/assign/locallib.php');
         require_once($CFG->dirroot . '/mod/assign/lib.php');
@@ -256,12 +271,17 @@ class assign extends activity {
         // Check if the override already exists.
         $override = $this->get_override_record($userid, $groupid);
         if ($override) {
-            // No need to update if the due date is the same.
-            if ($override->duedate == $newduedate && $override->cutoffdate == $cutoffdate) {
+            // No need to update if all override values are the same.
+            if (
+                $override->duedate == $newduedate
+                && $override->cutoffdate == $cutoffdate
+                && $override->allowsubmissionsfromdate == $startdate
+            ) {
                 return;
             }
             $override->duedate = $newduedate;
             $override->cutoffdate = $cutoffdate;
+            $override->allowsubmissionsfromdate = $startdate;
             $DB->update_record('assign_overrides', $override);
             $newrecord = false;
         } else {
@@ -270,6 +290,7 @@ class assign extends activity {
             $override->assignid = $this->get_source_instance()->id;
             $override->duedate = $newduedate;
             $override->cutoffdate = $cutoffdate;
+            $override->allowsubmissionsfromdate = $startdate;
             $override->userid = $groupid ? null : $userid;
             $override->groupid = $groupid ?: null;
             $override->sortorder = $groupid ? 0 : null;

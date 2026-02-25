@@ -1,0 +1,57 @@
+{
+  "identifier": "KLFGH78",
+  "forename": "Jane",
+  "display_name": "Jane Doe",
+  "surname": "Doe",
+  "userid": "KLFGHJK",
+  "ucl_email": null,
+  "association": {
+    "identifier": "87654321/1",
+    "type": {
+      "name": "U",
+      "code": "Undergraduate"
+    },
+    "supplementary": {
+      "student_code": "87654321",
+      "student_programme_route_code": "87654321/1",
+      "candidate_number": "KKPQR9",
+      "exam_centre_code": "EXAMSRM"
+    },
+    "organisation_unit": {
+      "code": "MATHS_MAP",
+      "name": "Mathematics",
+      "type": "Department",
+      "link": {
+        "code": "MAP",
+        "name": "Faculty Of Mathematical And Physical Sciences",
+        "type": "Faculty"
+      }
+    }
+  },
+  "student_assessment": {
+    "identifier ": null,
+    "resit_number": "002",
+    "start_datetime": null,
+    "end_datetime": null,
+    "duration": null,
+    "submission_datetime": null,
+    "marker": null,
+    "actual_mark": null,
+    "actual_grade": null,
+    "agreed_mark": null,
+    "agreed_grade": null,
+    "sora": {
+      "extra_duration": null,
+      "rest_duration": null
+    },
+    "required_provisions": {
+      "provision_tier": "TIER2",
+      "no_dys_ext": null,
+      "no_hrs_ext": null,
+      "add_exam_time": 15,
+      "rest_brk_add_time": 10,
+      "asmnt_type_code": "ED03",
+      "accessibility_assessment_status": "5"
+    }
+  }
+}

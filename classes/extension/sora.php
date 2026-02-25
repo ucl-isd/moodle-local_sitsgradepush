@@ -68,18 +68,25 @@ class sora extends extension {
      * @param int $cmid The course module ID.
      * @param int $userid The user ID.
      * @param int $totalextension The total extension in seconds.
+     * @param int|null $newduedate The new due date timestamp for DLG-based groups.
      *
      * @return int
      * @throws \coding_exception
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public function get_sora_group_id(int $courseid, int $cmid, int $userid, int $totalextension): int {
+    public function get_sora_group_id(
+        int $courseid,
+        int $cmid,
+        int $userid,
+        int $totalextension,
+        ?int $newduedate = null
+    ): int {
         global $CFG;
         require_once($CFG->dirroot . '/group/lib.php');
 
         // Check group exists.
-        $groupname = self::get_extension_group_name($cmid, $totalextension);
+        $groupname = self::get_extension_group_name($cmid, $totalextension, $newduedate);
         $groupid = groups_get_group_by_name($courseid, $groupname);
 
         if (!$groupid) {
@@ -110,10 +117,23 @@ class sora extends extension {
      *
      * @param int $sourceid The moodle source ID.
      * @param int $totalextension The total extension in seconds.
+     * @param int|null $newduedate The new due date timestamp for DLG-based groups.
      * @return string
      */
-    public static function get_extension_group_name(int $sourceid, int $totalextension): string {
-        return sprintf(self::SORA_GROUP_PREFIX . '%d-Extension-%s', $sourceid, self::formatextensionstime($totalextension));
+    public static function get_extension_group_name(
+        int $sourceid,
+        int $totalextension,
+        ?int $newduedate = null
+    ): string {
+        $name = sprintf(
+            self::SORA_GROUP_PREFIX . '%d-Extension-%s',
+            $sourceid,
+            self::formatextensionstime($totalextension)
+        );
+        if ($newduedate !== null) {
+            $name .= '-Due-' . userdate($newduedate, '%Y%m%d%H%M%S');
+        }
+        return $name;
     }
 
     /**
@@ -250,16 +270,23 @@ class sora extends extension {
      * Calculate extension details (new due date and extension time) based on tier configuration.
      *
      * @param assessment $assessment The assessment object.
+     * @param int|null $enddate Optional end date override. When provided, this is used instead of
+     *                          the assessment's original end date (e.g. a deadline group's due date).
+     * @param int|null $startdate Optional start date override for duration calculation.
      * @return array Array with 'newduedate' and 'extensioninsecs' keys.
      * @throws \coding_exception If extension type is invalid or unsupported.
      */
-    public function calculate_extension_details(assessment $assessment): array {
+    public function calculate_extension_details(
+        assessment $assessment,
+        ?int $enddate = null,
+        ?int $startdate = null
+    ): array {
         $extensiontype = $this->raarequiredprovisions->get_extension_type();
-        $enddate = $assessment->get_end_date();
+        $enddate = $enddate ?? $assessment->get_end_date();
 
         $extensioninsecs = match ($extensiontype) {
             raa_required_provisions::EXTENSION_TIME_PER_HOUR => (int) (
-                ($assessment->get_assessment_duration() / HOURSECS) *
+                ($assessment->get_assessment_duration($enddate, $startdate) / HOURSECS) *
                 $this->raarequiredprovisions->get_time_per_hour_extension() *
                 MINSECS
             ),
@@ -287,11 +314,23 @@ class sora extends extension {
      * @param int $courseid The course ID.
      * @param int $cmid The course module ID.
      * @param int $extensioninsecs The extension time in seconds.
+     * @param int|null $newduedate The new due date timestamp for DLG-based groups.
      * @return int The group ID.
      * @throws \moodle_exception If group creation or user addition fails.
      */
-    public function get_or_create_sora_group(int $courseid, int $cmid, int $extensioninsecs): int {
-        $groupid = $this->get_sora_group_id($courseid, $cmid, $this->get_userid(), $extensioninsecs);
+    public function get_or_create_sora_group(
+        int $courseid,
+        int $cmid,
+        int $extensioninsecs,
+        ?int $newduedate = null
+    ): int {
+        $groupid = $this->get_sora_group_id(
+            $courseid,
+            $cmid,
+            $this->get_userid(),
+            $extensioninsecs,
+            $newduedate
+        );
 
         if (!$groupid) {
             throw new \moodle_exception('error:cannotgetsoragroupid', 'local_sitsgradepush');

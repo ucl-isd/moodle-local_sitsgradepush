@@ -34,6 +34,9 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/base_test_class.php');
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class extension_common extends base_test_class {
+    /** @var string Deadline group name prefix. */
+    const DLG_PREFIX = 'DLG-';
+
     /** @var \stdClass $course1 Default test course 1 */
     protected \stdClass $course1;
 
@@ -235,5 +238,103 @@ class extension_common extends base_test_class {
                 ['shortname' => 'course_year', 'value' => $this->clock->now()->modify('-1 year')->format('Y')],
             ]]
         );
+    }
+
+    /**
+     * Create a deadline group in the test course.
+     *
+     * @param string $name The group name.
+     * @return int The group ID.
+     */
+    protected function create_deadline_group(string $name): int {
+        $group = new \stdClass();
+        $group->courseid = $this->course1->id;
+        $group->name = $name;
+        return groups_create_group($group);
+    }
+
+    /**
+     * Insert a group override into the assign_overrides table.
+     *
+     * @param int $assignid The assignment ID.
+     * @param int $groupid The group ID.
+     * @param int|null $duedate The due date timestamp.
+     * @param int|null $startdate The start date timestamp.
+     * @param int $sortorder The sort order value.
+     * @return int The inserted override ID.
+     */
+    protected function create_assign_group_override(
+        int $assignid,
+        int $groupid,
+        ?int $duedate = null,
+        ?int $startdate = null,
+        int $sortorder = 0
+    ): int {
+        global $DB;
+        $override = new \stdClass();
+        $override->assignid = $assignid;
+        $override->groupid = $groupid;
+        $override->userid = null;
+        $override->duedate = $duedate;
+        $override->cutoffdate = null;
+        $override->allowsubmissionsfromdate = $startdate;
+        $override->sortorder = $sortorder;
+        return (int)$DB->insert_record('assign_overrides', $override);
+    }
+
+    /**
+     * Insert a group override into the quiz_overrides table.
+     *
+     * @param int $quizid The quiz ID.
+     * @param int $groupid The group ID.
+     * @param int|null $timeopen The time open timestamp.
+     * @param int|null $timeclose The time close timestamp.
+     * @return int The inserted override ID.
+     */
+    protected function create_quiz_group_override(
+        int $quizid,
+        int $groupid,
+        ?int $timeopen = null,
+        ?int $timeclose = null
+    ): int {
+        global $DB;
+        $override = new \stdClass();
+        $override->quiz = $quizid;
+        $override->groupid = $groupid;
+        $override->userid = null;
+        $override->timeopen = $timeopen;
+        $override->timeclose = $timeclose;
+        $override->timelimit = null;
+        $override->attempts = null;
+        $override->password = null;
+        return (int)$DB->insert_record('quiz_overrides', $override);
+    }
+
+    /**
+     * Insert a group override into the lesson_overrides table.
+     *
+     * @param int $lessonid The lesson ID.
+     * @param int $groupid The group ID.
+     * @param int|null $available The available timestamp.
+     * @param int|null $deadline The deadline timestamp.
+     * @return int The inserted override ID.
+     */
+    protected function create_lesson_group_override(
+        int $lessonid,
+        int $groupid,
+        ?int $available = null,
+        ?int $deadline = null
+    ): int {
+        global $DB;
+        $override = new \stdClass();
+        $override->lessonid = $lessonid;
+        $override->groupid = $groupid;
+        $override->userid = null;
+        $override->available = $available;
+        $override->deadline = $deadline;
+        $override->timelimit = null;
+        $override->review = null;
+        $override->maxattempts = null;
+        return (int)$DB->insert_record('lesson_overrides', $override);
     }
 }

@@ -124,6 +124,16 @@ class extensionmanager {
     }
 
     /**
+     * Get the configured deadline group prefix.
+     * Returns empty string if the setting is not configured, which disables the deadline group feature.
+     *
+     * @return string
+     */
+    public static function get_deadline_group_prefix(): string {
+        return get_config('local_sitsgradepush', 'deadlinegroup_prefix') ?: '';
+    }
+
+    /**
      * Check if the AST code is eligible for RAA extension.
      *
      * @param string $astcode AST code.
