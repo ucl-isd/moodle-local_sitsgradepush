@@ -219,6 +219,14 @@ if ($hassiteconfig) {
             '0'
         ));
 
+        // Setting to configure the deadline group prefix.
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/deadlinegroup_prefix',
+            get_string('settings:deadlinegroupprefix', 'local_sitsgradepush'),
+            get_string('settings:deadlinegroupprefix:desc', 'local_sitsgradepush'),
+            'DLG-'
+        ));
+
         // Setting to enable/disable request error logging.
         $settings->add(new admin_setting_configcheckbox(
             'local_sitsgradepush/request_error_logging',

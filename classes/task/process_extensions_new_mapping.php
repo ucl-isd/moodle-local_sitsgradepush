@@ -41,6 +41,27 @@ class process_extensions_new_mapping extends adhoc_task {
     }
 
     /**
+     * Check if a pending (not yet started) ad-hoc task already exists for the given mapping ID.
+     * Only pending tasks are matched so that changes occurring while a task runs still trigger a new task.
+     *
+     * @param int $mapid The SITS mapping ID.
+     * @return bool
+     */
+    public static function adhoc_task_exists(int $mapid): bool {
+        global $DB;
+
+        $sql = "SELECT id FROM {task_adhoc}
+                WHERE classname = :classname
+                  AND " . $DB->sql_like('customdata', ':pattern') . "
+                  AND timestarted IS NULL";
+
+        return $DB->record_exists_sql($sql, [
+            'classname' => '\\' . static::class,
+            'pattern' => '%"mapid":' . $mapid . '}%',
+        ]);
+    }
+
+    /**
      * Execute the task.
      */
     public function execute() {

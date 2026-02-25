@@ -17,7 +17,6 @@
 namespace local_sitsgradepush\assessment;
 
 use local_sitsgradepush\extension\ec;
-use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
 use mod_quiz\local\override_manager;
 
@@ -118,32 +117,21 @@ class quiz extends activity {
      * @throws \dml_exception
      */
     public function get_override_record(int $userid, ?int $groupid = null): mixed {
-        global $DB;
-        if ($groupid) {
-            $sql = 'SELECT * FROM {quiz_overrides} WHERE quiz = :quiz AND groupid = :groupid AND userid IS NULL';
-            $params = [
-                'quiz' => $this->get_source_instance()->id,
-                'groupid' => $groupid,
-            ];
-        } else {
-            $sql = 'SELECT * FROM {quiz_overrides} WHERE quiz = :quiz AND userid = :userid';
-            $params = [
-                'quiz' => $this->get_source_instance()->id,
-                'userid' => $userid,
-            ];
-        }
-
-        return $DB->get_record_sql($sql, $params);
+        return $this->find_override_record('quiz_overrides', 'quiz', $this->get_source_instance()->id, $userid, $groupid);
     }
 
     /**
      * Get the assessment duration in seconds.
      * Returns the lesser of time limit and quiz duration, or quiz duration if no time limit.
      *
+     * @param int|null $enddate Optional end date override.
+     * @param int|null $startdate Optional start date override.
      * @return int Duration in seconds.
      */
-    public function get_assessment_duration(): int {
-        $quizduration = $this->get_end_date() - $this->get_start_date();
+    public function get_assessment_duration(?int $enddate = null, ?int $startdate = null): int {
+        $enddate = $enddate ?? $this->get_end_date();
+        $startdate = $startdate ?? $this->get_start_date();
+        $quizduration = $enddate - $startdate;
         $timelimit = $this->get_time_limit();
 
         return $timelimit ? min($timelimit, $quizduration) : $quizduration;
@@ -197,31 +185,52 @@ class quiz extends activity {
     }
 
     /**
-     * Apply SORA extension to the quiz.
+     * Check if the quiz has any teacher-created deadline group overrides.
+     * Returns false if the deadline group prefix setting is empty.
      *
-     * @param sora $sora SORA extension object.
-     * @return void
-     * @throws \moodle_exception
+     * @return bool
      */
-    protected function apply_sora_extension(sora $sora): void {
-        global $DB;
+    protected function has_deadline_group_overrides(): bool {
+        return $this->check_deadline_group_overrides('quiz_overrides', 'quiz', $this->get_source_instance()->id);
+    }
 
-        // Calculate extension details.
-        $extensiondetails = $sora->calculate_extension_details($this);
-        $extensioninsecs = $extensiondetails['extensioninsecs'];
-        $newduedate = $extensiondetails['newduedate'];
-
-        // Get or create SORA group and add user to it.
-        $groupid = $sora->get_or_create_sora_group(
-            $this->get_course_id(),
-            $this->get_coursemodule_id(),
-            $extensioninsecs
+    /**
+     * Get the start and end dates from the deadline group overrides for a user.
+     * Returns null if the user is not in any deadline group with an override on this quiz.
+     *
+     * @param int $userid The Moodle user ID.
+     * @return array|null Array with startdate and enddate keys, or null if none found.
+     */
+    protected function get_user_deadline_group_dates(int $userid): ?array {
+        return $this->find_user_deadline_group_dates(
+            'quiz_overrides',
+            'quiz',
+            $this->get_source_instance()->id,
+            'timeclose',
+            'timeopen',
+            $userid
         );
+    }
 
-        // Remove user from previous SORA groups.
-        $this->remove_user_from_previous_sora_groups($sora->get_userid(), $groupid);
-
-        // Prepare override data.
+    /**
+     * Apply the quiz RAA group override.
+     *
+     * @param int $newduedate The new due date timestamp.
+     * @param int $extensioninsecs The extension duration in seconds.
+     * @param int $groupid The RAA group ID.
+     * @param int $userid The Moodle user ID.
+     * @param int|null $startdate The DLG start date to carry forward.
+     * Not used for quiz, the final start date is either the original start date or the deadline group override start date.
+     * @return void
+     */
+    protected function apply_raa_group_override(
+        int $newduedate,
+        int $extensioninsecs,
+        int $groupid,
+        int $userid,
+        ?int $startdate = null
+    ): void {
+        global $DB;
         $timelimit = $this->get_time_limit();
         $overridedata = [
             'quiz' => $this->get_source_instance()->id,
@@ -230,7 +239,6 @@ class quiz extends activity {
             'timeclose' => $newduedate,
         ];
 
-        // Check for existing override and update if exists.
         $override = $DB->get_record('quiz_overrides', [
             'quiz' => $this->get_source_instance()->id,
             'groupid' => $groupid,
@@ -241,7 +249,6 @@ class quiz extends activity {
             $overridedata['id'] = $override->id;
         }
 
-        // Save the override.
         $this->get_override_manager()->save_override($overridedata);
     }
 
@@ -252,19 +259,7 @@ class quiz extends activity {
      * @throws \dml_exception
      */
     protected function get_assessment_sora_overrides(): array {
-        global $DB;
-        // Find all the group overrides for the quiz.
-        $sql = 'SELECT qo.* FROM {quiz_overrides} qo
-                JOIN {groups} g ON qo.groupid = g.id
-                WHERE qo.quiz = :quizid AND qo.userid IS NULL AND g.name LIKE :name';
-
-        $params = [
-            'quizid' => $this->sourceinstance->id,
-            'name' => sora::SORA_GROUP_PREFIX . $this->get_id() . '%',
-        ];
-
-        // Get all the group overrides except the excluded group.
-        return $DB->get_records_sql($sql, $params);
+        return $this->find_assessment_raa_overrides('quiz_overrides', 'quiz', $this->sourceinstance->id);
     }
 
     /**

@@ -551,13 +551,17 @@ abstract class assessment implements iassessment {
      * Default implementation returns the time between start and end dates.
      * Subclasses can override for specific behavior (e.g., quiz time limit).
      *
+     * @param int|null $enddate Optional end date override.
+     * @param int|null $startdate Optional start date override.
      * @return int The duration in seconds.
      */
-    public function get_assessment_duration(): int {
+    public function get_assessment_duration(?int $enddate = null, ?int $startdate = null): int {
         if ($this->get_type() !== assessmentfactory::SOURCETYPE_MOD) {
             return 0;
         }
+        $enddate = $enddate ?? $this->get_end_date();
+        $startdate = $startdate ?? $this->get_start_date();
 
-        return $this->get_end_date() - $this->get_start_date();
+        return $enddate - $startdate;
     }
 }
