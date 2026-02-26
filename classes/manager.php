@@ -454,12 +454,12 @@ class manager {
                         'modocc' => $componentgrade['MAV_OCCUR'],
                         'academicyear' => $componentgrade['AYR_CODE'],
                         'periodslotcode' => $componentgrade['PSL_CODE'],
-                        'mapcode' => $componentgrade['MAP_CODE'],
                         'mabseq' => $componentgrade['MAB_SEQ'],
                     ]
                 )
             ) {
                 // Update record if this component grade already exists.
+                $record->mapcode = $componentgrade['MAP_CODE'];
                 $record->astcode = $componentgrade['AST_CODE'];
                 $record->mabperc = $componentgrade['MAB_PERC'];
                 $record->mabname = $componentgrade['MAB_NAME'];
