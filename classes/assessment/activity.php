@@ -19,6 +19,7 @@ namespace local_sitsgradepush\assessment;
 use core\context\module;
 use grade_item;
 use local_sitsgradepush\extension\ec;
+use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use moodle_exception;
@@ -245,6 +246,249 @@ abstract class activity extends assessment {
             return false;
         }
         return !empty($this->get_assessment_sora_overrides());
+    }
+
+    /**
+     * Apply RAA extension to the assessment.
+     * Handles common setup: calculates extension details, gets or creates the RAA group,
+     * removes the user from previous groups, then delegates the module-specific override
+     * application to apply_raa_group_override().
+     *
+     * @param sora $sora The RAA extension.
+     * @return void
+     */
+    protected function apply_sora_extension(sora $sora): void {
+        $extensiondetails = $this->calculate_raa_extension_details($sora);
+
+        // Deadline groups exist but user is not in any, so skip RAA extension application.
+        if ($extensiondetails === null) {
+            return;
+        }
+
+        $extensioninsecs = $extensiondetails['extensioninsecs'];
+        $newduedate = $extensiondetails['newduedate'];
+        $startdate = $extensiondetails['startdate'] ?? null;
+
+        // Get or create RAA group and add user to it.
+        $groupid = $sora->get_or_create_sora_group(
+            $this->get_course_id(),
+            $this->get_coursemodule_id(),
+            $extensioninsecs,
+            !empty($extensiondetails['dlg']) ? $newduedate : null
+        );
+
+        // Remove user from previous RAA groups.
+        $this->remove_user_from_previous_sora_groups($sora->get_userid(), $groupid);
+
+        // Apply the module-specific group override.
+        $this->apply_raa_group_override(
+            $newduedate,
+            $extensioninsecs,
+            $groupid,
+            $sora->get_userid(),
+            $startdate
+        );
+    }
+
+    /**
+     * Apply the module-specific RAA group override.
+     * Override this in activity subclasses to apply the appropriate group deadline override.
+     *
+     * @param int $newduedate The new due date timestamp.
+     * @param int $extensioninsecs The extension duration in seconds.
+     * @param int $groupid The RAA group ID.
+     * @param int $userid The Moodle user ID.
+     * @param int|null $startdate The DLG start date to carry forward.
+     * @return void
+     */
+    protected function apply_raa_group_override(
+        int $newduedate,
+        int $extensioninsecs,
+        int $groupid,
+        int $userid,
+        ?int $startdate = null
+    ): void {
+        throw new \moodle_exception('error:soraextensionnotsupported', 'local_sitsgradepush');
+    }
+
+    /**
+     * Check if the assessment has any teacher-created deadline group overrides.
+     * A deadline group is identified by the configured prefix (e.g. DLG-).
+     * Returns false if the prefix setting is empty, disabling the feature.
+     * Subclasses override this to query module-specific override tables.
+     *
+     * @return bool
+     */
+    protected function has_deadline_group_overrides(): bool {
+        return false;
+    }
+
+    /**
+     * Get the start and end dates from the highest-priority deadline group override for a user.
+     * Returns null if the user is not a member of any deadline group with an override on this assessment.
+     * Subclasses override this to query module-specific override tables.
+     *
+     * @param int $userid The Moodle user ID.
+     * @return array|null Array with startdate and enddate keys, or null if none found.
+     */
+    protected function get_user_deadline_group_dates(int $userid): ?array {
+        return null;
+    }
+
+    /**
+     * Calculate RAA extension details, using deadline group dates if applicable.
+     * Returns null if deadline groups exist for this assessment but the user is not in any.
+     *
+     * @param sora $sora The RAA extension.
+     * @return array|null Extension details array or null if extension should be skipped.
+     */
+    protected function calculate_raa_extension_details(sora $sora): ?array {
+        if ($this->has_deadline_group_overrides()) {
+            $groupdates = $this->get_user_deadline_group_dates($sora->get_userid());
+
+            // User is not in any deadline group, so skip RAA extension application.
+            if ($groupdates === null) {
+                return null;
+            }
+            // Calculate extension details based on the deadline group dates.
+            $details = $sora->calculate_extension_details(
+                $this,
+                $groupdates['enddate'],
+                $groupdates['startdate']
+            );
+            $details['dlg'] = true;
+            $details['startdate'] = $groupdates['startdate'];
+            return $details;
+        }
+        // No deadline groups, calculate extension details based on original assessment dates.
+        return $sora->calculate_extension_details($this);
+    }
+
+    /**
+     * Check if the assessment has teacher-created deadline group overrides in a given module override table.
+     * Returns false if the deadline group prefix setting is empty.
+     *
+     * @param string $table The override table name (without prefix brackets).
+     * @param string $idfield The module ID field name in the override table.
+     * @param int $idvalue The module instance ID.
+     * @return bool
+     */
+    protected function check_deadline_group_overrides(string $table, string $idfield, int $idvalue): bool {
+        global $DB;
+        $prefix = extensionmanager::get_deadline_group_prefix();
+        // If prefix is empty, the feature is disabled, so return false to indicate no overrides.
+        if ($prefix === '') {
+            return false;
+        }
+        $sql = "SELECT 1 FROM {{$table}} ot
+                JOIN {groups} g ON ot.groupid = g.id
+                WHERE ot.{$idfield} = :idvalue AND ot.userid IS NULL AND g.name LIKE :prefix";
+        return $DB->record_exists_sql($sql, [
+            'idvalue' => $idvalue,
+            'prefix' => $DB->sql_like_escape($prefix) . '%',
+        ]);
+    }
+
+    /**
+     * Get the deadline group dates for a user from a single matching override record.
+     * Picks the highest-priority record ordered by endfield DESC (non-NULL values first).
+     * Falls back to the assessment's original dates if the override does not set a field.
+     * Returns null if the user is not a member of any matching deadline group.
+     *
+     * @param string $table The override table name (without prefix brackets).
+     * @param string $idfield The module ID field name in the override table.
+     * @param int $idvalue The module instance ID.
+     * @param string $endfield The end date field name in the override table.
+     * @param string $startfield The start date field name in the override table.
+     * @param int $userid The Moodle user ID.
+     * @return array|null Array with startdate and enddate keys, or null if not in any deadline group.
+     */
+    protected function find_user_deadline_group_dates(
+        string $table,
+        string $idfield,
+        int $idvalue,
+        string $endfield,
+        string $startfield,
+        int $userid
+    ): ?array {
+        global $DB;
+        $prefix = extensionmanager::get_deadline_group_prefix();
+        if ($prefix === '') {
+            return null;
+        }
+
+        $sql = "SELECT ot.{$startfield} AS startdate, ot.{$endfield} AS enddate
+                FROM {{$table}} ot
+                JOIN {groups} g ON ot.groupid = g.id
+                JOIN {groups_members} gm ON g.id = gm.groupid
+                WHERE ot.{$idfield} = :idvalue AND ot.userid IS NULL
+                  AND gm.userid = :userid AND g.name LIKE :prefix
+                ORDER BY (CASE WHEN ot.{$endfield} IS NULL THEN 1 ELSE 0 END),
+                         ot.{$endfield} DESC";
+
+        $record = $DB->get_record_sql($sql, [
+            'idvalue' => $idvalue,
+            'userid' => $userid,
+            'prefix' => $DB->sql_like_escape($prefix) . '%',
+        ], IGNORE_MULTIPLE);
+
+        if (!$record) {
+            return null;
+        }
+
+        return [
+            'startdate' => $record->startdate !== null
+                ? (int)$record->startdate : (int)$this->get_start_date(),
+            'enddate' => $record->enddate !== null
+                ? (int)$record->enddate : (int)$this->get_end_date(),
+        ];
+    }
+
+    /**
+     * Get all RAA group overrides for the assessment from a given module override table.
+     *
+     * @param string $table The override table name (without prefix brackets).
+     * @param string $idfield The module ID field name in the override table.
+     * @param int $idvalue The module instance ID.
+     * @return array
+     */
+    protected function find_assessment_raa_overrides(string $table, string $idfield, int $idvalue): array {
+        global $DB;
+        $sql = "SELECT ot.* FROM {{$table}} ot
+                JOIN {groups} g ON ot.groupid = g.id
+                WHERE ot.{$idfield} = :idvalue AND ot.userid IS NULL AND g.name LIKE :name";
+        return $DB->get_records_sql($sql, [
+            'idvalue' => $idvalue,
+            'name' => sora::SORA_GROUP_PREFIX . $this->get_id() . '%',
+        ]);
+    }
+
+    /**
+     * Get an override record from a given module override table by user ID and optionally group ID.
+     *
+     * @param string $table The override table name (without prefix brackets).
+     * @param string $idfield The module ID field name in the override table.
+     * @param int $idvalue The module instance ID.
+     * @param int $userid The Moodle user ID.
+     * @param int|null $groupid The Moodle group ID.
+     * @return mixed
+     */
+    protected function find_override_record(
+        string $table,
+        string $idfield,
+        int $idvalue,
+        int $userid,
+        ?int $groupid = null
+    ): mixed {
+        global $DB;
+        if ($groupid) {
+            $sql = "SELECT * FROM {{$table}} WHERE {$idfield} = :idvalue AND groupid = :groupid AND userid IS NULL";
+            $params = ['idvalue' => $idvalue, 'groupid' => $groupid];
+        } else {
+            $sql = "SELECT * FROM {{$table}} WHERE {$idfield} = :idvalue AND userid = :userid";
+            $params = ['idvalue' => $idvalue, 'userid' => $userid];
+        }
+        return $DB->get_record_sql($sql, $params);
     }
 
     /**

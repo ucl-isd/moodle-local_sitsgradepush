@@ -16,6 +16,7 @@
 
 use core\clock;
 use core\di;
+use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\assesstype;
 use local_sitsgradepush\cachemanager;
 use local_sitsgradepush\extensionmanager;
@@ -117,5 +118,176 @@ class local_sitsgradepush_observer {
      */
     public static function grade_item_updated(\core\event\grade_item_updated $event): void {
         assesstype::grade_item_updated($event);
+    }
+
+    /**
+     * Handle group override created/updated events for assign, quiz, and lesson.
+     * When a teacher creates or updates a deadline group override (identified by the configured prefix),
+     * RAA extensions are re-processed for all SITS mappings on that course module.
+     *
+     * @param \core\event\base $event The group override event.
+     * @return void
+     */
+    public static function group_override_changed(\core\event\base $event): void {
+        global $DB;
+        // Only process if the event is for a module context (i.e. an override for an activity).
+        if ($event->contextlevel !== CONTEXT_MODULE) {
+            return;
+        }
+
+        $groupid = $event->other['groupid'] ?? null;
+        if (empty($groupid) || !self::is_deadline_group($groupid)) {
+            return;
+        }
+
+        // Find SITS mappings for the course module.
+        $cmid = $event->contextinstanceid;
+        $mappings = $DB->get_records(
+            manager::TABLE_ASSESSMENT_MAPPING,
+            ['sourceid' => $cmid, 'enableextension' => 1]
+        );
+
+        foreach ($mappings as $mapping) {
+            // Delete existing SORA overrides for this mapping to ensure they are re-created with the updated override data.
+            try {
+                $assessment = assessmentfactory::get_assessment(
+                    $mapping->sourcetype,
+                    $mapping->sourceid
+                );
+                $assessment->delete_sora_overrides_for_mapping($mapping);
+            } catch (\Exception $e) {
+                // Very unlikely to have an error here,
+                // but if any error occurs (e.g. assessment not found), skip to the next mapping.
+                continue;
+            }
+            taskmanager::add_process_extensions_for_new_mapping_adhoc_task((int)$mapping->id);
+        }
+    }
+
+    /**
+     * Handle group member added/removed events.
+     * When a student is added to or removed from a deadline group, RAA extensions
+     * are re-processed for all SITS mappings on assessments that use that group override.
+     *
+     * @param \core\event\base $event The group member event.
+     * @return void
+     */
+    public static function deadline_group_member_changed(\core\event\base $event): void {
+        $groupid = $event->objectid;
+        if (empty($groupid) || !self::is_deadline_group($groupid)) {
+            return;
+        }
+
+        // Find SITS mappings for assessments that have a group override for this group.
+        global $DB;
+        $sql = "SELECT DISTINCT am.id
+                FROM {" . manager::TABLE_ASSESSMENT_MAPPING . "} am
+                JOIN {course_modules} cm ON cm.id = am.sourceid
+                WHERE am.enableextension = 1
+                  AND am.courseid = :courseid
+                  AND (
+                      EXISTS (
+                          SELECT 1 FROM {assign_overrides} ao
+                          WHERE ao.groupid = :groupid1 AND ao.assignid = cm.instance
+                            AND am.moduletype = 'assign'
+                      )
+                      OR EXISTS (
+                          SELECT 1 FROM {quiz_overrides} qo
+                          WHERE qo.groupid = :groupid2 AND qo.quiz = cm.instance
+                            AND am.moduletype = 'quiz'
+                      )
+                      OR EXISTS (
+                          SELECT 1 FROM {lesson_overrides} lo
+                          WHERE lo.groupid = :groupid3 AND lo.lessonid = cm.instance
+                            AND am.moduletype = 'lesson'
+                      )
+                  )";
+
+        $courseid = $event->courseid;
+        $mappings = $DB->get_records_sql($sql, [
+            'courseid' => $courseid,
+            'groupid1' => $groupid,
+            'groupid2' => $groupid,
+            'groupid3' => $groupid,
+        ]);
+
+        foreach ($mappings as $mapping) {
+            taskmanager::add_process_extensions_for_new_mapping_adhoc_task((int)$mapping->id);
+        }
+    }
+
+    /**
+     * Handle deadline group deleted event.
+     * When a deadline group is deleted from a course, clear RAA overrides
+     * and re-process extensions for all SITS mappings in that course.
+     *
+     * @param \core\event\base $event The group deleted event.
+     * @return void
+     */
+    public static function deadline_group_deleted(\core\event\base $event): void {
+        global $DB;
+
+        if (!extensionmanager::is_extension_enabled()) {
+            return;
+        }
+
+        // Check if the deleted group was a deadline group by its name.
+        $prefix = extensionmanager::get_deadline_group_prefix();
+        if ($prefix === '') {
+            return;
+        }
+
+        $group = $event->get_record_snapshot('groups', $event->objectid);
+        if (!$group || !str_starts_with($group->name, $prefix)) {
+            return;
+        }
+
+        // Find all extension-enabled SITS mappings for this course.
+        $mappings = $DB->get_records(
+            manager::TABLE_ASSESSMENT_MAPPING,
+            ['courseid' => $event->courseid, 'enableextension' => 1]
+        );
+
+        foreach ($mappings as $mapping) {
+            try {
+                $assessment = assessmentfactory::get_assessment(
+                    $mapping->sourcetype,
+                    $mapping->sourceid
+                );
+
+                // Skip assessments in the past.
+                if ($assessment->get_end_date() < di::get(clock::class)->time()) {
+                    continue;
+                }
+
+                $assessment->delete_sora_overrides_for_mapping($mapping);
+            } catch (\Exception $e) {
+                // If any error occurs (e.g. assessment not found), skip to the next mapping.
+                continue;
+            }
+            taskmanager::add_process_extensions_for_new_mapping_adhoc_task((int)$mapping->id);
+        }
+    }
+
+    /**
+     * Check if a group is a teacher-created deadline group.
+     * Returns false if extensions are disabled or the prefix setting is empty.
+     *
+     * @param int $groupid The Moodle group ID.
+     * @return bool
+     */
+    private static function is_deadline_group(int $groupid): bool {
+        global $DB;
+        if (!extensionmanager::is_extension_enabled()) {
+            return false;
+        }
+
+        $prefix = extensionmanager::get_deadline_group_prefix();
+        if ($prefix === '') {
+            return false;
+        }
+        $groupname = $DB->get_field('groups', 'name', ['id' => $groupid]);
+
+        return $groupname && str_starts_with($groupname, $prefix);
     }
 }
