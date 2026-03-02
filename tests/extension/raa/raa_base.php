@@ -41,12 +41,13 @@ class raa_base extends extension_common {
     /**
      * Get test student data with Moodle user ID.
      *
-     * @param string $astcode The AST code.
+     * @param string $astcode The fixture name (e.g. 'CN01', 'ED03', 'ED03_tier2').
+     * @param int|null $userid The Moodle user ID. Defaults to student1.
      * @return array The test student data.
      */
-    protected function get_test_student_data(string $astcode = 'CN01'): array {
+    protected function get_test_student_data(string $astcode = 'CN01', ?int $userid = null): array {
         $student = tests_data_provider::get_sora_testing_student_data($astcode);
-        $student['moodleuserid'] = $this->student1->id;
+        $student['moodleuserid'] = $userid ?? $this->student1->id;
         return $student;
     }
 
@@ -180,6 +181,7 @@ class raa_base extends extension_common {
         }
     }
 
+
     /**
      * Check if feedback tracker plugin is installed.
      *
@@ -187,5 +189,33 @@ class raa_base extends extension_common {
      */
     protected function is_feedback_tracker_installed(): bool {
         return class_exists('report_feedback_tracker\local\helper');
+    }
+
+    /**
+     * Create a SITS mapping and setup test student data.
+     *
+     * @param \stdClass $mab The MAB object.
+     * @param int $courseid The course ID.
+     * @param \stdClass $module The module object.
+     * @param string $modtype The module type (e.g. 'quiz', 'assign', 'lesson').
+     * @param int $reassess The reassessment flag.
+     * @return bool|int The mapping ID.
+     */
+    protected function create_module_mapping(
+        \stdClass $mab,
+        int $courseid,
+        \stdClass $module,
+        string $modtype,
+        int $reassess = 0
+    ): bool|int {
+        $mappingid = $this->insert_mapping(
+            $mab->id,
+            $courseid,
+            $module,
+            $modtype,
+            $reassess
+        );
+        $this->setup_test_student_data($mab);
+        return $mappingid;
     }
 }

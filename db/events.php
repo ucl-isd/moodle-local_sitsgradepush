@@ -54,4 +54,64 @@ $observers = [
         'eventname' => '\core\event\grade_item_updated',
         'callback'  => 'local_sitsgradepush_observer::grade_item_updated',
     ],
+    [
+        'eventname' => '\mod_assign\event\group_override_created',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\mod_assign\event\group_override_updated',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\mod_assign\event\group_override_deleted',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\mod_quiz\event\group_override_created',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\mod_quiz\event\group_override_updated',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\mod_quiz\event\group_override_deleted',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\mod_lesson\event\group_override_created',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\mod_lesson\event\group_override_updated',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\mod_lesson\event\group_override_deleted',
+        'callback'  => 'local_sitsgradepush_observer::group_override_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\core\event\group_member_added',
+        'callback'  => 'local_sitsgradepush_observer::deadline_group_member_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\core\event\group_member_removed',
+        'callback'  => 'local_sitsgradepush_observer::deadline_group_member_changed',
+        'priority'  => 200,
+    ],
+    [
+        'eventname' => '\core\event\group_deleted',
+        'callback'  => 'local_sitsgradepush_observer::deadline_group_deleted',
+        'priority'  => 200,
+    ],
 ];

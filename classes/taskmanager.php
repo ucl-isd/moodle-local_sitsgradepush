@@ -434,8 +434,12 @@ class taskmanager {
                 throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $mappingid);
             }
 
-            // Add an adhoc task to process extensions if the mapped assessment is supported.
-            if (in_array($mapping->moduletype, extension::SUPPORTED_MODULE_TYPES)) {
+            // Add an adhoc task to process extensions if the mapped assessment is supported
+            // and no pending task for this mapping already exists.
+            if (
+                in_array($mapping->moduletype, extension::SUPPORTED_MODULE_TYPES) &&
+                !process_extensions_new_mapping::adhoc_task_exists($mappingid)
+            ) {
                 $task = new process_extensions_new_mapping();
                 $task->set_custom_data((object)['mapid' => $mappingid]);
                 coretaskmanager::queue_adhoc_task($task);
