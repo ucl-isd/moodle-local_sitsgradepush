@@ -268,5 +268,35 @@
     "mkscode": "GNA01",
     "timecreated": "1707494753",
     "timemodified": "1707494753"
+  },
+  {
+    "modcode": "BARC0119",
+    "modocc": "A7P",
+    "academicyear": "2024",
+    "periodslotcode": "T2/3",
+    "mapcode": "BARC0119A7PG",
+    "mabseq": "001",
+    "astcode": "CN01",
+    "mabperc": "100",
+    "mabname": "Same mapcode assessment T2/3",
+    "examroomcode": null,
+    "mkscode": "GNA02",
+    "timecreated": "1707494753",
+    "timemodified": "1707494753"
+  },
+  {
+    "modcode": "BARC0119",
+    "modocc": "A7P",
+    "academicyear": "2024",
+    "periodslotcode": "T2/3/S",
+    "mapcode": "BARC0119A7PG",
+    "mabseq": "001",
+    "astcode": "CN01",
+    "mabperc": "100",
+    "mabname": "Same mapcode assessment T2/3/S",
+    "examroomcode": null,
+    "mkscode": "GNA02",
+    "timecreated": "1707494753",
+    "timemodified": "1707494753"
   }
 ]

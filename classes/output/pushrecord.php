@@ -166,10 +166,22 @@ class pushrecord {
         if (!array_key_exists($this->idnumber, $students)) {
             return false;
         }
+
+        $student = $students[$this->idnumber];
+
+        // Filter by delivery: only include students whose pslcode matches this mapping.
+        $identifier = $student['assessment']['identifier'] ?? null;
+        if ($identifier !== null) {
+            $studentpslcode = manager::parse_pslcode_from_identifier($identifier);
+            if ($studentpslcode !== null && $studentpslcode !== $mapping->periodslotcode) {
+                return false;
+            }
+        }
+
         if ($mapping->reassessment == 1) {
-            return $students[$this->idnumber]['assessment']['resit_number'] > 0;
+            return $student['assessment']['resit_number'] > 0;
         } else {
-            return $students[$this->idnumber]['assessment']['resit_number'] == 0;
+            return $student['assessment']['resit_number'] == 0;
         }
     }
 

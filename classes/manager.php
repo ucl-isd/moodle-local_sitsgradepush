@@ -883,7 +883,13 @@ class manager {
         $data->mabseq = $assessmentmapping->mabseq;
         $data->sprcode = $student['spr_code'];
         $data->academicyear = $assessmentmapping->academicyear;
-        $data->pslcode = $assessmentmapping->periodslotcode;
+
+        // Try to get period slot code from student assessment's identifier,
+        // fallback to the mapping's period slot code if not exists.
+        $identifier = $student['assessment']['identifier'] ?? null;
+        $pslcode = $identifier ? self::parse_pslcode_from_identifier($identifier) : null;
+        $data->pslcode = $pslcode ?? $assessmentmapping->periodslotcode;
+
         $data->reassessment = $assessmentmapping->reassessment;
         $data->source = sprintf(
             'moodle-course%s-%s%s-user%s',
@@ -969,7 +975,8 @@ class manager {
                     cg.id as mabid,
                     cg.mapcode,
                     cg.mabseq,
-                    cg.astcode
+                    cg.astcode,
+                    cg.periodslotcode
                 FROM {" . self::TABLE_COMPONENT_GRADE . "} cg
                 INNER JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                     ON cg.id = am.componentgradeid
@@ -1066,7 +1073,7 @@ class manager {
                 }
             }
 
-            $assessmentdata['mappings'][$mabkey] = $mapping;
+            $assessmentdata['mappings'][$mapping->id] = $mapping;
         }
 
         // Remaining students are not valid for pushing.
@@ -1336,9 +1343,12 @@ class manager {
 
         // Get existing mappings for this activity.
         if ($existingmappings = $this->get_assessment_mappings($assessment)) {
-            // Make sure it does not map to another component grade with same map code.
+            // Make sure it does not map to another component grade with same map code and period slot code.
             foreach ($existingmappings as $existingmapping) {
-                if ($existingmapping->mapcode == $componentgrade->mapcode) {
+                if (
+                    $existingmapping->mapcode == $componentgrade->mapcode
+                    && $existingmapping->periodslotcode == $componentgrade->periodslotcode
+                ) {
                     throw new \moodle_exception('error:same_map_code_for_same_activity', 'local_sitsgradepush');
                 }
             }
@@ -1884,6 +1894,26 @@ class manager {
         }
 
         $DB->delete_records_list(self::TABLE_COMPONENT_GRADE, 'id', array_column($mabs, 'id'));
+    }
+
+    /**
+     * Parse the period slot code from a SITS assessment identifier.
+     *
+     * Identifier format: "{sprcode}-{academicyear}-{pslcode}-{resit_number}"
+     * where / is replaced by _ in all segments.
+     * e.g. "12345678_1-2025-T2_3_S-0" -> pslcode = "T2/3/S"
+     *
+     * Returns null if the identifier does not contain enough segments.
+     *
+     * @param string $identifier The assessment identifier from SITS.
+     * @return string|null The period slot code, or null if the identifier is malformed.
+     */
+    public static function parse_pslcode_from_identifier(string $identifier): ?string {
+        $parts = explode('-', $identifier);
+        if (count($parts) < 3) {
+            return null;
+        }
+        return str_replace('_', '/', $parts[count($parts) - 2]);
     }
 
     /**
