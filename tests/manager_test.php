@@ -25,6 +25,7 @@ use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
 use moodle_exception;
+use sitsapiclient_easikit\requests\pushgrade;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -358,7 +359,7 @@ final class manager_test extends base_test_class {
     public function test_get_component_grade_options(): void {
         $this->setup_testing_environment();
         $options = $this->manager->get_component_grade_options($this->course1->id);
-        $this->assertCount(4, $options);
+        $this->assertCount(6, $options);
 
         // Test course with no module occurrence mappings.
         $options = $this->manager->get_component_grade_options($this->course2->id);
@@ -911,6 +912,86 @@ final class manager_test extends base_test_class {
                 $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id)
             );
         }
+    }
+
+    /**
+     * Test that the push URL uses the period slot code (e.g. T1, T1/2, etc) from the student's assessment identifier.
+     *
+     * When two deliveries share the same map code, each student's identifier encodes
+     * their actual delivery's period slot code. The push URL must use this per-student period slot code
+     * rather than the mapping's period slot code, so SITS routes the grade to the correct delivery.
+     *
+     * @covers \local_sitsgradepush\manager::parse_pslcode_from_identifier
+     * @covers \local_sitsgradepush\manager::get_required_data_for_pushing
+     * @covers \sitsapiclient_easikit\requests\pushgrade::transform_data
+     *
+     * @return void
+     */
+    public function test_push_url_pslcode_from_student_identifier(): void {
+        $assessment = assessmentfactory::get_assessment('mod', $this->assign1->cmid);
+        $this->setup_testing_environment($assessment);
+
+        $apiclientproperty = $this->reflectionmanager->getProperty('apiclient');
+
+        // Test 1: period slot code is taken from the student assessment's identifier, not the mapping's period slot code.
+        // The mapping has period slot code T1/2, but the student assessment's identifier encodes T2/3/S.
+        $students = [
+            [
+                'code' => 12345678,
+                'spr_code' => '12345678/1',
+                'forename' => 'Test',
+                'surname' => 'Student',
+                'assessment' => [
+                    'identifier' => '12345678_1-2023-T2_3_S-0',
+                    'resit_number' => 0,
+                ],
+            ],
+        ];
+        // Update API client to return the test students.
+        $apiclientproperty->setValue($this->manager, $this->get_apiclient_for_testing(false, $students));
+        $this->manager->get_students_from_sits($this->mab1, true);
+
+        $data = $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id);
+        $this->assertEquals('T2/3/S', $data->pslcode);
+
+        // Verify the final push URL uses underscores instead of slashes.
+        $data->marks = 75;
+        $data->grade = 'A';
+        $request = new pushgrade($data);
+        $url = $request->get_endpoint_url_with_params();
+        $this->assertStringContainsString('T2_3_S', $url);
+        $this->assertStringNotContainsString('T2/3/S', $url);
+        $this->assertStringNotContainsString('T1_2', $url);
+
+        // Test 2: period slot code falls back to mapping's period slot code when identifier is absent.
+        $students[0]['assessment'] = ['resit_number' => 0];
+        $apiclientproperty->setValue($this->manager, $this->get_apiclient_for_testing(false, $students));
+        $this->manager->get_students_from_sits($this->mab1, true);
+
+        $data = $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id);
+        $this->assertEquals('T1/2', $data->pslcode);
+
+        $data->marks = 75;
+        $data->grade = 'A';
+        $request = new pushgrade($data);
+        $url = $request->get_endpoint_url_with_params();
+        $this->assertStringContainsString('T1_2', $url);
+        $this->assertStringNotContainsString('T1/2', $url);
+
+        // Test 3: period slot code falls back to mapping's period slot code when identifier is malformed.
+        $students[0]['assessment'] = ['identifier' => 'MALFORMED', 'resit_number' => 0];
+        $apiclientproperty->setValue($this->manager, $this->get_apiclient_for_testing(false, $students));
+        $this->manager->get_students_from_sits($this->mab1, true);
+
+        $data = $this->manager->get_required_data_for_pushing($this->assessmentmapping1, $this->student1->id);
+        $this->assertEquals('T1/2', $data->pslcode);
+
+        $data->marks = 75;
+        $data->grade = 'A';
+        $request = new pushgrade($data);
+        $url = $request->get_endpoint_url_with_params();
+        $this->assertStringContainsString('T1_2', $url);
+        $this->assertStringNotContainsString('T1/2', $url);
     }
 
     /**
@@ -1468,6 +1549,9 @@ final class manager_test extends base_test_class {
         // Set Easikit API client.
         set_config('apiclient', 'easikit', 'local_sitsgradepush');
 
+        // Set endpoint config needed to construct pushgrade requests.
+        set_config('endpoint_grade_push', 'https://example.com/api', 'sitsapiclient_easikit');
+
         // Set AST codes.
         set_config(
             'moodle_ast_codes',
@@ -1589,6 +1673,7 @@ final class manager_test extends base_test_class {
         $this->mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
 
         // Set the return student data from SITS.
+        $rseq = $reassess == 1 ? str_pad($reassess, 3, '0', STR_PAD_LEFT) : '0';
         $students = [
           [
             'code' => 12345678,
@@ -1596,7 +1681,8 @@ final class manager_test extends base_test_class {
             'forename' => 'Test',
             'surname' => 'Student',
             'assessment' => [
-              "resit_number" => $reassess,
+              'identifier' => '12345678_1-2023-T1_2-' . $rseq,
+              'resit_number' => $reassess,
             ],
           ],
         ];

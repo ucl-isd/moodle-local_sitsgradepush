@@ -5,6 +5,7 @@
         "code": "23456781",
         "spr_code": "23456781/1",
         "assessment": {
+          "identifier": "23456781_1-2023-T1_2-0",
           "resit_number": 0
         }
       },
@@ -12,6 +13,7 @@
         "code": "23456782",
         "spr_code": "23456782/1",
         "assessment": {
+          "identifier": "23456782_1-2023-T1_2-0",
           "resit_number": 0
         }
       },
@@ -19,6 +21,7 @@
         "code": "23456783",
         "spr_code": "23456783/1",
         "assessment": {
+          "identifier": "23456783_1-2023-T1_2-0",
           "resit_number": 0
         }
       }
@@ -28,6 +31,7 @@
         "code": "23456781",
         "spr_code": "23456781/1",
         "assessment": {
+          "identifier": "23456781_1-2023-T1_2-0",
           "resit_number": 0
         }
       },
@@ -35,6 +39,7 @@
         "code": "23456782",
         "spr_code": "23456782/1",
         "assessment": {
+          "identifier": "23456782_1-2023-T1_2-0",
           "resit_number": 0
         }
       },
@@ -42,6 +47,35 @@
         "code": "23456783",
         "spr_code": "23456783/1",
         "assessment": {
+          "identifier": "23456783_1-2023-T1_2-0",
+          "resit_number": 0
+        }
+      }
+    ]
+  },
+  "BARC0119A7PG": {
+    "001": [
+      {
+        "code": "23456781",
+        "spr_code": "23456781/1",
+        "assessment": {
+          "identifier": "23456781_1-2024-T2_3-0",
+          "resit_number": 0
+        }
+      },
+      {
+        "code": "23456782",
+        "spr_code": "23456782/1",
+        "assessment": {
+          "identifier": "23456782_1-2024-T2_3_S-0",
+          "resit_number": 0
+        }
+      },
+      {
+        "code": "23456783",
+        "spr_code": "23456783/1",
+        "assessment": {
+          "identifier": "23456783_1-2024-T2_3-0",
           "resit_number": 0
         }
       }
@@ -53,6 +87,7 @@
         "code": "23456781",
         "spr_code": "23456781/1",
         "assessment": {
+          "identifier": "23456781_1-2023-T1-1",
           "resit_number": 1
         }
       },
@@ -60,6 +95,7 @@
         "code": "23456782",
         "spr_code": "23456782/1",
         "assessment": {
+          "identifier": "23456782_1-2023-T1-1",
           "resit_number": 1
         }
       },
@@ -67,6 +103,7 @@
         "code": "23456783",
         "spr_code": "23456783/1",
         "assessment": {
+          "identifier": "23456783_1-2023-T1-1",
           "resit_number": 1
         }
       }
@@ -76,6 +113,7 @@
         "code": "23456781",
         "spr_code": "23456781/1",
         "assessment": {
+          "identifier": "23456781_1-2023-T1-1",
           "resit_number": 1
         }
       },
@@ -83,6 +121,7 @@
         "code": "23456782",
         "spr_code": "23456782/1",
         "assessment": {
+          "identifier": "23456782_1-2023-T1-1",
           "resit_number": 1
         }
       },
@@ -90,6 +129,7 @@
         "code": "23456783",
         "spr_code": "23456783/1",
         "assessment": {
+          "identifier": "23456783_1-2023-T1-1",
           "resit_number": 1
         }
       }

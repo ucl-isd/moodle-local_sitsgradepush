@@ -34,5 +34,23 @@
     "mod_occ_mav": "A7P",
     "mod_occ_year_code": "2023",
     "mod_occ_name": "Preventing Crimes"
+  },
+  {
+    "mod_occ_bdo_id": "BARC0119A7PT23BDO001",
+    "mod_inst_bdo_id": "BARC0119A7PT23INST001",
+    "mod_code": "BARC0119",
+    "mod_occ_psl_code": "T2/3",
+    "mod_occ_mav": "A7P",
+    "mod_occ_year_code": "2024",
+    "mod_occ_name": "Architecture Design"
+  },
+  {
+    "mod_occ_bdo_id": "BARC0119A7PT23SBDO001",
+    "mod_inst_bdo_id": "BARC0119A7PT23SINST001",
+    "mod_code": "BARC0119",
+    "mod_occ_psl_code": "T2/3/S",
+    "mod_occ_mav": "A7P",
+    "mod_occ_year_code": "2024",
+    "mod_occ_name": "Architecture Design (Summer)"
   }
 ]
