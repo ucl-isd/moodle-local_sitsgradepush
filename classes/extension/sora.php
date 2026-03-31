@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\extension;
 
+use core_date;
+use DateTimeImmutable;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extension\models\raa_event_message;
@@ -360,14 +362,17 @@ class sora extends extension {
 
         $closuredays = \report_feedback_tracker\local\helper::get_closuredays();
         $daystoextend = $this->raarequiredprovisions->get_days_extension();
-        $newduedate = $enddate;
+
+        $tz = core_date::get_server_timezone_object();
+        $dt = (new DateTimeImmutable('@' . $enddate))->setTimezone($tz);
         $daysadded = 0;
 
         // Loop until the required number of working days have been added.
+        // Use calendar day addition to correctly handle DST transitions.
         while ($daysadded < $daystoextend) {
-            $newduedate += DAYSECS;
-            $datestring = date('Y-m-d', $newduedate);
-            $weekday = date('N', $newduedate);
+            $dt = $dt->modify('+1 day');
+            $datestring = $dt->format('Y-m-d');
+            $weekday = $dt->format('N');
 
             // Count the day if it's a weekday and not a closure day.
             if ($weekday < 6 && !in_array($datestring, $closuredays, true)) {
@@ -375,7 +380,7 @@ class sora extends extension {
             }
         }
 
-        return $newduedate;
+        return $dt->getTimestamp();
     }
 
     /**

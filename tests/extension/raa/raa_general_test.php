@@ -16,7 +16,10 @@
 
 namespace local_sitsgradepush\extension\raa;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use local_sitsgradepush\extension\aws_queue_processor;
+use local_sitsgradepush\extension\models\raa_required_provisions;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extension\sora_queue_processor;
 use local_sitsgradepush\extensionmanager;
@@ -243,6 +246,58 @@ final class raa_general_test extends raa_base {
 
         // Verify no override was created.
         $this->assertEmpty($DB->get_records('assign_overrides'));
+    }
+
+    /**
+     * Test that get_new_duedate preserves wall-clock time when the extension spans the GMT→BST transition.
+     *
+     * UK clocks spring forward on Sunday 29 March 2026 at 01:00 GMT.
+     * An original due date of Monday 23 March 2026 at 14:00 GMT, extended by 5 working days,
+     * should land on Monday 30 March 2026 at 14:00 BST — not 15:00 BST.
+     *
+     * @covers \local_sitsgradepush\extension\sora::get_new_duedate
+     */
+    public function test_get_new_duedate_preserves_wall_clock_time_across_dst(): void {
+        if (!$this->is_feedback_tracker_installed()) {
+            $this->markTestSkipped('Feedback tracker plugin is not installed.');
+        }
+
+        // Use Europe/London so the GMT→BST DST transition is active.
+        set_config('timezone', 'Europe/London');
+
+        $tz = new DateTimeZone('Europe/London');
+
+        // Original due date: Monday 23 March 2026 at 14:00 GMT.
+        // UK is still in GMT (UTC+0) on this date — clocks change on Sunday 29 March 2026.
+        $originalduedate = (new DateTimeImmutable('2026-03-23 14:00:00', $tz))->getTimestamp();
+
+        // Create sora with 5 working days extension.
+        $sora = new sora();
+        $sora->raarequiredprovisions = new raa_required_provisions([
+            'provision_tier' => 'TIER1',
+            'no_dys_ext' => '5',
+            'no_hrs_ext' => null,
+            'add_exam_time' => null,
+            'rest_brk_add_time' => null,
+            'asmnt_type_code' => 'CN01',
+            'accessibility_assessment_status' => sora::RAA_STATUS_APPROVED,
+        ]);
+
+        $newduedate = $sora->get_new_duedate($originalduedate);
+
+        // Working day walk:
+        // Tuesday  24 March 2026 — count (1st working day, still GMT)
+        // Wednesday 25 March 2026 — count (2nd working day)
+        // Thursday  26 March 2026 — count (3rd working day)
+        // Friday    27 March 2026 — count (4th working day)
+        // Saturday  28 March 2026 — skip (weekend)
+        // Sunday    29 March 2026 — skip (weekend; clocks spring forward at 01:00 GMT this day)
+        // Monday    30 March 2026 — count (5th working day, now in BST = UTC+1)
+        // Expected result: Monday 30 March 2026 at 14:00 BST = 13:00 UTC.
+        // Buggy code (+=DAYSECS) would produce 14:00 UTC = 15:00 BST instead.
+        $expectedduedate = (new DateTimeImmutable('2026-03-30 14:00:00', $tz))->getTimestamp();
+
+        $this->assertEquals($expectedduedate, $newduedate);
     }
 
     /**
