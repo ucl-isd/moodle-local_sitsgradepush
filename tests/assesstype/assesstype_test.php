@@ -515,17 +515,19 @@ final class assesstype_test extends \advanced_testcase {
             'parent' => $this->gradecategory->id,
         ]);
 
-        // Create item in subcategory.
+        // Create item outside the mapped hierarchy (defaults to course root category).
+        // Creating with categoryid set only fires grade_item_created, which is not observed.
+        // The real Moodle UI calls set_parent() after insert(), which fires grade_item_updated.
+        // We replicate that by creating the item first and then moving it via add_item_to_category().
         $subcategoryitem = $this->getDataGenerator()->create_grade_item([
             'courseid' => $this->course->id,
             'itemname' => 'Subcategory item',
             'itemtype' => 'manual',
             'gradetype' => GRADE_TYPE_VALUE,
-            'categoryid' => $subcategory->id,
         ]);
 
-        // Recalculate course grades to ensure all grade items are properly processed.
-        grade_regrade_final_grades($this->course->id);
+        // Move item into subcategory — fires grade_item_updated, which triggers locking.
+        $this->add_item_to_category($subcategoryitem->id, $subcategory->id);
 
         // Verify item in subcategory is now locked (because parent category is mapped).
         $this->assert_lock_status($subcategoryitem->id);
