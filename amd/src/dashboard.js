@@ -236,6 +236,12 @@ function updateUIOnTaskScheduling(assessmentmappingid) {
         changeSourceButton.style.display = 'none';
     }
 
+    // Hide the remove source button.
+    let removeSourceButton = document.getElementById('remove-source-button-' + assessmentmappingid);
+    if (removeSourceButton) {
+        removeSourceButton.classList.add('d-none');
+    }
+
     // Hide the transfer button and show the progress bar immediately.
     let assessments = [
         {task: {progress: 0}, assessmentmappingid: assessmentmappingid, markscount: 0, nonsubmittedcount: 0},

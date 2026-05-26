@@ -165,6 +165,7 @@ $string['error:pastcourse'] = 'It looks like this course is from a previous acad
 $string['error:pushgradespermission'] = 'You do not have permission to transfer marks.';
 $string['error:reassessmentdisabled'] = 'Re-assessment marks transfer is disabled.';
 $string['error:remove_mapping'] = 'You do not have permission to remove mapping.';
+$string['error:removewhiletaskrunning'] = 'Source cannot be removed while a marks transfer task is in progress.';
 $string['error:resit_number_zero_for_reassessment'] = 'Student resit number should not be zero for a reassessment.';
 $string['error:same_map_code_for_same_activity'] = 'An activity cannot be mapped to more than one assessment component with same map code';
 $string['error:soraextensionnotsupported'] = 'Reasonable academic adjustment (RAA) extension is not supported for this assessment.';
