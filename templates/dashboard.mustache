@@ -136,7 +136,7 @@
     {{/currentacademicyear}}
     {{! Jump to dropdown }}
     <div class="dropdown">
-        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="jump-to-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="jump-to-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             {{jump-to-label}}
         </button>
         <div class="dropdown-menu" aria-labelledby="jump-to-dropdown">
@@ -247,7 +247,7 @@
                                                 </a>
                                             </p>
                                             {{#currentacademicyear}}
-                                                <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}{{^nonsubmittedcount}}d-none{{/nonsubmittedcount}}{{/markstotransfer}}" data-toggle="modal" data-target="#transferModal">
+                                                <button type="button" class="btn btn-primary btn-sm js-btn-transfer-marks {{^markstotransfer}}{{^nonsubmittedcount}}d-none{{/nonsubmittedcount}}{{/markstotransfer}}" data-bs-toggle="modal" data-bs-target="#transferModal">
                                                     <i class="fa-solid fa-cloud-arrow-up mr-2"></i>{{#str}} dashboard:transfermarks, local_sitsgradepush {{/str}}
                                                     <span class="sr-only">for {{mabseq}} {{mabname}}</span>
                                                 </button>
