@@ -18,11 +18,6 @@ namespace local_sitsgradepush\aws;
 
 use Aws\Sqs\SqsClient;
 
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->dirroot . '/lib/aws-sdk/src/functions.php');
-require_once($CFG->dirroot . '/lib/guzzlehttp/guzzle/src/functions.php');
-
 /**
  * Class for SQS client.
  *
