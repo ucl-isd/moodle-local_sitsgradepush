@@ -235,7 +235,7 @@ class sora extends extension {
                 $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
 
                 // Check if the assessment can apply SORA extension.
-                if (!$assessment->can_assessment_apply_sora($this, $mapping->id)) {
+                if (!$assessment->can_assessment_apply_sora($this)) {
                     continue;
                 }
 

@@ -138,6 +138,43 @@ final class raa_assign_test extends raa_base {
     }
 
     /**
+     * Test an assignment without a start date can be extended using hours extension type (e.g. HD05).
+     *
+     * @covers \local_sitsgradepush\assessment\assessment::can_assessment_apply_sora
+     * @covers \local_sitsgradepush\assessment\assign::apply_sora_extension
+     * @return void
+     */
+    public function test_assignment_without_start_date_can_be_extended_with_hours_type(): void {
+        // Create an assignment with no start date mapped to HD05.
+        $assign = $this->setup_assignment_with_mapping($this->course1->id, null, '2025-02-18 14:00:00', 'PUBL0065A7PG', '001');
+
+        // Process all mappings for SORA.
+        $this->process_all_mappings_for_sora();
+
+        // Verify the override was created - HD05 extends by 14 hours.
+        $this->assert_assignment_override_exists(new sora(), $assign, 14 * HOURSECS, strtotime('2025-02-19 04:00:00'));
+    }
+
+    /**
+     * Test an assignment without a start date cannot be extended using time per hour extension type (e.g. ED03).
+     *
+     * @covers \local_sitsgradepush\assessment\assessment::can_assessment_apply_sora
+     * @return void
+     */
+    public function test_assignment_without_start_date_cannot_be_extended_with_time_per_hour_type(): void {
+        global $DB;
+
+        // Create an assignment with no start date mapped to ED03 (time per hour - requires start date).
+        $assign = $this->setup_assignment_with_mapping($this->course1->id, null, '2025-02-11 13:00:00', 'LAWS0024A6UF', '001');
+
+        // Process all mappings for SORA.
+        $this->process_all_mappings_for_sora();
+
+        // Verify no override was created - time per hour extension requires start date.
+        $this->assertFalse($DB->get_record('assign_overrides', ['assignid' => $assign->id]));
+    }
+
+    /**
      * Test the update RAA override for students in a mapping.
      * It also tests the RAA override using the student data from assessment API
      * and the RAA override group is deleted when the mapping is removed.
@@ -479,7 +516,7 @@ final class raa_assign_test extends raa_base {
      * Create assignment and mapping for testing.
      *
      * @param int $courseid The course ID.
-     * @param string $startdatetime Start datetime string.
+     * @param string|null $startdatetime Start datetime string, or null for no start date.
      * @param string $enddatetime End datetime string.
      * @param string $mapcode MAB mapcode.
      * @param string $mabseq MAB sequence.
@@ -490,7 +527,7 @@ final class raa_assign_test extends raa_base {
      */
     private function setup_assignment_with_mapping(
         int $courseid,
-        string $startdatetime,
+        ?string $startdatetime,
         string $enddatetime,
         string $mapcode,
         string $mabseq,
@@ -498,8 +535,8 @@ final class raa_assign_test extends raa_base {
     ): \stdClass {
         global $DB;
 
-        $startdate = $this->clock->now()->modify($startdatetime)->getTimestamp();
-        $enddate = $this->clock->now()->modify($enddatetime)->getTimestamp();
+        $startdate = $startdatetime ? strtotime($startdatetime) : 0;
+        $enddate = strtotime($enddatetime);
         $assign = $this->create_assignment($courseid, $startdate, $enddate);
 
         $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => $mapcode, 'mabseq' => $mabseq]);

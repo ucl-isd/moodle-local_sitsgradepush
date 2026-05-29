@@ -218,9 +218,7 @@ class extensionmanager {
      * @return bool
      */
     public static function is_source_extension_eligible(assessment $assessment, bool $duedatecheck = true): bool {
-        $primarycheck = self::is_extension_enabled() &&
-            $assessment->is_extension_supported() &&
-            $assessment->is_valid_for_extension()->valid;
+        $primarycheck = self::is_extension_enabled() && $assessment->is_extension_supported();
 
         return $duedatecheck ? $primarycheck && $assessment->get_end_date() > di::get(clock::class)->time() : $primarycheck;
     }

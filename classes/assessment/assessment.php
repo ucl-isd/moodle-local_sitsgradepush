@@ -20,6 +20,7 @@ use core\clock;
 use core\di;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\extension;
+use local_sitsgradepush\extension\models\raa_required_provisions;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
@@ -83,11 +84,6 @@ abstract class assessment implements iassessment {
      * @throws \moodle_exception
      */
     public function apply_extension(extension $extension): void {
-        $check = $this->is_valid_for_extension();
-        if (!$check->valid) {
-            throw new \moodle_exception($check->errorcode, 'local_sitsgradepush');
-        }
-
         // Skip extension if there is an extension added by exam guard.
         if ($this->has_exam_guard_extension()) {
             return;
@@ -266,19 +262,6 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Check if the assessment is valid for EC or SORA extension.
-     *
-     * @return \stdClass
-     */
-    public function is_valid_for_extension(): \stdClass {
-        if ($this->get_start_date() === null || $this->get_end_date() === null) {
-            return $this->set_validity_result(false, 'error:assessmentdatesnotset');
-        }
-
-        return $this->set_validity_result(true);
-    }
-
-    /**
      * Delete SORA overrides for a mapping.
      * It is used to delete all SORA overrides for an assessment when the mapping is removed.
      *
@@ -415,10 +398,9 @@ abstract class assessment implements iassessment {
      * Check if assessment can apply SORA extension for a given SORA object and mapping id.
      *
      * @param sora $sora SORA extension object.
-     * @param int $mappingid SITS mapping ID.
      * @return bool
      */
-    public function can_assessment_apply_sora(sora $sora, int $mappingid): bool {
+    public function can_assessment_apply_sora(sora $sora): bool {
         // Check if extension feature is enabled.
         if (!extensionmanager::is_extension_enabled()) {
             return false;
@@ -431,6 +413,14 @@ abstract class assessment implements iassessment {
 
         // Skip SORA overrides if the end date of the assessment is in the past.
         if ($this->get_end_date() < $this->clock->time()) {
+            return false;
+        }
+
+        // If RAA extension type is time per hour, start date and end date are required to be set to calculate the duration.
+        if (
+            $sora->raarequiredprovisions->get_extension_type() === raa_required_provisions::EXTENSION_TIME_PER_HOUR
+            && (empty($this->get_start_date()) || empty($this->get_end_date()))
+        ) {
             return false;
         }
 
