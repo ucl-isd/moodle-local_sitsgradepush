@@ -1607,6 +1607,11 @@ class manager {
             throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $mappingid);
         }
 
+        // Remove mapping is not allowed if there is a pending task.
+        if (taskmanager::get_pending_task_in_queue($mappingid)) {
+            throw new \moodle_exception('error:removewhiletaskrunning', 'local_sitsgradepush');
+        }
+
         // Remove mapping is not allowed if grades have been pushed.
         if ($this->has_grades_pushed($mappingid)) {
             throw new \moodle_exception('error:mab_has_push_records', 'local_sitsgradepush', '', 'Mapping ID: ' . $mappingid);

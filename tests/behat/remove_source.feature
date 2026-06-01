@@ -7,6 +7,7 @@ Feature: Remove Moodle source for SITS assessment component
   Background:
     Given the following "users" exist:
       | username | firstname | lastname | idnumber | email                |
+      | student1 | Student1  | Test     | 23456781 | student1@example.com |
       | teacher1 | Teacher1  | Test     | tea1     | teacher1@example.com |
     And the following custom field exists for grade push:
       | category  | CLC |
@@ -19,9 +20,11 @@ Feature: Remove Moodle source for SITS assessment component
     And the following "course enrolments" exist:
       | user | course | role |
       | teacher1 | C1 | editingteacher |
+      | student1 | C1 | student        |
     And the following "permission overrides" exist:
       | capability                        | permission | role           | contextlevel | reference |
       | local/sitsgradepush:mapassessment | Allow      | editingteacher | Course       | C1        |
+      | local/sitsgradepush:pushgrade     | Allow      | editingteacher | Course       | C1        |
     And the course "C1" is set up for marks transfer
     And the following "activities" exist:
       | activity        | name       | intro   | course | idnumber    | section |
@@ -57,3 +60,20 @@ Feature: Remove Moodle source for SITS assessment component
     Then I should see "Are you sure you want to remove source Assign 2 for SITS assessment (001) 72hr take-home examination (3000 words) including automated Reasonable Academic Adjustments (RAAs) extension groups and EC/DAP extension user overrides?"
     And I click on "Confirm" "button" in the "Remove source" "dialogue"
     Then I should see "72hr take-home examination (3000 words)" is not mapped
+
+  @javascript
+  Scenario: Remove source button is hidden when a marks transfer task is scheduled
+    Given the following "mod_assign > submissions" exist:
+      | assign  | user     | onlinetext                          |
+      | assign1 | student1 | This is a submission for assignment |
+    And the following "grade grades" exist:
+      | gradeitem | user     | grade |
+      | Assign 1  | student1 | 50    |
+    And the "mod_assign" "assign1" is mapped to "72hr take-home examination (3000 words)"
+    And I am on the "Course 1" course page logged in as teacher1
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And "Remove source" "button" should be visible
+    And I click on the "Transfer marks" button for "72hr take-home examination (3000 words)"
+    And I press "Confirm"
+    And "Remove source" "button" should not be visible
