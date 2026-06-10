@@ -1538,6 +1538,44 @@ final class manager_test extends base_test_class {
     }
 
     /**
+     * Test removing a mapping using a course it does not belong to is rejected.
+     *
+     * @covers \local_sitsgradepush\manager::remove_mapping
+     * @return void
+     */
+    public function test_remove_mapping_course_mismatch(): void {
+        global $DB;
+
+        // Set up the test environment. The mapping is created in course1.
+        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
+
+        // Grant the capability on course1 so the rejection is due to the course mismatch, not permissions.
+        $roleid = $this->dg->create_role(['shortname' => 'canmapassessment']);
+        assign_capability(
+            'local/sitsgradepush:mapassessment',
+            CAP_ALLOW,
+            $roleid,
+            context_course::instance($this->course1->id)->id
+        );
+        $this->dg->enrol_user($this->teacher1->id, $this->course1->id, 'canmapassessment');
+        $this->setUser($this->teacher1);
+
+        // The mapping belongs to course1, so removing it via course2 must be rejected.
+        try {
+            $this->manager->remove_mapping($this->course2->id, $this->mappingid1);
+            $this->fail('Expected moodle_exception was not thrown.');
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(
+                get_string('error:remove_mapping', 'local_sitsgradepush'),
+                $e->getMessage()
+            );
+        }
+
+        // The mapping must still exist.
+        $this->assertTrue($DB->record_exists('local_sitsgradepush_mapping', ['id' => $this->mappingid1]));
+    }
+
+    /**
      * Set default configurations for the tests.
      *
      * @return void

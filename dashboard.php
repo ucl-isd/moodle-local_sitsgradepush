@@ -55,6 +55,8 @@ require_capability('local/sitsgradepush:mapassessment', $context);
 // Process remove source action.
 if ($action = optional_param('action', '', PARAM_ALPHA)) {
     if ($action === 'removesource') {
+        // This is a state-changing action, so a valid session key is required.
+        require_sesskey();
         $mapid = required_param('mapid', PARAM_INT);
         $urlparams = ['id' => $courseid];
         if ($reassess == 1) {

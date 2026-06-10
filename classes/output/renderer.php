@@ -478,7 +478,7 @@ class renderer extends plugin_renderer_base {
      * @return \moodle_url
      */
     private function get_remove_source_url(int $courseid, int $mapid, int $reassess): \moodle_url {
-        $params = ['id' => $courseid, 'mapid' => $mapid, 'action' => 'removesource'];
+        $params = ['id' => $courseid, 'mapid' => $mapid, 'action' => 'removesource', 'sesskey' => sesskey()];
         if ($reassess == 1) {
             $params['reassess'] = 1;
         }

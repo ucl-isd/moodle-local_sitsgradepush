@@ -1597,14 +1597,18 @@ class manager {
     public function remove_mapping(int $courseid, int $mappingid): void {
         global $DB;
 
-        // Check permission. Assume the user who has permission to map assessment is allowed to remove mapping too.
-        if (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($courseid))) {
-            throw new \moodle_exception('error:remove_mapping', 'local_sitsgradepush');
-        }
-
         // Check the mapping exists.
         if (!$mapping = $DB->get_record(self::TABLE_ASSESSMENT_MAPPING, ['id' => $mappingid])) {
             throw new \moodle_exception('error:assessmentmapping', 'local_sitsgradepush', '', $mappingid);
+        }
+
+        // Check permission against the mapping's real course and make sure it matches the supplied course.
+        // Assume the user who has permission to map assessment is allowed to remove mapping too.
+        if (
+            (int) $mapping->courseid !== $courseid ||
+            !has_capability('local/sitsgradepush:mapassessment', context_course::instance($mapping->courseid))
+        ) {
+            throw new \moodle_exception('error:remove_mapping', 'local_sitsgradepush');
         }
 
         // Remove mapping is not allowed if there is a pending task.
