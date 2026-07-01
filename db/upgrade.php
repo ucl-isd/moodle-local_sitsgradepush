@@ -883,5 +883,40 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026012700, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2026062900) {
+        // Define table local_sitsgradepush_stuenrol to be created.
+        $table = new xmldb_table('local_sitsgradepush_stuenrol');
+
+        // Adding fields to table local_sitsgradepush_stuenrol.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('modcode', XMLDB_TYPE_CHAR, '12', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('modocc', XMLDB_TYPE_CHAR, '6', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('academicyear', XMLDB_TYPE_CHAR, '12', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('periodslotcode', XMLDB_TYPE_CHAR, '6', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table local_sitsgradepush_stuenrol.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key(
+            'idx_delivery',
+            XMLDB_KEY_UNIQUE,
+            ['courseid', 'userid', 'modcode', 'modocc', 'academicyear', 'periodslotcode']
+        );
+
+        // Adding indexes to table local_sitsgradepush_stuenrol.
+        $table->add_index('idx_courseid', XMLDB_INDEX_NOTUNIQUE, ['courseid']);
+        $table->add_index('idx_userid', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+
+        // Conditionally launch create table for local_sitsgradepush_stuenrol.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2026062900, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

@@ -219,6 +219,14 @@ if ($hassiteconfig) {
             '0'
         ));
 
+        // Setting to enable/disable the SITS module delivery sourcing and resolution service.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/delivery_resolution_enabled',
+            get_string('settings:delivery_resolution_enabled', 'local_sitsgradepush'),
+            get_string('settings:delivery_resolution_enabled:desc', 'local_sitsgradepush'),
+            '1'
+        ));
+
         // Setting to configure the deadline group prefix.
         $settings->add(new admin_setting_configtext(
             'local_sitsgradepush/deadlinegroup_prefix',

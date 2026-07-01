@@ -214,5 +214,25 @@
         <INDEX NAME="idx_academic_year" UNIQUE="false" FIELDS="academic_year"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_sitsgradepush_stuenrol" COMMENT="Durable mapping of a student to their SITS module delivery">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Moodle user id"/>
+        <FIELD NAME="modcode" TYPE="char" LENGTH="12" NOTNULL="true" SEQUENCE="false" COMMENT="SITS module code"/>
+        <FIELD NAME="modocc" TYPE="char" LENGTH="6" NOTNULL="true" SEQUENCE="false" COMMENT="Module Occurrence"/>
+        <FIELD NAME="academicyear" TYPE="char" LENGTH="12" NOTNULL="true" SEQUENCE="false" COMMENT="Academic Year (AYR) code"/>
+        <FIELD NAME="periodslotcode" TYPE="char" LENGTH="6" NOTNULL="true" SEQUENCE="false" COMMENT="Period Slot (PSL) code"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="idx_delivery" TYPE="unique" FIELDS="courseid, userid, modcode, modocc, academicyear, periodslotcode"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_courseid" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="idx_userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>
