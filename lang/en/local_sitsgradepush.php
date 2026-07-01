@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['cachedef_candidatenumbers'] = 'Student candidate numbers related data';
 $string['cachedef_componentgrades'] = 'SITS assessment components';
+$string['cachedef_deliveryresolution'] = 'Students resolved to no SITS module delivery';
 $string['cachedef_mappingmabinfo'] = 'SITS Mapping and MAB information';
 $string['cachedef_markingschemes'] = 'SITS marking schemes';
 $string['cachedef_studentspr'] = 'Student\'s SPR code per SITS assessment pattern';
