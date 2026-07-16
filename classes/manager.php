@@ -57,6 +57,9 @@ class manager {
     /** @var string Action identifier for get students from SITS */
     const GET_STUDENTS_V2 = 'getstudentsv2';
 
+    /** @var string Action identifier for get combined due dates from SITS */
+    const GET_COMBINED_DUE_DATE = 'getcombinedduedate';
+
     /** @var string Action identifier for pushing grades to SITS */
     const PUSH_GRADE = 'pushgrade';
 
@@ -716,6 +719,41 @@ class manager {
     }
 
     /**
+     * Get combined due dates for a grade component from SITS.
+     *
+     * @param \stdClass $mab Component grade (MAB) information.
+     * @param string $sprcode Filter by student programme route code.
+     * @return array Combined due date records keyed by student programme route code.
+     * @throws \moodle_exception
+     */
+    public function get_combined_due_dates_from_sits(\stdClass $mab, string $sprcode = ''): array {
+        // Stutalk Direct is not supported currently.
+        if ($this->apiclient->get_client_name() == 'Stutalk Direct') {
+            throw new \moodle_exception(
+                'error:multiplemappingsnotsupported',
+                'local_sitsgradepush',
+                '',
+                $this->apiclient->get_client_name()
+            );
+        }
+
+        // Build required data.
+        $data = new \stdClass();
+        $data->academicyear = $mab->academicyear;
+        $data->modcode = $mab->modcode;
+        $data->modocc = $mab->modocc;
+        $data->mabseq = $mab->mabseq;
+        $data->periodslotcode = $mab->periodslotcode;
+        $data->sprcode = $sprcode;
+
+        // Build and send request.
+        $request = $this->apiclient->build_request(self::GET_COMBINED_DUE_DATE, $data);
+        $result = $this->apiclient->send_request($request);
+
+        return $result ?: [];
+    }
+
+    /**
      * Push grade to SITS.
      *
      * @param \stdClass $assessmentmapping
@@ -976,7 +1014,10 @@ class manager {
                     cg.mapcode,
                     cg.mabseq,
                     cg.astcode,
-                    cg.periodslotcode
+                    cg.periodslotcode,
+                    cg.modcode,
+                    cg.modocc,
+                    cg.academicyear
                 FROM {" . self::TABLE_COMPONENT_GRADE . "} cg
                 INNER JOIN {" . self::TABLE_ASSESSMENT_MAPPING . "} am
                     ON cg.id = am.componentgradeid

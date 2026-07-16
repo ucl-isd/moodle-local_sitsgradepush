@@ -39,7 +39,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/mstokenendpoint',
         new lang_string('settings:mstokenendpoint', 'sitsapiclient_easikit'),
         new lang_string('settings:mstokenendpoint:desc', 'sitsapiclient_easikit'),
-        'https://login.microsoftonline.com/1faf88fe-a998-4c5b-93c9-210a11d9a5c2/oauth2/v2.0/token'
+        'https://login.microsoftonline.com/1faf88fe-a998-4c5b-93c9-210a11d9a5c2/oauth2/v2.0/token',
+        PARAM_URL
     ));
 
     // Client ID.
@@ -47,7 +48,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/clientid',
         new lang_string('settings:clientid', 'sitsapiclient_easikit'),
         new lang_string('settings:clientid:desc', 'sitsapiclient_easikit'),
-        'f2dfca44-322a-4e0e-9ab9-6014fa27c8af'
+        'f2dfca44-322a-4e0e-9ab9-6014fa27c8af',
+        PARAM_ALPHANUMEXT
     ));
 
     // Client secret.
@@ -71,7 +73,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/endpoint_grade_push',
         get_string('settings:endpoint_push_grade', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_push_grade:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle',
+        PARAM_URL
     ));
 
     // Submission log endpoint.
@@ -79,7 +82,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/endpoint_submission_log',
         get_string('settings:endpoint_submission_log', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_submission_log:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle',
+        PARAM_URL
     ));
 
     // Get component grade endpoint.
@@ -87,7 +91,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/endpoint_component_grade',
         get_string('settings:endpoint_component_grade', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_component_grade:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle/assessment-component'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/moodle/assessment-component',
+        PARAM_URL
     ));
 
     // Get student endpoint.
@@ -95,7 +100,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/endpoint_get_student',
         get_string('settings:endpoint_get_student', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_get_student:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component',
+        PARAM_URL
     ));
 
     // Get mark schemes endpoint.
@@ -103,7 +109,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/endpoint_get_mark_schemes',
         get_string('settings:endpoint_mark_schemes', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_mark_schemes:desc', 'sitsapiclient_easikit'),
-        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component/mark-scheme'
+        'https://student.integration-dev.ucl.ac.uk/assessment/v1/assessment-component/mark-scheme',
+        PARAM_URL
     ));
 
     // Setting for AWS.
@@ -118,7 +125,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/assessmenttargetclientidv2',
         get_string('settings:assessmenttargetclientid', 'sitsapiclient_easikit'),
         get_string('settings:assessmenttargetclientid:desc', 'sitsapiclient_easikit'),
-        'change-me-to-your-client-id'
+        'change-me-to-your-client-id',
+        PARAM_ALPHANUMEXT
     ));
 
     // Get student endpoint v2.
@@ -126,6 +134,16 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/endpoint_get_student_v2',
         get_string('settings:endpoint_get_student_v2', 'sitsapiclient_easikit'),
         get_string('settings:endpoint_get_student_v2:desc', 'sitsapiclient_easikit'),
-        'https://change-me-to-your-endpoint/url'
+        'https://change-me-to-your-endpoint/url',
+        PARAM_URL
+    ));
+
+    // Get combined due date endpoint.
+    $settings->add(new admin_setting_configtext(
+        'sitsapiclient_easikit/endpoint_combined_due_date',
+        get_string('settings:endpoint_combined_due_date', 'sitsapiclient_easikit'),
+        get_string('settings:endpoint_combined_due_date:desc', 'sitsapiclient_easikit'),
+        'https://change-me-to-your-endpoint/url',
+        PARAM_URL
     ));
 }
