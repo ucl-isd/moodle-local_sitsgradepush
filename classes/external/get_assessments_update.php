@@ -31,6 +31,8 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class get_assessments_update extends external_api {
+    use course_capability_trait;
+
     /**
      * Returns description of method parameters.
      *
@@ -76,6 +78,9 @@ class get_assessments_update extends external_api {
                     'sourceid' => $sourceid,
                 ]
             );
+
+            // Validate the course context and check the user's capability.
+            self::validate_course_capability($params['courseid']);
 
             // Get updates.
             if (

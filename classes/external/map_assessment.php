@@ -21,6 +21,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\manager;
 
 /**
@@ -32,6 +33,8 @@ use local_sitsgradepush\manager;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class map_assessment extends external_api {
+    use course_capability_trait;
+
     /**
      * Returns description of method parameters.
      *
@@ -83,10 +86,6 @@ class map_assessment extends external_api {
         ?int $partid = null
     ) {
         try {
-            if (!has_capability('local/sitsgradepush:mapassessment', context_course::instance($courseid))) {
-                throw new \moodle_exception('error:mapassessment', 'local_sitsgradepush');
-            }
-
             $params = self::validate_parameters(
                 self::execute_parameters(),
                 [
@@ -99,6 +98,15 @@ class map_assessment extends external_api {
                     'partid' => $partid,
                 ]
             );
+
+            // Resolve the source and make sure the supplied course matches the source's real course.
+            $source = assessmentfactory::get_assessment($params['sourcetype'], $params['sourceid']);
+            if ($source->get_course_id() !== $params['courseid']) {
+                throw new \moodle_exception('error:coursemismatch', 'local_sitsgradepush');
+            }
+
+            // Validate the course context and check the user's capability against the source's real course.
+            self::validate_course_capability($source->get_course_id());
 
             $manager = manager::get_manager();
             $data = new \stdClass();

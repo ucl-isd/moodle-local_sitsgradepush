@@ -49,8 +49,13 @@ $pushgrade = optional_param('pushgrade', 0, PARAM_INT);
 // Get the source object.
 $source = assessment\assessmentfactory::get_assessment($sourcetype, $id);
 
-// Get course context.
-$coursecontext = context_course::instance($courseid);
+// Make sure the supplied course matches the source's real course to prevent operating on another course's data.
+if ($source->get_course_id() !== $courseid) {
+    throw new \moodle_exception('error:coursemismatch', 'local_sitsgradepush');
+}
+
+// Get course context from the source's real course.
+$coursecontext = context_course::instance($source->get_course_id());
 
 // Check user's capability.
 require_capability('local/sitsgradepush:pushgrade', $coursecontext);
@@ -90,7 +95,7 @@ echo '<div class="container py-5">';
 
 // Page header.
 if ($showassessmentname) {
-    echo '<h2 class="mb-4">' . $source->get_assessment_name() . '</h2>';
+    echo '<h2 class="mb-4">' . format_string($source->get_assessment_name()) . '</h2>';
 }
 echo '<h3 class="mb-4">' . get_string('index:header', 'local_sitsgradepush') . '</h3>';
 
@@ -118,6 +123,11 @@ if (!empty($content)) {
 
         // Loop through each mapping.
         foreach ($content['mappings'] as $mapping) {
+            // Make sure the mapping belongs to the capability-checked course before transferring marks.
+            if ((int) $mapping->courseid !== $courseid) {
+                throw new \moodle_exception('error:mappingcoursemismatch', 'local_sitsgradepush');
+            }
+
             // Skip if there is no student in the mapping.
             if (empty($mapping->students)) {
                 continue;
