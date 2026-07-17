@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\extension;
 
 use DateTime;
+use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
 use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\logger;
@@ -87,8 +88,8 @@ class ec extends extension {
 
         foreach ($mappings as $mapping) {
             try {
-                // Skip reassessments for EC.
-                if ($mapping->reassessment == 1) {
+                // Skip mappings that are not applicable to this extension type.
+                if ($this->should_skip_mapping($mapping)) {
                     continue;
                 }
 
@@ -98,27 +99,62 @@ class ec extends extension {
                 }
                 $assessment->set_sits_mapping_id($mapping->id);
                 if (empty($this->get_new_deadline())) {
-                    // Check if student has an active EC override.
+                    // Check if student has an active override of this extension type.
                     $mtoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
                         $mapping->id,
                         $mapping->sourceid,
-                        extensionmanager::EXTENSION_EC,
+                        $this->get_extension_type(),
                         $this->get_userid()
                     );
-                    // Delete previous EC override if exists when the new deadline is empty,
-                    // i.e. EC is removed for the student on SITS.
+                    // Delete previous override if exists when the new deadline is empty,
+                    // i.e. the extension is removed for the student on SITS.
                     if (!empty($mtoverride)) {
-                        $assessment->delete_ec_override($mtoverride);
+                        $assessment->delete_user_override($mtoverride);
                     }
                     // Continue to next mapping as the new deadline is empty.
                     continue;
                 }
+
+                // Run any pre-apply cleanup required by the extension type.
+                $this->before_apply_extension($assessment, $mapping);
+
                 $assessment->apply_extension($this);
             } catch (\Throwable $e) {
                 // Throwable, not Exception, so one unusable mapping cannot abandon the rest.
                 logger::log($e->getMessage(), null, "Mapping ID: $mapping->id");
             }
         }
+    }
+
+    /**
+     * Get the extension type constant used for override lookups.
+     *
+     * @return string
+     */
+    protected function get_extension_type(): string {
+        return extensionmanager::EXTENSION_EC;
+    }
+
+    /**
+     * Determine whether a mapping should be skipped during extension processing.
+     *
+     * @param \stdClass $mapping
+     * @return bool
+     */
+    protected function should_skip_mapping(\stdClass $mapping): bool {
+        // Skip reassessments for EC.
+        return $mapping->reassessment == 1;
+    }
+
+    /**
+     * Hook to run any cleanup required before applying the extension to an assessment.
+     *
+     * @param assessment $assessment
+     * @param \stdClass $mapping
+     * @return void
+     */
+    protected function before_apply_extension(assessment $assessment, \stdClass $mapping): void {
+        // No-op by default. Override in child class if needed.
     }
 
     /**

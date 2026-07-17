@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\assessment;
 
+use local_sitsgradepush\extension\cdd;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
@@ -83,13 +84,13 @@ class coursework extends activity {
     }
 
     /**
-     * Delete applied EC override and restore original override if any.
+     * Delete an applied user override and restore the original override if any.
      *
      * @param stdClass $mtsavedoverride - Override record saved in marks transfer overrides table (local_sitsgradepush_overrides)
      *
      * @return void
      */
-    public function delete_ec_override(stdClass $mtsavedoverride): void {
+    public function delete_user_override(stdClass $mtsavedoverride): void {
         global $DB;
         $this->process_overrides_deletion([$mtsavedoverride]);
 
@@ -246,55 +247,17 @@ class coursework extends activity {
      * @return void
      */
     protected function apply_ec_extension(ec $ec): void {
-        // Do not apply EC if it is a group assessment as ECs are only for individual students.
-        // Currently, coursework does not support individual extensions for group assessments.
-        if ($this->is_group_assessment()) {
-            return;
-        }
+        $this->apply_user_date_extension($ec, extensionmanager::EXTENSION_EC);
+    }
 
-        // Calculate the new due date.
-        $newduedate = $this->calculate_ec_new_duedate($ec);
-
-        // Get existing override for the user if any.
-        $preexistingoverride = $this->get_override_record($ec->get_userid());
-
-        // Override the coursework settings for user.
-        $this->overrides_due_date($newduedate, $ec->get_userid(), $preexistingoverride);
-
-        // Get the updated coursework override record.
-        $courseworkoverride = $this->get_override_record($ec->get_userid());
-
-        // Get active RAA override for the student if any.
-        $activesoraoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
-            $this->sitsmappingid,
-            $this->get_id(),
-            extensionmanager::EXTENSION_SORA,
-            $ec->get_userid()
-        );
-
-        // If there is an active SORA override, update it to restored state as EC takes precedence.
-        if ($activesoraoverride) {
-            $preexistingoverride = json_decode($activesoraoverride->ori_override_data) ?: false;
-            $this->mark_override_restored($activesoraoverride->id);
-
-            // This will create a new MT override record for the EC, so set $mtoverride to false.
-            $mtoverride = false;
-        } else {
-            // Get active EC override for the student if any.
-            $mtoverride = $this->get_active_ec_override($ec->get_userid());
-        }
-
-        // Save override record in marks transfer overrides table.
-        $this->save_override(
-            extensionmanager::EXTENSION_EC,
-            $this->sitsmappingid,
-            $ec->get_userid(),
-            $mtoverride,
-            $courseworkoverride,
-            $preexistingoverride,
-            null,
-            $ec->get_latest_identifier() ?: null
-        );
+    /**
+     * Apply CDD extension to the assessment.
+     *
+     * @param cdd $cdd The CDD extension.
+     * @return void
+     */
+    protected function apply_cdd_extension(cdd $cdd): void {
+        $this->apply_user_date_extension($cdd, extensionmanager::EXTENSION_CDD);
     }
 
     /**
@@ -351,6 +314,65 @@ class coursework extends activity {
             $mtoverride,
             $courseworkoverride,
             $preexistingoverride
+        );
+    }
+
+    /**
+     * Apply a user date extension of the given extension type to the assessment.
+     *
+     * @param ec $extension The extension.
+     * @param string $extensiontype The extension type, e.g. EC, CDD.
+     * @return void
+     */
+    private function apply_user_date_extension(ec $extension, string $extensiontype): void {
+        // Do not apply the extension if it is a group assessment as extensions are only for individual students.
+        // Currently, coursework does not support individual extensions for group assessments.
+        if ($this->is_group_assessment()) {
+            return;
+        }
+
+        // Calculate the new due date.
+        $newduedate = $this->calculate_ec_new_duedate($extension);
+
+        // Get existing override for the user if any.
+        $preexistingoverride = $this->get_override_record($extension->get_userid());
+
+        // Override the coursework settings for user.
+        $this->overrides_due_date($newduedate, $extension->get_userid(), $preexistingoverride);
+
+        // Get the updated coursework override record.
+        $courseworkoverride = $this->get_override_record($extension->get_userid());
+
+        // Get active RAA override for the student if any.
+        $activesoraoverride = extensionmanager::get_active_user_mt_overrides_by_mapid(
+            $this->sitsmappingid,
+            $this->get_id(),
+            extensionmanager::EXTENSION_SORA,
+            $extension->get_userid()
+        );
+
+        // If there is an active SORA override, update it to restored state as the extension takes precedence.
+        if ($activesoraoverride) {
+            $preexistingoverride = json_decode($activesoraoverride->ori_override_data) ?: false;
+            $this->mark_override_restored($activesoraoverride->id);
+
+            // This will create a new MT override record for the extension, so set $mtoverride to false.
+            $mtoverride = false;
+        } else {
+            // Get active override of the extension type for the student if any.
+            $mtoverride = $this->get_active_user_override($extensiontype, $extension->get_userid());
+        }
+
+        // Save override record in marks transfer overrides table.
+        $this->save_override(
+            $extensiontype,
+            $this->sitsmappingid,
+            $extension->get_userid(),
+            $mtoverride,
+            $courseworkoverride,
+            $preexistingoverride,
+            null,
+            $extension->get_latest_identifier() ?: null
         );
     }
 

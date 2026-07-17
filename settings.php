@@ -165,6 +165,14 @@ if ($hassiteconfig) {
             '0'
         ));
 
+        // Setting to enable/disable the combined due date feature.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/cdd_enabled',
+            get_string('settings:enablecdd', 'local_sitsgradepush'),
+            get_string('settings:enablecdd:desc', 'local_sitsgradepush'),
+            '0'
+        ));
+
         // Set the extension support page URL.
         $settings->add(new admin_setting_configtext(
             'local_sitsgradepush/extension_support_page_url',

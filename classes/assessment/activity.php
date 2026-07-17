@@ -502,18 +502,29 @@ abstract class activity extends assessment {
     }
 
     /**
+     * Get the active override of an extension type for a specific user from the marks transfer overrides table.
+     *
+     * @param string $extensiontype The extension type, e.g. EC, CDD.
+     * @param int $userid The Moodle user ID.
+     * @return mixed The active override record or false if not found.
+     */
+    protected function get_active_user_override(string $extensiontype, int $userid): mixed {
+        return extensionmanager::get_active_user_mt_overrides_by_mapid(
+            $this->sitsmappingid,
+            $this->get_id(),
+            $extensiontype,
+            $userid
+        );
+    }
+
+    /**
      * Get the active EC override for a specific user from the marks transfer overrides table.
      *
      * @param int $userid The Moodle user ID.
      * @return mixed The active EC override record or false if not found.
      */
     protected function get_active_ec_override(int $userid): mixed {
-        return extensionmanager::get_active_user_mt_overrides_by_mapid(
-            $this->sitsmappingid,
-            $this->get_id(),
-            extensionmanager::EXTENSION_EC,
-            $userid
-        );
+        return $this->get_active_user_override(extensionmanager::EXTENSION_EC, $userid);
     }
 
     /**

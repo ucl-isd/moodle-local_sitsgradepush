@@ -20,6 +20,7 @@ use core\clock;
 use core\di;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\assessment\assessmentfactory;
+use local_sitsgradepush\extension\cdd;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\sora;
@@ -42,6 +43,9 @@ class extensionmanager {
 
     /** @var string Extension name for EC */
     const EXTENSION_EC = 'EC';
+
+    /** @var string Extension name for combined due date */
+    const EXTENSION_CDD = 'CDD';
 
     /**
      * Update SORA extension for students in a mapping using the SITS get students API as the data source.
@@ -114,6 +118,52 @@ class extensionmanager {
     }
 
     /**
+     * Update combined due date (CDD) extension for students in a mapping
+     * using the SITS combined due date API as the data source.
+     *
+     * @param \stdClass $mapping Assessment component mapping information including MAB info.
+     * @param array $cddrecords Combined due date records for the mapping, keyed by student programme route code.
+     * @return array Student codes of the students handled by the combined due date.
+     * @throws \dml_exception|\moodle_exception
+     */
+    public static function update_cdd_for_mapping(\stdClass $mapping, array $cddrecords): array {
+        // Nothing to do if the combined due date feature is not enabled.
+        if (!self::is_cdd_enabled()) {
+            return [];
+        }
+
+        // Nothing to do if the extension is not enabled for the mapping.
+        if ($mapping->enableextension !== '1') {
+            return [];
+        }
+
+        // Nothing to do if the combined due date API returned no records.
+        if (empty($cddrecords)) {
+            return [];
+        }
+
+        // Process CDD extension for each student returned by the combined due date API.
+        $handledstudents = [];
+        foreach ($cddrecords as $cddrecord) {
+            $sprcode = $cddrecord['student_programme_route_code'] ?? '';
+            try {
+                $cdd = new cdd();
+                $cdd->set_properties_from_cdd_api($cddrecord);
+                $cdd->process_extension([$mapping]);
+
+                // Collect the student code if the student is handled by the combined due date.
+                if ($cdd->has_combined_due_date()) {
+                    $handledstudents[] = $cdd->get_student_code();
+                }
+            } catch (\Exception $e) {
+                logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, SPR code: $sprcode");
+            }
+        }
+
+        return $handledstudents;
+    }
+
+    /**
      * Check if the extension is enabled.
      *
      * @return bool
@@ -121,6 +171,16 @@ class extensionmanager {
      */
     public static function is_extension_enabled(): bool {
         return get_config('local_sitsgradepush', 'extension_enabled') == '1';
+    }
+
+    /**
+     * Check if the combined due date (CDD) feature is enabled.
+     *
+     * @return bool
+     * @throws \dml_exception
+     */
+    public static function is_cdd_enabled(): bool {
+        return self::is_extension_enabled() && get_config('local_sitsgradepush', 'cdd_enabled') == '1';
     }
 
     /**
@@ -232,27 +292,32 @@ class extensionmanager {
      * @throws \dml_exception
      */
     public static function delete_ec_overrides(int $mapid): void {
-        // Get EC overrides by SITS mapping ID.
-        $backups = self::get_mt_overrides(['mapid' => $mapid, 'extensiontype' => self::EXTENSION_EC, 'restored_by' => null]);
+        self::delete_overrides_by_type($mapid, self::EXTENSION_EC);
+    }
 
-        // Nothing to do if there are no EC overrides.
-        if (empty($backups)) {
-            return;
-        }
+    /**
+     * Delete CDD overrides for a mapped Moodle assessment.
+     *
+     * @param int $mapid SITS mapping ID.
+     *
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function delete_cdd_overrides(int $mapid): void {
+        self::delete_overrides_by_type($mapid, self::EXTENSION_CDD);
+    }
 
-        try {
-            // Get Moodle assessment.
-            $assessment = [];
-            foreach ($backups as $backup) {
-                if (empty($assessment[$backup->cmid])) {
-                    $assessment[$backup->cmid] =
-                        assessmentfactory::get_assessment(assessmentfactory::SOURCETYPE_MOD, $backup->cmid);
-                }
-                $assessment[$backup->cmid]->delete_ec_override($backup);
-            }
-        } catch (\Exception $e) {
-            logger::log($e->getMessage(), null, "delete_ec_overrides: mapping ID: $mapid");
-        }
+    /**
+     * Check if the user has an active CDD override for a mapping.
+     *
+     * @param int $mapid SITS mapping ID.
+     * @param int $cmid Course module ID.
+     * @param int $userid Moodle user ID.
+     * @return bool
+     * @throws \dml_exception
+     */
+    public static function user_has_active_cdd_override(int $mapid, int $cmid, int $userid): bool {
+        return !empty(self::get_active_user_mt_overrides_by_mapid($mapid, $cmid, self::EXTENSION_CDD, $userid));
     }
 
     /**
@@ -299,5 +364,38 @@ class extensionmanager {
             'extensiontype' => $extensiontype,
         ];
         return $DB->get_record_sql($sql, $params);
+    }
+
+    /**
+     * Delete overrides of a given extension type for a mapped Moodle assessment.
+     *
+     * @param int $mapid SITS mapping ID.
+     * @param string $extensiontype The extension type, e.g. EC, CDD.
+     *
+     * @return void
+     * @throws \dml_exception
+     */
+    private static function delete_overrides_by_type(int $mapid, string $extensiontype): void {
+        // Get overrides of the extension type by SITS mapping ID.
+        $overrides = self::get_mt_overrides(['mapid' => $mapid, 'extensiontype' => $extensiontype, 'restored_by' => null]);
+
+        // Nothing to do if there are no overrides.
+        if (empty($overrides)) {
+            return;
+        }
+
+        // Delete each override, continuing on error so one bad record does not block the rest.
+        $assessment = [];
+        foreach ($overrides as $override) {
+            try {
+                if (empty($assessment[$override->cmid])) {
+                    $assessment[$override->cmid] =
+                        assessmentfactory::get_assessment(assessmentfactory::SOURCETYPE_MOD, $override->cmid);
+                }
+                $assessment[$override->cmid]->delete_user_override($override);
+            } catch (\Exception $e) {
+                logger::log($e->getMessage(), null, "delete_overrides_by_type ($extensiontype): mapping ID: $mapid");
+            }
+        }
     }
 }

@@ -518,6 +518,9 @@ class manager {
             // Delete EC overrides for the deleted mapping.
             extensionmanager::delete_ec_overrides($existingmapping->id);
 
+            // Delete CDD overrides for the deleted mapping.
+            extensionmanager::delete_cdd_overrides($existingmapping->id);
+
             // Clear mapping MAB info cache.
             $this->clear_mapping_mab_info_cache($existingmapping->id);
         }
@@ -1673,6 +1676,9 @@ class manager {
 
         // Delete any EC overrides for the deleted mapping.
         extensionmanager::delete_ec_overrides($mapping->id);
+
+        // Delete any CDD overrides for the deleted mapping.
+        extensionmanager::delete_cdd_overrides($mapping->id);
 
         // Clear mapping MAB info cache.
         $this->clear_mapping_mab_info_cache($mappingid);
