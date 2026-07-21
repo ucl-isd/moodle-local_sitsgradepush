@@ -58,15 +58,6 @@ class cdd extends ec {
     }
 
     /**
-     * Get the student programme route code.
-     *
-     * @return string
-     */
-    public function get_sprcode(): string {
-        return $this->sprcode;
-    }
-
-    /**
      * Get the extension type constant used for override lookups.
      *
      * @return string
@@ -83,6 +74,16 @@ class cdd extends ec {
      * @return bool
      */
     protected function should_skip_mapping(\stdClass $mapping): bool {
+        return false;
+    }
+
+    /**
+     * The combined due date is never superseded by itself, so CDD processing always proceeds.
+     *
+     * @param \stdClass $mapping
+     * @return bool
+     */
+    protected function is_superseded_by_cdd(\stdClass $mapping): bool {
         return false;
     }
 
@@ -135,6 +136,7 @@ class cdd extends ec {
         $this->manualdaysext = (int)($effective['manual_dys_ext'] ?? 0);
 
         // A combined due date exists only when there is a calculated due date and at least one day extension.
+        // Therefore, an exam type assessment should not have combined due date as it won't be extended by days.
         $calcduedate = $effective['calc_due_dt'] ?? '';
         $this->hascombinedduedate = !empty($calcduedate) &&
             ($this->ecdaysext > 0 || $this->dapdaysext > 0 || $this->raadaysext > 0 || $this->manualdaysext > 0);

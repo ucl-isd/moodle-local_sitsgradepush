@@ -118,15 +118,16 @@ class extensionmanager {
     }
 
     /**
-     * Update combined due date (CDD) extension for students in a mapping
-     * using the SITS combined due date API as the data source.
+     * Update combined due date (CDD) extension for students in a mapping.
+     * The mapping's student list from the SITS get students API drives processing, so the combined
+     * due date is only applied to students who are actually in the mapping.
      *
      * @param \stdClass $mapping Assessment component mapping information including MAB info.
-     * @param array $cddrecords Combined due date records for the mapping, keyed by student programme route code.
+     * @param array $students Students data from the SITS get students API.
      * @return array Student codes of the students handled by the combined due date.
      * @throws \dml_exception|\moodle_exception
      */
-    public static function update_cdd_for_mapping(\stdClass $mapping, array $cddrecords): array {
+    public static function update_cdd_for_mapping(\stdClass $mapping, array $students): array {
         // Nothing to do if the combined due date feature is not enabled.
         if (!self::is_cdd_enabled()) {
             return [];
@@ -137,30 +138,73 @@ class extensionmanager {
             return [];
         }
 
+        // Nothing to do if there are no students in the mapping.
+        if (empty($students)) {
+            return [];
+        }
+
         // Nothing to do if the combined due date API returned no records.
+        $cddrecords = manager::get_manager()->get_combined_due_dates_from_sits($mapping);
         if (empty($cddrecords)) {
             return [];
         }
 
-        // Process CDD extension for each student returned by the combined due date API.
-        $handledstudents = [];
+        // Build a lookup of combined due date records keyed by student code. The student code is the
+        // part of the student programme route code before the slash, e.g. 12345678/1 has code 12345678.
+        $cddrecordsbycode = [];
         foreach ($cddrecords as $cddrecord) {
-            $sprcode = $cddrecord['student_programme_route_code'] ?? '';
+            $studentcode = explode('/', $cddrecord['student_programme_route_code'] ?? '')[0];
+            if ($studentcode !== '') {
+                $cddrecordsbycode[$studentcode] = $cddrecord;
+            }
+        }
+
+        // Process CDD extension for each student in the mapping that has a combined due date record.
+        $handledstudents = [];
+        foreach ($students as $student) {
+            $studentcode = $student['association']['supplementary']['student_code'] ?? '';
+
+            // Skip students without a combined due date record.
+            if ($studentcode === '' || !isset($cddrecordsbycode[$studentcode])) {
+                continue;
+            }
+
             try {
                 $cdd = new cdd();
-                $cdd->set_properties_from_cdd_api($cddrecord);
+                $cdd->set_properties_from_cdd_api($cddrecordsbycode[$studentcode]);
                 $cdd->process_extension([$mapping]);
 
+                // If no combined due date data for this student, active CDD override exists should be removed
+                // in above process_extension() call.
                 // Collect the student code if the student is handled by the combined due date.
                 if ($cdd->has_combined_due_date()) {
                     $handledstudents[] = $cdd->get_student_code();
                 }
             } catch (\Exception $e) {
-                logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, SPR code: $sprcode");
+                logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, Student code: $studentcode");
             }
         }
 
         return $handledstudents;
+    }
+
+    /**
+     * Filter out students already handled by the combined due date from a SITS students list.
+     *
+     * @param array $students Students data from the SITS get students API.
+     * @param array $cddhandledstudentcodes Student codes of students handled by the combined due date.
+     * @return array The students not handled by the combined due date.
+     */
+    public static function filter_out_cdd_handled_students(array $students, array $cddhandledstudentcodes): array {
+        // Nothing to filter if no students were handled by the combined due date.
+        if (empty($cddhandledstudentcodes)) {
+            return $students;
+        }
+
+        return array_filter($students, function ($student) use ($cddhandledstudentcodes) {
+            $studentcode = $student['association']['supplementary']['student_code'] ?? '';
+            return !in_array($studentcode, $cddhandledstudentcodes);
+        });
     }
 
     /**

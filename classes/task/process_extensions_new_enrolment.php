@@ -18,6 +18,7 @@ namespace local_sitsgradepush\task;
 
 use core\task\adhoc_task;
 use core\task\manager as coretaskmanager;
+use local_sitsgradepush\extension\cdd;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\sora;
 use local_sitsgradepush\extensionmanager;
@@ -74,7 +75,7 @@ class process_extensions_new_enrolment extends adhoc_task {
             $DB->delete_records('local_sitsgradepush_enrol', ['courseid' => $courseid]);
         }
 
-        // Process SORA extension for each mapping.
+        // Process extensions for each mapping.
         foreach ($mappings as $mapping) {
             $studentsbycode = [];
             // Get fresh students data from SITS for the mapping.
@@ -85,7 +86,20 @@ class process_extensions_new_enrolment extends adhoc_task {
                 $studentsbycode[$student['association']['supplementary']['student_code']] = $student;
             }
 
-            // Process SORA extension for each user enrolment event.
+            // Create a map of combined due date records by student code, so EC and RAA can be
+            // skipped for students handled by the combined due date. The student code is the part
+            // of the student programme route code before the slash, e.g. 12345678/1 has code 12345678.
+            $cddrecordsbycode = [];
+            if (extensionmanager::is_cdd_enabled()) {
+                foreach ($manager->get_combined_due_dates_from_sits($mapping) as $cddrecord) {
+                    $studentcode = explode('/', $cddrecord['student_programme_route_code'] ?? '')[0];
+                    if ($studentcode !== '') {
+                        $cddrecordsbycode[$studentcode] = $cddrecord;
+                    }
+                }
+            }
+
+            // Process extension for each user enrolment event.
             foreach ($userenrolments as $userenrolment) {
                 try {
                     // Get user's student ID number.
@@ -93,15 +107,27 @@ class process_extensions_new_enrolment extends adhoc_task {
 
                     // Check if the student's code exists in the pre-mapped list.
                     if (isset($studentsbycode[$studentidnumber])) {
-                        // Process SORA extension.
-                        $sora = new sora();
-                        $sora->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
-                        $sora->process_extension([$mapping]);
+                        // Process combined due date (CDD) extension first.
+                        $cddhandled = false;
+                        if (isset($cddrecordsbycode[$studentidnumber])) {
+                            $cdd = new cdd();
+                            $cdd->set_properties_from_cdd_api($cddrecordsbycode[$studentidnumber]);
+                            $cdd->process_extension([$mapping]);
+                            $cddhandled = $cdd->has_combined_due_date();
+                        }
 
-                        // Process EC extension.
-                        $ec = new ec();
-                        $ec->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
-                        $ec->process_extension([$mapping]);
+                        // Only process RAA and EC if the student is not handled by the combined due date.
+                        if (!$cddhandled) {
+                            // Process RAA extension.
+                            $sora = new sora();
+                            $sora->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
+                            $sora->process_extension([$mapping]);
+
+                            // Process EC extension.
+                            $ec = new ec();
+                            $ec->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
+                            $ec->process_extension([$mapping]);
+                        }
 
                         // Delete the student from the list to avoid duplicate processing.
                         unset($studentsbycode[$studentidnumber]);

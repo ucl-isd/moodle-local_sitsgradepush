@@ -101,7 +101,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $mab = $this->get_mab_by_mapcode('LAWS0024A6UF', '002');
         $this->insert_mapping($mab->id, $this->course1->id, $this->assign1, 'assign');
 
-        $this->run_task($this->course1->id, 'both');
+        $this->run_task($this->course1->id, 'all');
 
         $this->assert_ec_overrides_exist($this->assign1->id);
         $this->assert_raa_overrides_exist($this->assign1->id);
@@ -122,7 +122,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $this->insert_mapping($mab1->id, $this->course1->id, $this->assign1, 'assign');
         $this->insert_mapping($mab2->id, $course2->id, $assign2, 'assign');
 
-        $this->run_task($this->course1->id, 'both');
+        $this->run_task($this->course1->id, 'all');
 
         $this->assert_overrides_exist($this->assign1->id);
         $this->assert_overrides_empty($assign2->id);
@@ -143,7 +143,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $this->insert_mapping($mab1->id, $this->course1->id, $this->assign1, 'assign');
         $this->insert_mapping($mab2->id, $course2->id, $assign2, 'assign');
 
-        $this->run_task(0, 'both');
+        $this->run_task(0, 'all');
 
         $this->assert_overrides_exist($this->assign1->id);
         $this->assert_overrides_exist($assign2->id);
@@ -173,7 +173,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $task = new process_extensions_all_mappings();
         $task->set_custom_data((object)[
             'courseid' => $this->course1->id,
-            'extensiontype' => 'both',
+            'extensiontype' => 'all',
             'lastprocessedid' => 0,
         ]);
         $task->execute();
@@ -209,7 +209,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $task = new process_extensions_all_mappings();
         $task->set_custom_data((object)[
             'courseid' => $this->course1->id,
-            'extensiontype' => 'both',
+            'extensiontype' => 'all',
             'lastprocessedid' => 0,
         ]);
         $task->execute();
@@ -273,7 +273,7 @@ final class process_extensions_all_mappings_test extends extension_common {
             });
 
         $this->set_manager_instance($mockmanager);
-        $this->run_task(0, 'both');
+        $this->run_task(0, 'all');
 
         // Verify an error was logged for the first mapping.
         $errors = $DB->get_records('local_sitsgradepush_err_log');

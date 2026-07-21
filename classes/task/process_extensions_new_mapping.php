@@ -79,11 +79,22 @@ class process_extensions_new_mapping extends adhoc_task {
                 throw new \moodle_exception('error:mab_or_mapping_not_found', 'local_sitsgradepush', '', $data->mapid);
             }
 
-            // Process SORA extension.
-            extensionmanager::update_sora_for_mapping($mapping, manager::get_manager()->get_students_from_sits($mapping, true, 2));
+            // Fetch students once from SITS for the mapping.
+            $manager = manager::get_manager();
+            $students = $manager->get_students_from_sits($mapping, true, 2);
+
+            // Process combined due date (CDD) extension first so EC and RAA are only applied
+            // to students not already handled by the combined due date.
+            $cddhandled = extensionmanager::update_cdd_for_mapping($mapping, $students);
+
+            // Exclude students handled by the combined due date from EC and RAA processing.
+            $remaining = extensionmanager::filter_out_cdd_handled_students($students, $cddhandled);
+
+            // Process RAA extension.
+            extensionmanager::update_sora_for_mapping($mapping, $remaining);
 
             // Process EC extension.
-            extensionmanager::update_ec_for_mapping($mapping, manager::get_manager()->get_students_from_sits($mapping, true, 2));
+            extensionmanager::update_ec_for_mapping($mapping, $remaining);
         } catch (\Exception $e) {
             $mapid = $data->mapid ? 'Map ID: ' . $data->mapid : '';
             logger::log($e->getMessage(), null, $mapid);
