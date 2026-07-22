@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['cachedef_candidatenumbers'] = 'Student candidate numbers related data';
 $string['cachedef_componentgrades'] = 'SITS assessment components';
+$string['cachedef_deliveryresolution'] = 'Students resolved to no SITS module delivery';
 $string['cachedef_mappingmabinfo'] = 'SITS Mapping and MAB information';
 $string['cachedef_markingschemes'] = 'SITS marking schemes';
 $string['cachedef_studentspr'] = 'Student\'s SPR code per SITS assessment pattern';
@@ -221,7 +222,6 @@ $string['manualprocessextensions:success'] = 'Extension processing task has been
 $string['marks_transferred_successfully'] = 'Marks Transferred Successfully';
 $string['option:none'] = 'NONE';
 $string['pluginname'] = 'SITS Marks Transfer';
-$string['privacy:metadata'] = 'This plugin does not store any personal data.';
 $string['privacy:metadata:local_sitsgradepush_enrol'] = 'Stores the enrolment records temporarily for auto assessment due date extension.';
 $string['privacy:metadata:local_sitsgradepush_enrol:userid'] = 'The user who newly enrolled.';
 $string['privacy:metadata:local_sitsgradepush_err_log'] = 'Stores the error logs.';
@@ -239,6 +239,13 @@ $string['privacy:metadata:local_sitsgradepush_scn'] = 'Stores the student candid
 $string['privacy:metadata:local_sitsgradepush_scn:candidate_number'] = 'The candidate number assigned to the student.';
 $string['privacy:metadata:local_sitsgradepush_scn:student_code'] = 'The student code (ID number) of the user.';
 $string['privacy:metadata:local_sitsgradepush_scn:userid'] = 'The user whose candidate number is stored.';
+$string['privacy:metadata:local_sitsgradepush_stuenrol'] = 'Stores the resolved mapping of a student to their SITS module delivery.';
+$string['privacy:metadata:local_sitsgradepush_stuenrol:academicyear'] = 'The academic year (AYR) code of the delivery.';
+$string['privacy:metadata:local_sitsgradepush_stuenrol:courseid'] = 'The course the student belongs to.';
+$string['privacy:metadata:local_sitsgradepush_stuenrol:modcode'] = 'The SITS module code of the delivery.';
+$string['privacy:metadata:local_sitsgradepush_stuenrol:modocc'] = 'The module occurrence of the delivery.';
+$string['privacy:metadata:local_sitsgradepush_stuenrol:periodslotcode'] = 'The period slot (PSL) code of the delivery.';
+$string['privacy:metadata:local_sitsgradepush_stuenrol:userid'] = 'The user resolved to the delivery.';
 $string['privacy:metadata:local_sitsgradepush_tasks'] = 'Stores the transfer tasks.';
 $string['privacy:metadata:local_sitsgradepush_tasks:info'] = 'Additional information about the transfer task.';
 $string['privacy:metadata:local_sitsgradepush_tasks:status'] = 'The status of the transfer task.';
@@ -250,6 +257,7 @@ $string['privacy:metadata:local_sitsgradepush_tfr_log:response'] = 'The response
 $string['privacy:metadata:local_sitsgradepush_tfr_log:type'] = 'The type of the transfer task.';
 $string['privacy:metadata:local_sitsgradepush_tfr_log:userid'] = 'Whose this transfer task is for.';
 $string['privacy:metadata:local_sitsgradepush_tfr_log:usermodified'] = 'The user who requested the transfer task.';
+$string['privacy:stuenrolpath'] = 'SITS module delivery';
 $string['progress'] = 'Progress:';
 $string['pushrecordsexist'] = 'Transfer records exist';
 $string['pushrecordsnotexist'] = 'No transfer records';
@@ -300,6 +308,8 @@ $string['settings:deadlinegroupprefix:desc'] = 'Prefix used to identify teacher-
     ' Groups with this prefix will have their overwritten dates used as the base for RAA extension calculations.' .
     ' Leave empty to disable this feature and use the assessment\'s original deadline.';
 $string['settings:debug_error_logging'] = 'Enable debug error logging';
+$string['settings:delivery_resolution_enabled'] = 'Enable module delivery resolution';
+$string['settings:delivery_resolution_enabled:desc'] = 'Source SITS module deliveries and resolve which delivery a student belongs to.';
 $string['settings:enable'] = 'Enable Marks Transfer';
 $string['settings:enable:desc'] = 'Enable Marks Transfer to SITS';
 $string['settings:enableassesstypeupdate'] = 'Enable update local assessment type';

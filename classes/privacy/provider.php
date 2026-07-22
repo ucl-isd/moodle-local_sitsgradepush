@@ -16,7 +16,15 @@
 
 namespace local_sitsgradepush\privacy;
 
+use context;
+use context_course;
 use core_privacy\local\metadata\collection;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\contextlist;
+use core_privacy\local\request\transform;
+use core_privacy\local\request\userlist;
+use core_privacy\local\request\writer;
 
 /**
  * Data provider class.
@@ -27,18 +35,9 @@ use core_privacy\local\metadata\collection;
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 class provider implements
-    \core_privacy\local\metadata\null_provider,
-    \core_privacy\local\metadata\provider {
-    /**
-     * Get the language string identifier with the component's language
-     * file to explain why this plugin stores no data.
-     *
-     * @return  string
-     */
-    public static function get_reason(): string {
-        return 'privacy:metadata';
-    }
-
+    \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider {
     /**
      * Returns metadata about this plugin.
      *
@@ -88,6 +87,155 @@ class provider implements
             'candidate_number' => 'privacy:metadata:local_sitsgradepush_scn:candidate_number',
         ], 'privacy:metadata:local_sitsgradepush_scn');
 
+        $collection->add_database_table('local_sitsgradepush_stuenrol', [
+            'courseid' => 'privacy:metadata:local_sitsgradepush_stuenrol:courseid',
+            'userid' => 'privacy:metadata:local_sitsgradepush_stuenrol:userid',
+            'modcode' => 'privacy:metadata:local_sitsgradepush_stuenrol:modcode',
+            'modocc' => 'privacy:metadata:local_sitsgradepush_stuenrol:modocc',
+            'academicyear' => 'privacy:metadata:local_sitsgradepush_stuenrol:academicyear',
+            'periodslotcode' => 'privacy:metadata:local_sitsgradepush_stuenrol:periodslotcode',
+        ], 'privacy:metadata:local_sitsgradepush_stuenrol');
+
         return $collection;
+    }
+
+    /**
+     * Get the list of contexts that contain user information for the specified user.
+     *
+     * @param int $userid The user to search.
+     * @return contextlist The contextlist containing the list of contexts used in this plugin.
+     */
+    public static function get_contexts_for_userid(int $userid): contextlist {
+        $contextlist = new contextlist();
+
+        $sql = "SELECT ctx.id
+                  FROM {local_sitsgradepush_stuenrol} se
+                  JOIN {context} ctx ON ctx.instanceid = se.courseid AND ctx.contextlevel = :contextlevel
+                 WHERE se.userid = :userid";
+        $contextlist->add_from_sql($sql, [
+            'contextlevel' => CONTEXT_COURSE,
+            'userid' => $userid,
+        ]);
+
+        return $contextlist;
+    }
+
+    /**
+     * Get the list of users who have data within a context.
+     *
+     * @param userlist $userlist The userlist containing the list of users who have data in this context.
+     * @return void
+     */
+    public static function get_users_in_context(userlist $userlist): void {
+        $context = $userlist->get_context();
+        if (!$context instanceof context_course) {
+            return;
+        }
+
+        $userlist->add_from_sql(
+            'userid',
+            "SELECT userid FROM {local_sitsgradepush_stuenrol} WHERE courseid = :courseid",
+            ['courseid' => $context->instanceid]
+        );
+    }
+
+    /**
+     * Export all user data for the specified user, in the specified contexts.
+     *
+     * @param approved_contextlist $contextlist The approved contexts to export information for.
+     * @return void
+     */
+    public static function export_user_data(approved_contextlist $contextlist): void {
+        global $DB;
+
+        $userid = $contextlist->get_user()->id;
+
+        foreach ($contextlist->get_contexts() as $context) {
+            if (!$context instanceof context_course) {
+                continue;
+            }
+
+            $records = $DB->get_records('local_sitsgradepush_stuenrol', [
+                'courseid' => $context->instanceid,
+                'userid' => $userid,
+            ]);
+            if (empty($records)) {
+                continue;
+            }
+
+            $deliveries = [];
+            foreach ($records as $record) {
+                $deliveries[] = (object) [
+                    'modcode' => $record->modcode,
+                    'modocc' => $record->modocc,
+                    'academicyear' => $record->academicyear,
+                    'periodslotcode' => $record->periodslotcode,
+                    'timecreated' => transform::datetime($record->timecreated),
+                ];
+            }
+
+            writer::with_context($context)->export_data(
+                [get_string('privacy:stuenrolpath', 'local_sitsgradepush')],
+                (object) ['deliveries' => $deliveries]
+            );
+        }
+    }
+
+    /**
+     * Delete all data for all users in the specified context.
+     *
+     * @param context $context The specific context to delete data for.
+     * @return void
+     */
+    public static function delete_data_for_all_users_in_context(context $context): void {
+        global $DB;
+
+        if (!$context instanceof context_course) {
+            return;
+        }
+
+        $DB->delete_records('local_sitsgradepush_stuenrol', ['courseid' => $context->instanceid]);
+    }
+
+    /**
+     * Delete all user data for the specified user, in the specified contexts.
+     *
+     * @param approved_contextlist $contextlist The approved contexts and user to delete information for.
+     * @return void
+     */
+    public static function delete_data_for_user(approved_contextlist $contextlist): void {
+        global $DB;
+
+        $userid = $contextlist->get_user()->id;
+
+        foreach ($contextlist->get_contexts() as $context) {
+            if (!$context instanceof context_course) {
+                continue;
+            }
+
+            $DB->delete_records('local_sitsgradepush_stuenrol', [
+                'courseid' => $context->instanceid,
+                'userid' => $userid,
+            ]);
+        }
+    }
+
+    /**
+     * Delete multiple users' data within a single context.
+     *
+     * @param approved_userlist $userlist The approved context and user information to delete information for.
+     * @return void
+     */
+    public static function delete_data_for_users(approved_userlist $userlist): void {
+        global $DB;
+
+        $context = $userlist->get_context();
+        if (!$context instanceof context_course) {
+            return;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
+        $params = ['courseid' => $context->instanceid] + $inparams;
+        $DB->delete_records_select('local_sitsgradepush_stuenrol', "courseid = :courseid AND userid $insql", $params);
     }
 }

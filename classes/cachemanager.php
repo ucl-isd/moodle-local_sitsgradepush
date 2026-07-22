@@ -47,6 +47,9 @@ class cachemanager {
     /** @var string Cache area for storing student candidate numbers.*/
     const CACHE_AREA_CANDIDATE_NUMBERS = 'candidatenumbers';
 
+    /** @var string Cache area for the "student resolved to no delivery" negative marker.*/
+    const CACHE_AREA_DELIVERYRESOLUTION = 'deliveryresolution';
+
     /**
      * Get cache.
      *
