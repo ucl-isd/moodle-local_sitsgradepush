@@ -306,6 +306,14 @@ if ($hassiteconfig) {
             'CHANGEME'
         ));
 
+        // AWS combined due date queue URL.
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/aws_cdd_sqs_queue_url',
+            get_string('settings:awscddqueueurl', 'local_sitsgradepush'),
+            get_string('settings:awscddqueueurl:desc', 'local_sitsgradepush'),
+            'CHANGEME'
+        ));
+
         // AWS delay process time.
         $settings->add(new admin_setting_configtext(
             'local_sitsgradepush/aws_delay_process_time',
