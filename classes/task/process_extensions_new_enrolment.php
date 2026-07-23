@@ -105,33 +105,32 @@ class process_extensions_new_enrolment extends adhoc_task {
                     // Get user's student ID number.
                     $studentidnumber = $DB->get_field('user', 'idnumber', ['id' => $userenrolment->userid]);
 
-                    // Check if the student's code exists in the pre-mapped list.
-                    if (isset($studentsbycode[$studentidnumber])) {
-                        // Process combined due date (CDD) extension first.
-                        $cddhandled = false;
-                        if (isset($cddrecordsbycode[$studentidnumber])) {
-                            $cdd = new cdd();
-                            $cdd->set_properties_from_cdd_api($cddrecordsbycode[$studentidnumber]);
-                            $cdd->process_extension([$mapping]);
-                            $cddhandled = $cdd->has_combined_due_date();
-                        }
-
-                        // Only process RAA and EC if the student is not handled by the combined due date.
-                        if (!$cddhandled) {
-                            // Process RAA extension.
-                            $sora = new sora();
-                            $sora->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
-                            $sora->process_extension([$mapping]);
-
-                            // Process EC extension.
-                            $ec = new ec();
-                            $ec->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
-                            $ec->process_extension([$mapping]);
-                        }
-
-                        // Delete the student from the list to avoid duplicate processing.
-                        unset($studentsbycode[$studentidnumber]);
+                    // Process combined due date (CDD) extension first, driven directly by the
+                    // combined due date record independent of the get students API list.
+                    $cddhandled = false;
+                    if (isset($cddrecordsbycode[$studentidnumber])) {
+                        $cdd = new cdd();
+                        $cdd->set_properties_from_cdd_api($cddrecordsbycode[$studentidnumber]);
+                        $cdd->process_extension([$mapping]);
+                        $cddhandled = $cdd->has_combined_due_date();
                     }
+
+                    // Only process RAA and EC if the student is not handled by the combined due date
+                    // and exists in the get students API list, as EC and RAA data come from that list.
+                    if (!$cddhandled && isset($studentsbycode[$studentidnumber])) {
+                        // Process RAA extension.
+                        $sora = new sora();
+                        $sora->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
+                        $sora->process_extension([$mapping]);
+
+                        // Process EC extension.
+                        $ec = new ec();
+                        $ec->set_properties_from_get_students_api($studentsbycode[$studentidnumber]);
+                        $ec->process_extension([$mapping]);
+                    }
+
+                    // Delete the student from the list to avoid duplicate processing.
+                    unset($studentsbycode[$studentidnumber]);
                     // Delete the user enrolment event after processing.
                     $DB->delete_records('local_sitsgradepush_enrol', ['id' => $userenrolment->id]);
                 } catch (\Exception $e) {

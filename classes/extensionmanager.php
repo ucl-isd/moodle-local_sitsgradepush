@@ -118,16 +118,17 @@ class extensionmanager {
     }
 
     /**
-     * Update combined due date (CDD) extension for students in a mapping.
-     * The mapping's student list from the SITS get students API drives processing, so the combined
-     * due date is only applied to students who are actually in the mapping.
+     * Update combined due date (CDD) extension for a mapping.
+     * The combined due date records from the SITS combined due date API drive processing directly,
+     * so the combined due date is applied straight from each record without matching against the
+     * get students API list. Students who are not participants of the mapped assessment are skipped
+     * during the extension processing.
      *
      * @param \stdClass $mapping Assessment component mapping information including MAB info.
-     * @param array $students Students data from the SITS get students API.
      * @return array Student codes of the students handled by the combined due date.
      * @throws \dml_exception|\moodle_exception
      */
-    public static function update_cdd_for_mapping(\stdClass $mapping, array $students): array {
+    public static function update_cdd_for_mapping(\stdClass $mapping): array {
         // Nothing to do if the combined due date feature is not enabled.
         if (!self::is_cdd_enabled()) {
             return [];
@@ -138,40 +139,27 @@ class extensionmanager {
             return [];
         }
 
-        // Nothing to do if there are no students in the mapping.
-        if (empty($students)) {
-            return [];
-        }
-
         // Nothing to do if the combined due date API returned no records.
         $cddrecords = manager::get_manager()->get_combined_due_dates_from_sits($mapping);
         if (empty($cddrecords)) {
             return [];
         }
 
-        // Build a lookup of combined due date records keyed by student code. The student code is the
-        // part of the student programme route code before the slash, e.g. 12345678/1 has code 12345678.
-        $cddrecordsbycode = [];
-        foreach ($cddrecords as $cddrecord) {
-            $studentcode = explode('/', $cddrecord['student_programme_route_code'] ?? '')[0];
-            if ($studentcode !== '') {
-                $cddrecordsbycode[$studentcode] = $cddrecord;
-            }
-        }
-
-        // Process CDD extension for each student in the mapping that has a combined due date record.
+        // Process CDD extension directly from each combined due date record returned by the API.
         $handledstudents = [];
-        foreach ($students as $student) {
-            $studentcode = $student['association']['supplementary']['student_code'] ?? '';
+        foreach ($cddrecords as $cddrecord) {
+            // The student code is the part of the student programme route code before the slash,
+            // e.g. 12345678/1 has code 12345678.
+            $studentcode = explode('/', $cddrecord['student_programme_route_code'] ?? '')[0];
 
-            // Skip students without a combined due date record.
-            if ($studentcode === '' || !isset($cddrecordsbycode[$studentcode])) {
+            // Skip records without a student code.
+            if ($studentcode === '') {
                 continue;
             }
 
             try {
                 $cdd = new cdd();
-                $cdd->set_properties_from_cdd_api($cddrecordsbycode[$studentcode]);
+                $cdd->set_properties_from_cdd_api($cddrecord);
                 $cdd->process_extension([$mapping]);
 
                 // If no combined due date data for this student, active CDD override exists should be removed
@@ -352,16 +340,41 @@ class extensionmanager {
     }
 
     /**
-     * Check if the user has an active CDD override for a mapping.
+     * Resolve whether EC or SORA processing is superseded by an active combined due date override.
+     * When the combined due date feature is enabled, an active override is authoritative and EC/SORA
+     * processing is superseded. When the feature is disabled but a stale active override still exists,
+     * the override is removed here so the normal EC/RAA flow can proceed.
      *
-     * @param int $mapid SITS mapping ID.
-     * @param int $cmid Course module ID.
+     * @param assessment $assessment The mapped Moodle assessment.
+     * @param \stdClass $mapping Assessment component mapping information.
      * @param int $userid Moodle user ID.
-     * @return bool
-     * @throws \dml_exception
+     * @return bool True if EC/SORA processing should be skipped because the combined due date is authoritative.
+     * @throws \dml_exception|\moodle_exception
      */
-    public static function user_has_active_cdd_override(int $mapid, int $cmid, int $userid): bool {
-        return !empty(self::get_active_user_mt_overrides_by_mapid($mapid, $cmid, self::EXTENSION_CDD, $userid));
+    public static function handle_cdd_supersession(assessment $assessment, \stdClass $mapping, int $userid): bool {
+        // Get the student's active combined due date override for the mapping.
+        $cddoverride = self::get_active_user_mt_overrides_by_mapid(
+            $mapping->id,
+            $mapping->sourceid,
+            self::EXTENSION_CDD,
+            $userid
+        );
+
+        // No active combined due date override, so nothing supersedes EC/RAA processing.
+        if (empty($cddoverride)) {
+            return false;
+        }
+
+        // The combined due date is enabled and authoritative, so EC/RAA processing is superseded.
+        if (self::is_cdd_enabled()) {
+            return true;
+        }
+
+        // The combined due date is disabled but a stale override still exists,
+        // so remove it and allow the normal EC/RAA flow to proceed.
+        $assessment->delete_user_override($cddoverride);
+
+        return false;
     }
 
     /**

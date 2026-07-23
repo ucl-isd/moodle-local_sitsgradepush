@@ -80,10 +80,11 @@ class cdd extends ec {
     /**
      * The combined due date is never superseded by itself, so CDD processing always proceeds.
      *
+     * @param assessment $assessment
      * @param \stdClass $mapping
      * @return bool
      */
-    protected function is_superseded_by_cdd(\stdClass $mapping): bool {
+    protected function is_superseded_by_cdd(assessment $assessment, \stdClass $mapping): bool {
         return false;
     }
 

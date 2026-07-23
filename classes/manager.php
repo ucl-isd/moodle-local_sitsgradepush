@@ -239,6 +239,9 @@ class manager {
      */
     public function is_marking_scheme_supported(\stdClass $componentgrade): bool {
         $makingschemes = $this->fetch_marking_scheme_from_sits();
+        if (empty($makingschemes[$componentgrade->mkscode])) {
+            return false;
+        }
         return ($makingschemes[$componentgrade->mkscode]['MKS_MARKS'] == 'Y' &&
             $makingschemes[$componentgrade->mkscode]['MKS_IUSE'] == 'Y' &&
             $makingschemes[$componentgrade->mkscode]['MKS_TYPE'] == 'A');

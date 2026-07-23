@@ -87,7 +87,7 @@ class process_extensions_all_mappings extends adhoc_task {
                 // to students not already handled by the combined due date.
                 $cddhandled = [];
                 if ($extensiontype === 'cdd' || $extensiontype === 'all') {
-                    $cddhandled = extensionmanager::update_cdd_for_mapping($fullmapping, $students);
+                    $cddhandled = extensionmanager::update_cdd_for_mapping($fullmapping);
                 }
 
                 // Exclude students handled by the combined due date from EC and RAA processing.

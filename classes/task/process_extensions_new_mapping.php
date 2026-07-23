@@ -85,7 +85,7 @@ class process_extensions_new_mapping extends adhoc_task {
 
             // Process combined due date (CDD) extension first so EC and RAA are only applied
             // to students not already handled by the combined due date.
-            $cddhandled = extensionmanager::update_cdd_for_mapping($mapping, $students);
+            $cddhandled = extensionmanager::update_cdd_for_mapping($mapping);
 
             // Exclude students handled by the combined due date from EC and RAA processing.
             $remaining = extensionmanager::filter_out_cdd_handled_students($students, $cddhandled);

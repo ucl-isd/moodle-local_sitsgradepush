@@ -101,7 +101,8 @@ class ec extends extension {
 
                 // Skip students with an active combined due date override on the mapped assessment.
                 // The combined due date is authoritative, so EC updates must be ignored for them.
-                if ($this->is_superseded_by_cdd($mapping)) {
+                // When the combined due date is disabled, a stale override is removed so EC can proceed.
+                if ($this->is_superseded_by_cdd($assessment, $mapping)) {
                     continue;
                 }
 
@@ -168,12 +169,14 @@ class ec extends extension {
      * Determine whether processing should be skipped because the student has an active
      * combined due date (CDD) override on the mapped assessment. The combined due date is
      * authoritative, so EC updates must be ignored for a student who already has one.
+     * When the combined due date is disabled, a stale override is removed so EC can proceed.
      *
+     * @param assessment $assessment
      * @param \stdClass $mapping
      * @return bool
      */
-    protected function is_superseded_by_cdd(\stdClass $mapping): bool {
-        return extensionmanager::user_has_active_cdd_override($mapping->id, $mapping->sourceid, $this->userid);
+    protected function is_superseded_by_cdd(assessment $assessment, \stdClass $mapping): bool {
+        return extensionmanager::handle_cdd_supersession($assessment, $mapping, $this->userid);
     }
 
     /**
