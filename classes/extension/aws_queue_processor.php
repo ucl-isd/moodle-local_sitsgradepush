@@ -18,6 +18,7 @@ namespace local_sitsgradepush\extension;
 
 use core\clock;
 use core\di;
+use core\exception\moodle_exception;
 use local_sitsgradepush\aws\sqs;
 use local_sitsgradepush\logger;
 
@@ -324,6 +325,7 @@ abstract class aws_queue_processor {
                 'attempts' => $record ? $record->attempts + 1 : 1,
                 'studentcode' => $result['studentcode'] ?? null,
                 'astcode' => $result['astcode'] ?? null,
+                'mabidentifier' => $result['mabidentifier'] ?? null,
                 'eventtimestamp' => $result['eventtimestamp'] ?? null,
                 'eventtimeus' => $result['eventtimeus'] ?? null,
                 'ignore_reason' => $result['ignore_reason'] ?? null,
@@ -342,5 +344,24 @@ abstract class aws_queue_processor {
             logger::log($e->getMessage(), null, 'Failed to save message record');
             return false;
         }
+    }
+
+    /**
+     * Decode the JSON encoded message of the AWS notification.
+     *
+     * @param string $message JSON encoded message.
+     * @return \stdClass
+     * @throws \coding_exception|\moodle_exception
+     */
+    protected function decode_message(string $message): \stdClass {
+        $messagedata = json_decode($message);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new moodle_exception('error:invalid_json_data', 'local_sitsgradepush', '', json_last_error_msg());
+        }
+        if (empty($messagedata)) {
+            throw new moodle_exception('error:empty_json_data', 'local_sitsgradepush');
+        }
+
+        return $messagedata;
     }
 }

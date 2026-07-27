@@ -497,8 +497,23 @@ abstract class activity extends assessment {
      */
     protected function calculate_ec_new_duedate(ec $ec): int {
         $originalduedate = $this->get_end_date();
+
+        // Without an original due date there is nothing to anchor the new time to.
+        if (empty($originalduedate)) {
+            throw new moodle_exception('error:invalid_new_deadline', 'local_sitsgradepush', '', $ec->get_new_deadline());
+        }
+
+        // Combine the new deadline date with the original assessment time of day.
         $time = date('H:i:s', $originalduedate);
-        return strtotime($ec->get_new_deadline() . ' ' . $time);
+        $newduedate = strtotime($ec->get_new_deadline() . ' ' . $time);
+
+        // Guard against an unparseable deadline so a malformed value raises a catchable
+        // exception instead of a TypeError that would escape the queue processing loop.
+        if ($newduedate === false) {
+            throw new moodle_exception('error:invalid_new_deadline', 'local_sitsgradepush', '', $ec->get_new_deadline());
+        }
+
+        return $newduedate;
     }
 
     /**

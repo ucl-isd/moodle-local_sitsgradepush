@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\extension;
 
+use core\exception\moodle_exception;
 use local_sitsgradepush\assessment\assessment;
 use local_sitsgradepush\extensionmanager;
 
@@ -127,6 +128,12 @@ class cdd extends ec {
         // Set the user ID from the student code.
         $this->set_userid($this->studentcode);
 
+        // Set the MAB identifier from the top level module identifier and sequence, e.g. NSCI0010A4UH-001.
+        // These fields only exist on the top level record, not on the nested re-assessment entries.
+        if (!empty($cddrecord['module_identifier']) && !empty($cddrecord['module_sequence'])) {
+            $this->mabidentifier = $cddrecord['module_identifier'] . '-' . $cddrecord['module_sequence'];
+        }
+
         // Resolve the effective dataset, i.e. the latest re-assessment entry if present, otherwise the top level record.
         $effective = $this->get_effective_dataset($cddrecord);
 
@@ -151,6 +158,46 @@ class cdd extends ec {
         // Set data source.
         $this->datasource = self::DATASOURCE_API;
         $this->dataisset = true;
+    }
+
+    /**
+     * Set CDD properties from AWS event message.
+     *
+     * @param string $messagebody
+     * @return void
+     * @throws \Exception|moodle_exception
+     */
+    public function set_properties_from_aws_message(string $messagebody): void {
+        $messagedata = $this->parse_event_json($messagebody);
+
+        // The combined due date record lives under entity.combined_new_due_date and carries the same
+        // fields as a record from the combined due date API, so reuse that mapping logic.
+        $entity = $messagedata->entity->combined_new_due_date ?? null;
+        if (empty($entity)) {
+            throw new moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
+        }
+
+        $cddrecord = json_decode(json_encode($entity), true);
+
+        // The student programme route code is the only student identifier in the message.
+        if (empty($cddrecord['student_programme_route_code'])) {
+            throw new moodle_exception('error:invalid_message', 'local_sitsgradepush', '', null, $messagebody);
+        }
+
+        // In the event message re-assessment is a single object, whereas the API returns it as a list.
+        // Normalise it to a list so get_effective_dataset() resolves it the same way for both sources.
+        if (
+            !empty($cddrecord['re-assessment']) && is_array($cddrecord['re-assessment'])
+                && !array_is_list($cddrecord['re-assessment'])
+        ) {
+            $cddrecord['re-assessment'] = [$cddrecord['re-assessment']];
+        }
+
+        // Reuse the combined due date API mapping to populate all extension properties.
+        $this->set_properties_from_cdd_api($cddrecord);
+
+        // Override the data source as the data originated from an AWS event rather than a direct API call.
+        $this->datasource = self::DATASOURCE_AWS;
     }
 
     /**

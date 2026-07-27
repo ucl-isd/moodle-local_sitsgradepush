@@ -141,6 +141,7 @@ $string['error:invalid_extension_scenario'] = 'Invalid RAA extension case.';
 $string['error:invalid_json_data'] = 'Invalid JSON data: {$a}';
 $string['error:invalid_mab_identifier'] = 'Invalid MAB identifier: {$a->mabidentifier}, Student Code: {$a->studentcode}';
 $string['error:invalid_message'] = 'Invalid message received.';
+$string['error:invalid_new_deadline'] = 'Invalid new deadline: {$a}';
 $string['error:invalid_sora_datasource'] = 'Invalid Reasonable Academic Adjustments (RAAs) data source.';
 $string['error:invalid_source_type'] = 'Invalid source type. {$a}';
 $string['error:lesson_practice'] = 'Practice lessons have no grades';

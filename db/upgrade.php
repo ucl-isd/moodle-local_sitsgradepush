@@ -944,5 +944,39 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026081200, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2026081800) {
+        // Define field mabidentifier to be added to local_sitsgradepush_aws_log.
+        $table = new xmldb_table('local_sitsgradepush_aws_log');
+        $field = new xmldb_field('mabidentifier', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'astcode');
+
+        // Conditionally launch add field mabidentifier.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index idx_mabidentifier (not unique) to be added to local_sitsgradepush_aws_log.
+        $index = new xmldb_index('idx_mabidentifier', XMLDB_INDEX_NOTUNIQUE, ['mabidentifier']);
+
+        // Conditionally launch add index idx_mabidentifier.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Define composite index for efficient out-of-order queries scoped by MAB identifier.
+        $index = new xmldb_index(
+            'idx_queue_student_mab_ts',
+            XMLDB_INDEX_NOTUNIQUE,
+            ['queuename', 'studentcode', 'mabidentifier', 'eventtimestamp']
+        );
+
+        // Conditionally launch add index idx_queue_student_mab_ts.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2026081800, 'local', 'sitsgradepush');
+    }
+
     return true;
 }
