@@ -1678,10 +1678,10 @@ class manager {
         extensionmanager::delete_sora_overrides($mapping);
 
         // Delete any EC overrides for the deleted mapping.
-        extensionmanager::delete_ec_overrides($mapping->id);
+        extensionmanager::delete_ec_overrides($mappingid);
 
         // Delete any CDD overrides for the deleted mapping.
-        extensionmanager::delete_cdd_overrides($mapping->id);
+        extensionmanager::delete_cdd_overrides($mappingid);
 
         // Clear mapping MAB info cache.
         $this->clear_mapping_mab_info_cache($mappingid);

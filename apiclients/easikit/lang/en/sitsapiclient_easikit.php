@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['cachedef_oauth'] = 'Store OAuth access token';
 $string['error:access_token'] = 'Cannot get access token. Request: {$a}';
 $string['error:curl'] = 'Easikit curl error: {$a->requestname}. CURL error: {$a->error}';
+$string['error:endpointurlnotset'] = 'Endpoint URL for {$a} is not set';
 $string['error:missing_or_invalid_field'] = 'Required field missing or invalid: {$a}';
 $string['error:no_target_client_id'] = 'No target client id set for {$a}';
 $string['error:setting_missing'] = '{$a} not found';

@@ -16,13 +16,17 @@
 
 namespace local_sitsgradepush\task;
 
+use local_sitsgradepush\cdd_mock_manager_trait;
 use local_sitsgradepush\extension_common;
+use local_sitsgradepush\extensionmanager;
+use local_sitsgradepush\tests_data_provider;
 use mod_quiz\event\group_override_updated;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_provider.php');
 require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_common.php');
+require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/cdd_mock_manager_trait.php');
 
 /**
  * Tests for process_extensions_new_mapping adhoc task deduplication.
@@ -33,6 +37,8 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @author     Alex Yeung <k.yeung@ucl.ac.uk>
  */
 final class process_extensions_new_mapping_test extends extension_common {
+    use cdd_mock_manager_trait;
+
     /** @var string Task classname for process_extensions_new_mapping. */
     const TASK_CLASSNAME = '\\local_sitsgradepush\\task\\process_extensions_new_mapping';
 
@@ -74,5 +80,38 @@ final class process_extensions_new_mapping_test extends extension_common {
         $task = reset($tasks);
         $customdata = json_decode($task->customdata);
         $this->assertEquals($mappingid, $customdata->mapid);
+    }
+
+    /**
+     * Test the combined due date supersedes EC for a handled student when a new mapping is processed.
+     *
+     * @covers \local_sitsgradepush\task\process_extensions_new_mapping::execute
+     * @return void
+     */
+    public function test_execute_cdd_supersedes_handled_student(): void {
+        global $DB;
+
+        // Enable the combined due date feature.
+        set_config('cdd_enabled', '1', 'local_sitsgradepush');
+
+        $mab = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
+        $mappingid = (int)$this->insert_mapping($mab->id, $this->course1->id, $this->assign1, 'assign');
+
+        // Mock the manager to return a combined due date record for student1 and both students from SITS.
+        $this->setup_mock_manager_with_cdd(
+            [tests_data_provider::get_cdd_api_record()],
+            tests_data_provider::get_test_students_with_both_extensions()
+        );
+
+        $task = new process_extensions_new_mapping();
+        $task->set_custom_data((object)['mapid' => $mappingid]);
+        $task->execute();
+
+        // Student1 is handled by the combined due date, so has a CDD backup and no EC backup.
+        $this->assertNotEmpty($this->get_override_backup($this->student1->id, extensionmanager::EXTENSION_CDD));
+        $this->assertFalse($this->get_override_backup($this->student1->id, extensionmanager::EXTENSION_EC));
+
+        // Student2 is not handled by the combined due date, so is processed for EC.
+        $this->assertNotEmpty($this->get_override_backup($this->student2->id, extensionmanager::EXTENSION_EC));
     }
 }

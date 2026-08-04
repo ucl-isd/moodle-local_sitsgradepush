@@ -1,0 +1,29 @@
+{
+    "student_programme_route_code": "12345678/1",
+    "module_identifier": "LAWS0024A6UF",
+    "module_sequence": "001",
+    "period_slot_code": "T1/2",
+    "calc_due_dt": "2025-03-01",
+    "ec_dys_ext": 5,
+    "dap_dys_ext": 0,
+    "raa_dys_ext": 0,
+    "manual_dys_ext": 0,
+    "re-assessment": [
+        {
+            "reassessment_sequence": 1,
+            "calc_due_dt": "2025-03-10",
+            "ec_dys_ext": 3,
+            "dap_dys_ext": 0,
+            "raa_dys_ext": 0,
+            "manual_dys_ext": 0
+        },
+        {
+            "reassessment_sequence": 2,
+            "calc_due_dt": "2025-03-20",
+            "ec_dys_ext": 7,
+            "dap_dys_ext": 0,
+            "raa_dys_ext": 0,
+            "manual_dys_ext": 0
+        }
+    ]
+}

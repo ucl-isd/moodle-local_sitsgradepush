@@ -56,7 +56,7 @@ class getcombinedduedate extends request {
 
         // Check if endpoint is set.
         if (empty($endpointurl)) {
-            throw new \moodle_exception('Endpoint URL for ' . $this->name . '  is not set');
+            throw new \moodle_exception('error:endpointurlnotset', 'sitsapiclient_easikit', '', $this->name);
         }
 
         // Set the fields mapping, params fields and data.

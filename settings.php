@@ -295,7 +295,8 @@ if ($hassiteconfig) {
             'local_sitsgradepush/aws_sora_sqs_queue_url',
             get_string('settings:awssoraqueueurl', 'local_sitsgradepush'),
             get_string('settings:awssoraqueueurl:desc', 'local_sitsgradepush'),
-            'CHANGEME'
+            'https://change-me-to-your-endpoint/url',
+            PARAM_URL
         ));
 
         // AWS EC queue URL.
@@ -303,7 +304,8 @@ if ($hassiteconfig) {
             'local_sitsgradepush/aws_ec_sqs_queue_url',
             get_string('settings:awsecqueueurl', 'local_sitsgradepush'),
             get_string('settings:awsecqueueurl:desc', 'local_sitsgradepush'),
-            'CHANGEME'
+            'https://change-me-to-your-endpoint/url',
+            PARAM_URL
         ));
 
         // AWS combined due date queue URL.
@@ -311,7 +313,8 @@ if ($hassiteconfig) {
             'local_sitsgradepush/aws_cdd_sqs_queue_url',
             get_string('settings:awscddqueueurl', 'local_sitsgradepush'),
             get_string('settings:awscddqueueurl:desc', 'local_sitsgradepush'),
-            'CHANGEME'
+            'https://change-me-to-your-endpoint/url',
+            PARAM_URL
         ));
 
         // AWS delay process time.

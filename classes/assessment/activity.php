@@ -494,6 +494,7 @@ abstract class activity extends assessment {
      *
      * @param ec $ec The EC extension object.
      * @return int The new due date as a Unix timestamp.
+     * @throws moodle_exception
      */
     protected function calculate_ec_new_duedate(ec $ec): int {
         $originalduedate = $this->get_end_date();

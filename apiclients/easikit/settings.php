@@ -65,7 +65,8 @@ if ($ADMIN->fulltree) {
         'sitsapiclient_easikit/assessmenttargetclientid',
         get_string('settings:assessmenttargetclientid', 'sitsapiclient_easikit'),
         get_string('settings:assessmenttargetclientid:desc', 'sitsapiclient_easikit'),
-        'bcb132ed-50e3-491c-8c80-a5208fcb5088'
+        'bcb132ed-50e3-491c-8c80-a5208fcb5088',
+        PARAM_ALPHANUMEXT
     ));
 
     // Grade push endpoint.
