@@ -99,7 +99,7 @@ class stutalkdirect extends client {
 
             $curlclient = curl_init();
             curl_setopt($curlclient, CURLOPT_CONNECTTIMEOUT, 30);
-            curl_setopt($curlclient, CURLOPT_SSL_VERIFYHOST, true);
+            curl_setopt($curlclient, CURLOPT_SSL_VERIFYHOST, 2);
             curl_setopt($curlclient, CURLOPT_SSL_VERIFYPEER, true);
             curl_setopt($curlclient, CURLOPT_URL, $request->get_endpoint_url_with_params());
             curl_setopt($curlclient, CURLOPT_RETURNTRANSFER, true);
