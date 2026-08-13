@@ -178,6 +178,66 @@ final class raa_general_test extends raa_base {
     }
 
     /**
+     * Test that an earlier message published in the same second as a later one is still ignored.
+     * The AWS envelope timestamp is only accurate to the second, so ordering has to come from the
+     * microsecond timestamp carried by the message itself.
+     *
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::process_message
+     * @covers \local_sitsgradepush\extension\sora_queue_processor::is_message_out_of_order
+     * @covers \local_sitsgradepush\extension\models\raa_event_message::get_event_time_microseconds
+     * @return void
+     * @throws \dml_exception
+     * @throws \ReflectionException
+     */
+    public function test_earlier_message_in_same_second_ignored(): void {
+        global $DB;
+
+        $astcode = 'CN01';
+        $processor = new sora_queue_processor();
+
+        // Process the later message first, published 440 milliseconds into the second.
+        $messagelater = $this->create_sora_aws_message_for_ordering(
+            $this->student1->idnumber,
+            $this->latertimestamp,
+            $astcode,
+            440000
+        );
+        $resultlater = $this->call_process_message($processor, $messagelater);
+        $this->save_message_to_aws_log($messagelater, $resultlater);
+
+        // Process the earlier message, published in the very same second.
+        $messageearlier = $this->create_sora_aws_message_for_ordering(
+            $this->student1->idnumber,
+            $this->latertimestamp,
+            $astcode,
+            10000
+        );
+        $resultearlier = $this->call_process_message($processor, $messageearlier);
+        $this->save_message_to_aws_log($messageearlier, $resultearlier);
+
+        // Both messages share the same second, so the envelope timestamp cannot separate them.
+        $this->assertEquals($resultlater['eventtimestamp'], $resultearlier['eventtimestamp']);
+
+        // The later message is processed and the earlier one is ignored as out of order.
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $resultlater['status']);
+        $this->assertEquals(aws_queue_processor::STATUS_IGNORED, $resultearlier['status']);
+        $this->assertStringContainsString('Out-of-order message', $resultearlier['ignore_reason']);
+
+        $records = $DB->get_records(
+            'local_sitsgradepush_aws_log',
+            ['studentcode' => $this->student1->idnumber, 'astcode' => $astcode],
+            'eventtimeus ASC'
+        );
+        $this->assertCount(2, $records);
+
+        $earlier = array_shift($records);
+        $this->assertEquals(aws_queue_processor::STATUS_IGNORED, $earlier->status);
+
+        $later = array_shift($records);
+        $this->assertEquals(aws_queue_processor::STATUS_PROCESSED, $later->status);
+    }
+
+    /**
      * Test that messages for different assessment types are processed independently.
      *
      * @covers \local_sitsgradepush\extension\sora_queue_processor::process_message
@@ -306,11 +366,18 @@ final class raa_general_test extends raa_base {
      * @param string $studentcode Student code.
      * @param int $timestamp Unix timestamp.
      * @param string $astcode Assessment type code.
+     * @param int $microseconds Microseconds part of the message timestamp.
      * @return array AWS message structure.
      */
-    private function create_sora_aws_message_for_ordering(string $studentcode, int $timestamp, string $astcode): array {
+    private function create_sora_aws_message_for_ordering(
+        string $studentcode,
+        int $timestamp,
+        string $astcode,
+        int $microseconds = 0
+    ): array {
         return [
             'Message' => json_encode([
+                'timestamp' => gmdate('Ymd\THis', $timestamp) . '.' . sprintf('%06d', $microseconds) . 'UTC',
                 'entity' => [
                     'person_sora' => [
                         'person' => ['student_code' => $studentcode],
@@ -330,7 +397,7 @@ final class raa_general_test extends raa_base {
                 ],
                 'changes' => ['no_dys_ext'],
             ]),
-            'Timestamp' => $this->clock->now()->setTimestamp($timestamp)->format('Y-m-d\TH:i:s\Z'),
+            'Timestamp' => gmdate('Y-m-d\TH:i:s\Z', $timestamp),
         ];
     }
 
@@ -362,7 +429,7 @@ final class raa_general_test extends raa_base {
 
         $messagebody = json_decode($message['Message'], true);
         $studentcode = $messagebody['entity']['person_sora']['person']['student_code'] ?? null;
-        $timestamp = isset($message['Timestamp']) ? $this->clock->now()->modify($message['Timestamp'])->getTimestamp() : null;
+        $timestamp = isset($message['Timestamp']) ? strtotime($message['Timestamp']) : null;
 
         $record = new \stdClass();
         $record->queuename = 'SORA';
@@ -370,6 +437,7 @@ final class raa_general_test extends raa_base {
         $record->studentcode = $studentcode;
         $record->astcode = $result['astcode'] ?? null;
         $record->eventtimestamp = $timestamp;
+        $record->eventtimeus = $result['eventtimeus'] ?? null;
         $record->status = $result['status'];
         $record->attempts = 1;
         $record->payload = $message['Message'];

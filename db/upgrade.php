@@ -918,5 +918,31 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026062900, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2026081200) {
+        // Define field eventtimeus to be added to local_sitsgradepush_aws_log.
+        $table = new xmldb_table('local_sitsgradepush_aws_log');
+        $field = new xmldb_field('eventtimeus', XMLDB_TYPE_INTEGER, '18', null, null, null, null, 'eventtimestamp');
+
+        // Conditionally launch add field eventtimeus.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define index idx_queue_student_ast_tsus to be added to local_sitsgradepush_aws_log.
+        $index = new xmldb_index(
+            'idx_queue_student_ast_tsus',
+            XMLDB_INDEX_NOTUNIQUE,
+            ['queuename', 'studentcode', 'astcode', 'eventtimeus']
+        );
+
+        // Conditionally launch add index idx_queue_student_ast_tsus.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2026081200, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

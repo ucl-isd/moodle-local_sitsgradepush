@@ -48,36 +48,42 @@ class raa_event_message {
     /** @var string|null RAA status. */
     public ?string $raastatus = null;
 
+    /** @var int Number of elements in the raw required provisions array. */
+    protected int $provisionscount = 0;
+
+    /** @var string|null Raw event timestamp string from the message. */
+    protected ?string $eventtimestamp = null;
+
     /**
      * Constructor.
      *
+     * Nothing is rejected here. A message that is missing person_sora, the student code or the
+     * required provisions is still modelled, so the queue processor can decide whether the message
+     * is actionable and ignore it with a reason rather than fail and retry it.
+     *
      * @param \stdClass $messagedata Data from the RAA event message.
-     * @throws \moodle_exception If required fields are missing.
      */
     public function __construct(\stdClass $messagedata) {
-        // Validate message structure.
         $personsora = $messagedata->entity?->person_sora ?? null;
-        if (!$personsora) {
-            throw new \moodle_exception('error:missing_or_invalid_field', 'local_sitsgradepush', '', 'person_sora');
-        }
-
-        $studentcode = $personsora->person?->student_code ?? null;
-        if (empty($studentcode)) {
-            throw new \moodle_exception('error:missing_or_invalid_field', 'local_sitsgradepush', '', 'student_code');
-        }
-
-        $requiredprovisions = $personsora->required_provisions ?? null;
-        if (empty($requiredprovisions)) {
-            throw new \moodle_exception('error:missing_or_invalid_field', 'local_sitsgradepush', '', 'required_provisions');
-        }
 
         // Set properties.
         $this->changes = $messagedata->changes ?? [];
-        $this->typecode = $personsora->type?->code ?? null;
-        $this->studentcode = $studentcode;
-        $this->raastatus = $personsora->accessibility_assessment_status ?? null;
+        $this->eventtimestamp = $messagedata->timestamp ?? null;
+        $this->typecode = $personsora?->type?->code ?? null;
+        $this->typename = $personsora?->type?->name ?? null;
+        $this->studentcode = $personsora?->person?->student_code ?? null;
+        $this->raastatus = $personsora?->accessibility_assessment_status ?? null;
+
+        $requiredprovisions = $personsora?->required_provisions ?? null;
+        if (!is_array($requiredprovisions)) {
+            return;
+        }
+        $this->provisionscount = count($requiredprovisions);
+
         // Extract first element if required provisions is an array with single element.
-        if (is_array($requiredprovisions) && count($requiredprovisions) === 1) {
+        // There are a few event message types with multiple required_provisions. None of these messages are actionable,
+        // either because the provision does not contain extension information or because the relevant fields are empty.
+        if ($this->provisionscount === 1) {
             $requiredprovisions = reset($requiredprovisions);
             $requiredprovisions->accessibility_assessment_status = $this->raastatus;
             $this->requiredprovisions = new raa_required_provisions((array) $requiredprovisions);
@@ -121,26 +127,75 @@ class raa_event_message {
     }
 
     /**
-     * Check if the RAA status has changed.
+     * Get the RAA status change reported in the message.
      *
-     * @return bool
+     * @return array|null Array with 'from' and 'to' keys, or null if the status did not change.
      */
-    public function has_status_changed(): bool {
+    public function get_status_change(): ?array {
         foreach ($this->changes as $change) {
-            if (isset($change->attribute) && str_contains($change->attribute, self::RAA_STATUS_FIELD)) {
-                return true;
+            if (!isset($change->attribute) || !str_contains($change->attribute, self::RAA_STATUS_FIELD)) {
+                continue;
             }
+
+            return [
+                'from' => $change->from ?? null,
+                'to' => $change->to ?? null,
+            ];
         }
 
-        return false;
+        return null;
     }
 
     /**
-     * Check if the RAA status has changed to approved.
+     * Check if the reported status change crosses the approved boundary, i.e. the status moved from
+     * approved to any other status, or from any other status to approved. A change between two
+     * non-approved statuses does not affect any extension, so it is not a crossing.
      *
      * @return bool
      */
-    public function status_changed_to_approved(): bool {
-        return $this->has_status_changed() && $this->raastatus === sora::RAA_STATUS_APPROVED;
+    public function crosses_approved_boundary(): bool {
+        $change = $this->get_status_change();
+        if ($change === null) {
+            return false;
+        }
+
+        $wasapproved = $change['from'] === sora::RAA_STATUS_APPROVED;
+        $isapproved = $change['to'] === sora::RAA_STATUS_APPROVED;
+
+        return $wasapproved !== $isapproved;
+    }
+
+    /**
+     * Check if the message carries a single required provision for a known assessment type, which is
+     * the shape needed to apply an extension straight from the message data.
+     *
+     * @return bool
+     */
+    public function qualifies_for_provision_processing(): bool {
+        return $this->typecode === sora::RAA_MESSAGE_TYPE_RAPAS
+            && $this->provisionscount === 1
+            && !empty($this->requiredprovisions?->get_assessment_type_code());
+    }
+
+    /**
+     * Get the event time of the message in microseconds since the epoch. The message timestamp is
+     * microsecond precision, e.g. 20260812T120338.008085UTC, whereas the SQS envelope timestamp is
+     * only accurate to the second, which is too coarse to order messages published moments apart.
+     *
+     * @return int|null Microseconds since the epoch, or null if the timestamp cannot be parsed.
+     */
+    public function get_event_time_microseconds(): ?int {
+        if (empty($this->eventtimestamp)) {
+            return null;
+        }
+
+        // Strip the trailing timezone designator, the timezone is supplied to the parser instead.
+        $timestamp = preg_replace('/UTC$/', '', trim($this->eventtimestamp));
+        $datetime = \DateTimeImmutable::createFromFormat('Ymd\THis.u', $timestamp, new \DateTimeZone('UTC'));
+        if ($datetime === false) {
+            return null;
+        }
+
+        return (int) $datetime->format('U') * 1000000 + (int) $datetime->format('u');
     }
 }

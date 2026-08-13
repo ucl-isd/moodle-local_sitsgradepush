@@ -67,9 +67,7 @@ class ec_queue_processor extends aws_queue_processor {
         $ec->set_properties_from_aws_message($messagebody['Message']);
 
         // Extract event timestamp from AWS message.
-        $eventtimestamp = isset($messagebody['Timestamp'])
-            ? $this->clock->now()->modify($messagebody['Timestamp'])->getTimestamp()
-            : null;
+        $eventtimestamp = $this->get_event_timestamp($messagebody);
 
         // Check if we should ignore the message.
         $ignoreresult = $this->should_ignore_message($ec);

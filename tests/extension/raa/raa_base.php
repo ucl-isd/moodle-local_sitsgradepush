@@ -69,6 +69,33 @@ class raa_base extends extension_common {
     }
 
     /**
+     * Point the mocked API client at the given get students API response, so a test can control
+     * what SITS reports for the student when the extension is refetched.
+     *
+     * @param mixed $response The response the API client should return.
+     * @return void
+     */
+    protected function set_api_students_response(mixed $response): void {
+        $apiclient = $this->get_apiclient_for_testing(false, $response);
+        tests_data_provider::set_protected_property(manager::get_manager(), 'apiclient', $apiclient);
+    }
+
+    /**
+     * Have the mocked API client report the student with an empty provisions record. SITS always
+     * sends the record, either populated with an approved status or with every field null, which is
+     * how it reports a student who no longer holds an approved RAA.
+     *
+     * @param string $astcode The fixture name, e.g. 'CN01'.
+     * @return void
+     */
+    protected function set_api_students_response_without_provisions(string $astcode = 'CN01'): void {
+        $student = $this->get_test_student_data($astcode);
+        $provisions = $student['student_assessment']['required_provisions'];
+        $student['student_assessment']['required_provisions'] = array_fill_keys(array_keys($provisions), null);
+        $this->set_api_students_response([$student]);
+    }
+
+    /**
      * Create a test assignment.
      *
      * @param int $courseid The course ID.

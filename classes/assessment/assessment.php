@@ -417,8 +417,9 @@ abstract class assessment implements iassessment {
         }
 
         // If RAA extension type is time per hour, start date and end date are required to be set to calculate the duration.
+        // Every caller sets the provisions before getting here, the null safe operator is defensive only.
         if (
-            $sora->raarequiredprovisions->get_extension_type() === raa_required_provisions::EXTENSION_TIME_PER_HOUR
+            $sora->raarequiredprovisions?->get_extension_type() === raa_required_provisions::EXTENSION_TIME_PER_HOUR
             && (empty($this->get_start_date()) || empty($this->get_end_date()))
         ) {
             return false;

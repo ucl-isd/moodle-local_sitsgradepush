@@ -263,7 +263,7 @@ final class raa_assign_test extends raa_base {
     /**
      * Test RAA override is removed when RAA status changed to not approved event received.
      *
-     * @covers \local_sitsgradepush\extension\sora::process_extension
+     * @covers \local_sitsgradepush\extension\sora::process_status_change
      * @covers \local_sitsgradepush\assessment\assessment::apply_extension
      * @covers \local_sitsgradepush\extension\models\raa_required_provisions::has_extension
      * @return void
@@ -279,9 +279,12 @@ final class raa_assign_test extends raa_base {
         // Process event with status not approved.
         $eventdata = json_decode(tests_data_provider::get_sora_event_data_status(false), true);
 
+        // SITS returns the provisions record with every field null once the RAA is no longer approved.
+        $this->set_api_students_response_without_provisions();
+
         $sora = new sora();
         $sora->set_properties_from_aws_message(json_encode($eventdata));
-        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), null));
+        $sora->process_status_change($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Verify override was removed.
         $this->assertEmpty($DB->get_records('assign_overrides'));
@@ -290,7 +293,7 @@ final class raa_assign_test extends raa_base {
     /**
      * Test RAA override is added when RAA status changed to approved event received.
      *
-     * @covers \local_sitsgradepush\extension\sora::process_extension
+     * @covers \local_sitsgradepush\extension\sora::process_status_change
      * @covers \local_sitsgradepush\assessment\assessment::apply_extension
      * @covers \local_sitsgradepush\extension\models\raa_required_provisions::has_extension
      * @return void
@@ -304,7 +307,7 @@ final class raa_assign_test extends raa_base {
         $eventdata = json_decode(tests_data_provider::get_sora_event_data_status(true), true);
         $sora = new sora();
         $sora->set_properties_from_aws_message(json_encode($eventdata));
-        $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), null));
+        $sora->process_status_change($sora->get_mappings_by_userid($sora->get_userid()));
 
         // Verify override was created.
         $this->assertNotEmpty($DB->get_records('assign_overrides'));
