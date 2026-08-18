@@ -114,7 +114,8 @@ class ec extends extension {
                     continue;
                 }
                 $assessment->apply_extension($this);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                // Throwable, not Exception, so one unusable mapping cannot abandon the rest.
                 logger::log($e->getMessage(), null, "Mapping ID: $mapping->id");
             }
         }

@@ -117,6 +117,27 @@ abstract class aws_queue_processor {
     }
 
     /**
+     * Get the time the message was published, from the SQS envelope.
+     *
+     * The envelope carries an ISO-8601 instant in UTC, e.g. 2026-07-30T16:32:37.957Z, which has to be
+     * parsed as the absolute instant it states. Deriving it from the current time instead keeps the
+     * server timezone and silently discards the trailing Z, putting the result an hour out whenever
+     * the server is on a summer time offset.
+     *
+     * @param array $messagebody AWS SQS Message body
+     * @return int|null Seconds since the epoch, or null if the envelope carries no usable timestamp
+     */
+    protected function get_event_timestamp(array $messagebody): ?int {
+        if (empty($messagebody['Timestamp'])) {
+            return null;
+        }
+
+        $eventtimestamp = strtotime($messagebody['Timestamp']);
+
+        return $eventtimestamp !== false ? $eventtimestamp : null;
+    }
+
+    /**
      * Check should we process the message.
      *
      * @param string $messageid AWS SQS Message ID
@@ -131,10 +152,8 @@ abstract class aws_queue_processor {
         try {
             // Skip if message received time + delay time is greater than current time.
             $delaytime = (int) (get_config('local_sitsgradepush', 'aws_delay_process_time') ?: 0);
-            if (
-                isset($messagebody['Timestamp']) &&
-                strtotime($messagebody['Timestamp']) + $delaytime > di::get(clock::class)->time()
-            ) {
+            $eventtimestamp = $this->get_event_timestamp($messagebody);
+            if ($eventtimestamp !== null && $eventtimestamp + $delaytime > di::get(clock::class)->time()) {
                 mtrace("Skipping message due to delay time: {$messageid}");
                 return true;
             }
@@ -164,7 +183,7 @@ abstract class aws_queue_processor {
             }
 
             return false;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             logger::log($e->getMessage(), null, 'Failed to check message status');
             mtrace("Skipping message due to exception: {$messageid}");
             return true;
@@ -175,7 +194,7 @@ abstract class aws_queue_processor {
      * Execute the queue processor with batch processing support
      *
      * @return void
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function execute(): void {
         try {
@@ -229,7 +248,10 @@ abstract class aws_queue_processor {
                         $this->save_message_record($message, $this->get_queue_name(), $result);
                         $this->delete_message($message['ReceiptHandle']);
                         $processedcount++;
-                    } catch (\Exception $e) {
+                    } catch (\Throwable $e) {
+                        // Throwable, not Exception: an Error here would otherwise escape the batch loop
+                        // before the message is recorded or its attempt count incremented, leaving it on
+                        // the queue to be refetched and rethrown on every run, blocking everything behind it.
                         logger::log($e->getMessage(), null, static::class . ' Processing Error');
                         $this->save_message_record(
                             $message,
@@ -249,7 +271,7 @@ abstract class aws_queue_processor {
                     time() - $starttime
                 )
             );
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             logger::log($e->getMessage(), null, static::class . ' Queue Error');
             throw $e;
         }
@@ -303,6 +325,7 @@ abstract class aws_queue_processor {
                 'studentcode' => $result['studentcode'] ?? null,
                 'astcode' => $result['astcode'] ?? null,
                 'eventtimestamp' => $result['eventtimestamp'] ?? null,
+                'eventtimeus' => $result['eventtimeus'] ?? null,
                 'ignore_reason' => $result['ignore_reason'] ?? null,
             ];
 
@@ -315,7 +338,7 @@ abstract class aws_queue_processor {
 
             // Insert new record.
             return $DB->insert_record('local_sitsgradepush_aws_log', $data);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             logger::log($e->getMessage(), null, 'Failed to save message record');
             return false;
         }

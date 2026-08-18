@@ -121,6 +121,7 @@
         <FIELD NAME="studentcode" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Student code from message"/>
         <FIELD NAME="astcode" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Assessment type code from message"/>
         <FIELD NAME="eventtimestamp" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="AWS message timestamp"/>
+        <FIELD NAME="eventtimeus" TYPE="int" LENGTH="18" NOTNULL="false" SEQUENCE="false" COMMENT="Event time of the message in microseconds since the epoch, used to order messages published within the same second"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Process status"/>
         <FIELD NAME="attempts" TYPE="int" LENGTH="2" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="payload" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Original message content"/>
@@ -140,6 +141,7 @@
         <INDEX NAME="idx_astcode" UNIQUE="false" FIELDS="astcode"/>
         <INDEX NAME="idx_eventtimestamp" UNIQUE="false" FIELDS="eventtimestamp"/>
         <INDEX NAME="idx_queue_student_ast_ts" UNIQUE="false" FIELDS="queuename, studentcode, astcode, eventtimestamp"/>
+        <INDEX NAME="idx_queue_student_ast_tsus" UNIQUE="false" FIELDS="queuename, studentcode, astcode, eventtimeus"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_sitsgradepush_enrol" COMMENT="Store user enrolment events for assessment extension processing">

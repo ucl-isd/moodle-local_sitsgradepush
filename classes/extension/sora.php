@@ -170,7 +170,9 @@ class sora extends extension {
 
     /**
      * Set properties from AWS SORA update message.
-     * This set the student code and user id for this SORA, the SORA extension information will be obtained from the API.
+     * This sets the student code, user id and required provisions for this SORA from the message
+     * itself. A message that carries no student code or no usable provisions is still modelled, so
+     * the queue processor can decide whether it is actionable.
      *
      * @param string $messagebody
      * @return void
@@ -184,7 +186,7 @@ class sora extends extension {
         // Set datasource and create event message model.
         $this->datasource = self::DATASOURCE_AWS;
         $this->raaeventmsg = new raa_event_message($messagedata);
-        $this->studentcode = $this->raaeventmsg->get_student_code();
+        $this->studentcode = $this->raaeventmsg->get_student_code() ?? '';
         $this->raarequiredprovisions = $this->raaeventmsg->get_required_provisions();
 
         // Set user ID and mark data as set.
@@ -216,7 +218,7 @@ class sora extends extension {
     }
 
     /**
-     * Process the extension.
+     * Process the extension using the required provisions carried by this SORA object.
      *
      * @param array $mappings
      *
@@ -242,28 +244,46 @@ class sora extends extension {
                 // Set the SITS mapping ID for the assessment.
                 $assessment->set_sits_mapping_id($mapping->id);
 
-                // For status change events from AWS, update SORA extensions for the student.
-                if ($this->datasource === self::DATASOURCE_AWS && $this->get_raa_event_message()->has_status_changed()) {
-                    // RAA status from non-approved to approved, update SORA extensions.
-                    $raastatus = $this->get_raa_event_message()->raastatus;
-                    if ($raastatus === self::RAA_STATUS_APPROVED) {
-                        extensionmanager::update_sora_for_mapping(
-                            $mapping,
-                            manager::get_manager()->get_students_from_sits($mapping, true, 2, $this->get_student_code())
-                        );
-                    }
+                // Apply the extension to the assessment.
+                $assessment->apply_extension($this);
+            } catch (\Throwable $e) {
+                // Throwable, not Exception, so one unusable mapping cannot abandon the rest.
+                logger::log($e->getMessage());
+            }
+        }
+    }
 
-                    // RAA status changed to non-approved, remove any existing SORA extension for the student.
-                    if ($raastatus !== self::RAA_STATUS_APPROVED && in_array($this->get_userid(), $assessment->raauserids)) {
-                        $assessment->delete_raa_overrides($this->get_userid());
-                    }
+    /**
+     * Process an RAA approval status change.
+     *
+     * The message is only used to decide that something worth acting on happened. The extension
+     * data itself is fetched from SITS, so the provisions applied are the ones SITS holds now,
+     * regardless of the order in which the messages were delivered. An override is only ever
+     * removed when SITS positively reports a non-approved RAA, absent data leaves it alone.
+     *
+     * @param array $mappings
+     * @return void
+     */
+    public function process_status_change(array $mappings): void {
+        if (empty($mappings) || empty($this->get_userid())) {
+            return;
+        }
+
+        foreach ($mappings as $mapping) {
+            try {
+                $students = manager::get_manager()->get_students_from_sits($mapping, true, 2, $this->get_student_code());
+
+                // Nothing came back from SITS, which is not a statement that the RAA was withdrawn,
+                // so any override the student holds is left untouched.
+                if (!is_array($students) || empty($students)) {
                     continue;
                 }
 
-                // Apply the extension to the assessment.
-                $assessment->apply_extension($this);
-            } catch (\Exception $e) {
-                logger::log($e->getMessage());
+                // Let the API data decide what to apply, or remove when the RAA is no longer approved.
+                extensionmanager::update_sora_for_mapping($mapping, $students);
+            } catch (\Throwable $e) {
+                // Throwable, not Exception, so one unusable mapping cannot abandon the rest.
+                logger::log($e->getMessage(), null, "Mapping ID: $mapping->id, Student code: {$this->get_student_code()}");
             }
         }
     }
@@ -399,21 +419,20 @@ class sora extends extension {
      * @return bool true if the checks pass, false otherwise
      */
     protected function pre_process_extension_checks(array $mappings): bool {
-        // Basic extension checks from parent if it is AWS message with status change.
-        if ($this->datasource === self::DATASOURCE_AWS && $this->get_raa_event_message()->has_status_changed()) {
-            return parent::pre_process_extension_checks($mappings);
-        }
-
-        // Below checks for normal SORA extension processing, i.e. update on single assessment type.
         // Check required provisions exist.
         if ($this->raarequiredprovisions === null) {
             return false;
         }
 
-        // Check if the assessment type code is eligible for RAA.
-         $astcode = $this->raarequiredprovisions->get_assessment_type_code();
-        if (empty($astcode) || !extensionmanager::is_ast_code_eligible_for_raa($astcode)) {
-            return false;
+        // SITS always sends a provisions record, an all empty one means the student holds no approved
+        // adjustments. There is no assessment type code to check then, and the only outcome left is
+        // removing an override the student should no longer have, so let it through.
+        if ($this->raarequiredprovisions->has_extension()) {
+            // Check if the assessment type code is eligible for RAA.
+            $astcode = $this->raarequiredprovisions->get_assessment_type_code();
+            if (empty($astcode) || !extensionmanager::is_ast_code_eligible_for_raa($astcode)) {
+                return false;
+            }
         }
 
         return parent::pre_process_extension_checks($mappings);

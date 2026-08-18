@@ -32,6 +32,12 @@ class sora_queue_processor extends aws_queue_processor {
     /** @var string QUEUE_NAME */
     const QUEUE_NAME = 'SORA';
 
+    /** @var string Route for messages carrying a single required provision to apply directly. */
+    const ROUTE_PROVISION = 'provision';
+
+    /** @var string Route for messages reporting an RAA approval status change. */
+    const ROUTE_STATUS = 'status';
+
     /**
      * Get the queue URL.
      *
@@ -54,71 +60,108 @@ class sora_queue_processor extends aws_queue_processor {
     protected function process_message(array $messagebody): array {
         $sora = new sora();
         $sora->set_properties_from_aws_message($messagebody['Message']);
-        $astcode = $sora->raarequiredprovisions?->get_assessment_type_code();
+        $raaeventmsg = $sora->get_raa_event_message();
 
         // Extract event timestamp from AWS message.
-        $eventtimestamp = isset($messagebody['Timestamp'])
-            ? $this->clock->now()->modify($messagebody['Timestamp'])->getTimestamp()
-            : null;
+        $eventtimestamp = $this->get_event_timestamp($messagebody);
+
+        // The message carries its own microsecond timestamp, which is the only reliable way to order
+        // messages published within the same second. Fall back to the coarser SQS envelope time.
+        $eventtimeus = $raaeventmsg->get_event_time_microseconds()
+            ?? ($eventtimestamp !== null ? $eventtimestamp * 1000000 : null);
+
+        // Decide how the message should be handled, if at all.
+        $route = $this->get_processing_route($raaeventmsg);
+
+        // Only provision messages are tied to a single assessment type, status messages are student wide.
+        $astcode = $route === self::ROUTE_PROVISION ? $raaeventmsg->get_required_provisions()?->get_assessment_type_code() : null;
+
+        $result = [
+            'studentcode' => $sora->get_student_code(),
+            'astcode' => $astcode,
+            'eventtimestamp' => $eventtimestamp,
+            'eventtimeus' => $eventtimeus,
+        ];
 
         // Check if we should ignore the message.
-        $ignoreresult = $this->should_ignore_message($sora, $eventtimestamp, $astcode);
+        $ignoreresult = $this->should_ignore_message($sora, $route, $eventtimeus, $astcode);
         if ($ignoreresult !== false) {
-            return [
+            return $result + [
                 'status' => self::STATUS_IGNORED,
-                'studentcode' => $sora->get_student_code(),
-                'astcode' => $astcode,
-                'eventtimestamp' => $eventtimestamp,
                 'ignore_reason' => $ignoreresult,
             ];
         }
 
-        // Get all mappings for the student.
-        $mappings = $sora->get_mappings_by_userid($sora->get_userid(), $astcode);
-        $sora->process_extension($mappings);
+        if ($route === self::ROUTE_PROVISION) {
+            // Apply the provision carried by the message to the mappings of that assessment type.
+            $sora->process_extension($sora->get_mappings_by_userid($sora->get_userid(), $astcode));
+        } else {
+            // The approval status crossed the boundary, refetch the student data from SITS to act on.
+            $sora->process_status_change($sora->get_mappings_by_userid($sora->get_userid()));
+        }
 
-        return [
+        return $result + [
             'status' => self::STATUS_PROCESSED,
-            'studentcode' => $sora->get_student_code(),
-            'astcode' => $astcode,
-            'eventtimestamp' => $eventtimestamp,
             'ignore_reason' => null,
         ];
+    }
+
+    /**
+     * Work out how the message should be processed.
+     *
+     * A RAPAS message carrying exactly one required provision for a known assessment type holds
+     * everything needed to apply an extension, so it is processed from the message data. Any other
+     * message is only actionable when it reports the RAA approval status crossing the approved
+     * boundary, which is handled from the SITS API instead.
+     *
+     * @param raa_event_message $raaeventmsg
+     * @return string|null One of the ROUTE_* constants, or null if the message is not actionable.
+     */
+    protected function get_processing_route(raa_event_message $raaeventmsg): ?string {
+        if ($raaeventmsg->qualifies_for_provision_processing()) {
+            return self::ROUTE_PROVISION;
+        }
+
+        if ($raaeventmsg->crosses_approved_boundary()) {
+            return self::ROUTE_STATUS;
+        }
+
+        return null;
     }
 
     /**
      * Check if we should ignore the message.
      *
      * @param sora $sora
-     * @param int|null $eventtimestamp
+     * @param string|null $route One of the ROUTE_* constants, or null if the message is not actionable.
+     * @param int|null $eventtimeus Event time of the message in microseconds since the epoch.
      * @param string|null $astcode
      * @return string|false Returns ignore reason string if should ignore, false otherwise
      */
-    protected function should_ignore_message(sora $sora, ?int $eventtimestamp, ?string $astcode): string|false {
-        // Special case: should not ignore if RAA status has changed.
-        // RAA type could be non-RAPAS.
+    protected function should_ignore_message(sora $sora, ?string $route, ?int $eventtimeus, ?string $astcode): string|false {
         $raaeventmsg = $sora->get_raa_event_message();
-        if ($raaeventmsg->has_status_changed()) {
-            return false;
-        }
-
-        // RAPAS is the AAA record type that links to ARP records with extension data for each assessment type.
-        // Skip if it is not RAPAS.
-        if ($raaeventmsg->get_type_code() !== sora::RAA_MESSAGE_TYPE_RAPAS) {
-            $messagetype = $raaeventmsg->get_type_code() ?? 'NULL';
-            return "SORA message type is not RAPAS (type: {$messagetype})";
-        }
 
         // If there are no changes, we should ignore the message.
         if (!$raaeventmsg->has_changes()) {
             return 'No changes detected in the message';
         }
 
+        // The message does not carry a usable provision and does not change the approval status.
+        if ($route === null) {
+            $messagetype = $raaeventmsg->get_type_code() ?? 'NULL';
+            return "No actionable RAA change in the message (type: {$messagetype})";
+        }
+
+        // Nothing can be applied without knowing which student the message is about.
+        if (empty($sora->get_student_code())) {
+            return 'Missing student code in the message';
+        }
+
         // Check for out-of-order messages.
         $outofordermessage = $this->is_message_out_of_order(
             $astcode,
             $sora->get_student_code(),
-            $eventtimestamp
+            $eventtimeus
         );
 
         if ($outofordermessage !== false) {
@@ -131,30 +174,34 @@ class sora_queue_processor extends aws_queue_processor {
     /**
      * Check if message is out of order by comparing with latest processed message timestamp.
      *
+     * The comparison is made in microseconds because messages for the same student are routinely
+     * published within the same second, which a second-precision comparison cannot separate.
+     *
      * @param string|null $astcode
      * @param string $studentcode
-     * @param int|null $eventtimestamp
+     * @param int|null $eventtimeus Event time of the message in microseconds since the epoch.
      * @return string|false Returns ignore reason string if out of order, false otherwise
      */
     protected function is_message_out_of_order(
         ?string $astcode,
         string $studentcode,
-        ?int $eventtimestamp
+        ?int $eventtimeus
     ): string|false {
         global $DB;
 
         // If no timestamp or student code, cannot determine order, process it.
-        if (empty($eventtimestamp) || empty($studentcode)) {
+        if (empty($eventtimeus) || empty($studentcode)) {
             return false;
         }
 
         // Query for the latest processed message for this student and assessment type in SORA queue.
-        $sql = "SELECT MAX(eventtimestamp) as latesttimestamp
+        // Messages logged before the microsecond time was recorded cannot be ordered, so are skipped.
+        $sql = "SELECT MAX(eventtimeus) as latesttimeus
                 FROM {local_sitsgradepush_aws_log}
                 WHERE queuename = :queuename
                 AND studentcode = :studentcode
                 AND status = :processed
-                AND eventtimestamp IS NOT NULL";
+                AND eventtimeus IS NOT NULL";
 
         $params = [
             'queuename' => self::QUEUE_NAME,
@@ -173,18 +220,26 @@ class sora_queue_processor extends aws_queue_processor {
         $result = $DB->get_record_sql($sql, $params);
 
         // If there is a later message already processed, ignore this one.
-        if ($result && $result->latesttimestamp > $eventtimestamp) {
-            $currentts = date('Y-m-d H:i:s', $eventtimestamp);
-            $latestts = date('Y-m-d H:i:s', $result->latesttimestamp);
+        if ($result && $result->latesttimeus > $eventtimeus) {
             return sprintf(
                 'Out-of-order message for student %s. Current timestamp: %s, Latest processed: %s',
                 $studentcode,
-                $currentts,
-                $latestts
+                $this->format_microsecond_time($eventtimeus),
+                $this->format_microsecond_time((int) $result->latesttimeus)
             );
         }
 
         return false;
+    }
+
+    /**
+     * Format a microsecond timestamp for display in an ignore reason.
+     *
+     * @param int $eventtimeus Microseconds since the epoch.
+     * @return string
+     */
+    protected function format_microsecond_time(int $eventtimeus): string {
+        return date('Y-m-d H:i:s', intdiv($eventtimeus, 1000000)) . '.' . sprintf('%06d', $eventtimeus % 1000000);
     }
 
     /**
