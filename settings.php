@@ -165,6 +165,14 @@ if ($hassiteconfig) {
             '0'
         ));
 
+        // Setting to enable/disable the combined due date feature.
+        $settings->add(new admin_setting_configcheckbox(
+            'local_sitsgradepush/cdd_enabled',
+            get_string('settings:enablecdd', 'local_sitsgradepush'),
+            get_string('settings:enablecdd:desc', 'local_sitsgradepush'),
+            '0'
+        ));
+
         // Set the extension support page URL.
         $settings->add(new admin_setting_configtext(
             'local_sitsgradepush/extension_support_page_url',
@@ -287,7 +295,8 @@ if ($hassiteconfig) {
             'local_sitsgradepush/aws_sora_sqs_queue_url',
             get_string('settings:awssoraqueueurl', 'local_sitsgradepush'),
             get_string('settings:awssoraqueueurl:desc', 'local_sitsgradepush'),
-            'CHANGEME'
+            'https://change-me-to-your-endpoint/url',
+            PARAM_URL
         ));
 
         // AWS EC queue URL.
@@ -295,7 +304,17 @@ if ($hassiteconfig) {
             'local_sitsgradepush/aws_ec_sqs_queue_url',
             get_string('settings:awsecqueueurl', 'local_sitsgradepush'),
             get_string('settings:awsecqueueurl:desc', 'local_sitsgradepush'),
-            'CHANGEME'
+            'https://change-me-to-your-endpoint/url',
+            PARAM_URL
+        ));
+
+        // AWS combined due date queue URL.
+        $settings->add(new admin_setting_configtext(
+            'local_sitsgradepush/aws_cdd_sqs_queue_url',
+            get_string('settings:awscddqueueurl', 'local_sitsgradepush'),
+            get_string('settings:awscddqueueurl:desc', 'local_sitsgradepush'),
+            'https://change-me-to-your-endpoint/url',
+            PARAM_URL
         ));
 
         // AWS delay process time.

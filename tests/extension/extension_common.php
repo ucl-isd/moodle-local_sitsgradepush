@@ -19,6 +19,8 @@ namespace local_sitsgradepush;
 use core\clock;
 use mod_coursework\models\course_module;
 use mod_coursework\models\coursework;
+use ReflectionClass;
+use ReflectionMethod;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -60,6 +62,19 @@ class extension_common extends base_test_class {
 
     /** @var clock $clock */
     protected readonly clock $clock;
+
+    /** @var int Mapping ID. */
+    protected $mappingid;
+
+    /**
+     * Tear down the test.
+     *
+     * @return void
+     */
+    public function tearDown(): void {
+        parent::tearDown();
+        $this->reset_manager_instance();
+    }
 
     /**
      * Set up the test.
@@ -326,5 +341,149 @@ class extension_common extends base_test_class {
         $override->available = $available;
         $override->deadline = $deadline;
         return $DB->insert_record('lesson_overrides', $override);
+    }
+
+    /**
+     * Setup common test data and insert a mapping for the given activity type.
+     *
+     * @param string $type Activity type (assign/quiz/lesson/coursework).
+     * @return object The activity object.
+     */
+    protected function setup_common_test_data(string $type = 'assign'): object {
+        global $DB;
+
+        $mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
+        $activity = $this->resolve_activity($type);
+
+        $this->mappingid = $this->insert_mapping($mab1->id, $this->course1->id, $activity, $type);
+
+        return $activity;
+    }
+
+    /**
+     * Get the default test activity for a given activity type.
+     *
+     * @param string $type Activity type (assign/quiz/lesson/coursework).
+     * @return object The activity object.
+     */
+    protected function resolve_activity(string $type): object {
+        if ($type === 'assign') {
+            return $this->assign1;
+        } else if ($type === 'quiz') {
+            return $this->quiz1;
+        } else if ($type === 'lesson') {
+            return $this->lesson1;
+        } else {
+            return $this->coursework1;
+        }
+    }
+
+    /**
+     * Get override table details for a given activity type.
+     *
+     * @param string $type Activity type (assign/quiz/lesson/coursework).
+     * @return array Table details containing table name, date field, and activity field.
+     */
+    protected static function get_override_table_details(string $type): array {
+        if ($type === 'assign') {
+            return ['table' => 'assign_overrides', 'datefield' => 'duedate', 'activityfield' => 'assignid'];
+        } else if ($type === 'quiz') {
+            return ['table' => 'quiz_overrides', 'datefield' => 'timeclose', 'activityfield' => 'quiz'];
+        } else if ($type === 'lesson') {
+            return ['table' => 'lesson_overrides', 'datefield' => 'deadline', 'activityfield' => 'lessonid'];
+        } else {
+            return ['table' => 'coursework_extensions', 'datefield' => 'extended_deadline', 'activityfield' => 'courseworkid'];
+        }
+    }
+
+    /**
+     * Verify an override exists with the expected date, or that no override exists.
+     *
+     * @param object $activity The activity object.
+     * @param string $type Activity type.
+     * @param int|null $expecteddate Expected date timestamp, null to expect no override.
+     * @param string $userfield Name of the user ID field.
+     * @param int|null $userid The user ID to check, defaults to student 1.
+     * @return void
+     */
+    protected function verify_override(
+        object $activity,
+        string $type,
+        ?int $expecteddate,
+        string $userfield,
+        ?int $userid = null
+    ): void {
+        global $DB;
+        $details = $this->get_override_table_details($type);
+
+        $conditions = [
+            $details['activityfield'] => $activity->id,
+            $userfield => $userid ?? $this->student1->id,
+        ];
+
+        // Coursework requires allocatabletype field.
+        if ($type === 'coursework') {
+            $conditions['allocatabletype'] = 'user';
+        }
+
+        $override = $DB->get_record($details['table'], $conditions);
+
+        if ($expecteddate === null) {
+            $this->assertFalse($override);
+        } else {
+            $this->assertEquals($expecteddate, $override->{$details['datefield']});
+        }
+    }
+
+    /**
+     * Get an active override backup record of a given extension type for a user.
+     *
+     * @param int $userid The Moodle user ID.
+     * @param string $extensiontype The extension type, e.g. EC, CDD.
+     * @return mixed The record or false if not found.
+     */
+    protected function get_override_backup(int $userid, string $extensiontype): mixed {
+        global $DB;
+        return $DB->get_record('local_sitsgradepush_overrides', [
+            'userid' => $userid,
+            'extensiontype' => $extensiontype,
+            'restored_by' => null,
+        ]);
+    }
+
+    /**
+     * Get an accessible method from an object.
+     *
+     * @param object $object The object to get the method from.
+     * @param string $methodname The method name.
+     * @return ReflectionMethod The accessible method.
+     */
+    protected function get_accessible_method(object $object, string $methodname): ReflectionMethod {
+        $reflection = new ReflectionClass($object);
+        $method = $reflection->getMethod($methodname);
+        $method->setAccessible(true);
+        return $method;
+    }
+
+    /**
+     * Set the manager singleton instance via reflection.
+     *
+     * @param manager|null $manager The manager instance to set.
+     * @return void
+     */
+    protected function set_manager_instance(?manager $manager): void {
+        $managerreflection = new ReflectionClass(manager::class);
+        $instance = $managerreflection->getProperty('instance');
+        $instance->setAccessible(true);
+        $instance->setValue(null, $manager);
+    }
+
+    /**
+     * Reset the manager singleton instance.
+     *
+     * @return void
+     */
+    protected function reset_manager_instance(): void {
+        $this->set_manager_instance(null);
     }
 }

@@ -44,7 +44,7 @@ $PAGE->set_title(get_string('manualprocessextensions', 'local_sitsgradepush'));
 $confirm = optional_param('confirm', 0, PARAM_INT);
 if ($confirm && confirm_sesskey()) {
     $courseid = optional_param('courseid', 0, PARAM_INT);
-    $extensiontype = optional_param('extensiontype', 'both', PARAM_ALPHA);
+    $extensiontype = optional_param('extensiontype', 'all', PARAM_ALPHA);
 
     try {
         if (!extensionmanager::is_extension_enabled()) {

@@ -16,7 +16,10 @@
 
 namespace local_sitsgradepush\task;
 
+use core\task\manager as coretaskmanager;
+use local_sitsgradepush\cdd_mock_manager_trait;
 use local_sitsgradepush\extension_common;
+use local_sitsgradepush\extensionmanager;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\tests_data_provider;
 
@@ -24,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/tests_data_provider.php');
 require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_common.php');
+require_once($CFG->dirroot . '/local/sitsgradepush/tests/fixtures/cdd_mock_manager_trait.php');
 
 /**
  * Tests for the process_extensions_all_mappings adhoc task.
@@ -35,6 +39,8 @@ require_once($CFG->dirroot . '/local/sitsgradepush/tests/extension/extension_com
  * @covers     \local_sitsgradepush\task\process_extensions_all_mappings
  */
 final class process_extensions_all_mappings_test extends extension_common {
+    use cdd_mock_manager_trait;
+
     /**
      * Set up the test.
      *
@@ -47,16 +53,6 @@ final class process_extensions_all_mappings_test extends extension_common {
         $this->setup_mock_manager(
             tests_data_provider::get_test_students_with_both_extensions()
         );
-    }
-
-    /**
-     * Tear down the test.
-     *
-     * @return void
-     */
-    public function tearDown(): void {
-        parent::tearDown();
-        $this->reset_manager_instance();
     }
 
     /**
@@ -101,10 +97,64 @@ final class process_extensions_all_mappings_test extends extension_common {
         $mab = $this->get_mab_by_mapcode('LAWS0024A6UF', '002');
         $this->insert_mapping($mab->id, $this->course1->id, $this->assign1, 'assign');
 
-        $this->run_task($this->course1->id, 'both');
+        $this->run_task($this->course1->id, 'all');
 
         $this->assert_ec_overrides_exist($this->assign1->id);
         $this->assert_raa_overrides_exist($this->assign1->id);
+    }
+
+    /**
+     * Test the combined due date supersedes EC and RAA for a handled student.
+     *
+     * @covers \local_sitsgradepush\task\process_extensions_all_mappings::execute
+     * @covers \local_sitsgradepush\extensionmanager::update_cdd_for_mapping
+     * @covers \local_sitsgradepush\extensionmanager::filter_out_cdd_handled_students
+     * @return void
+     */
+    public function test_execute_all_cdd_supersedes_handled_student(): void {
+        // Enable the combined due date feature.
+        set_config('cdd_enabled', '1', 'local_sitsgradepush');
+
+        $mab = $this->get_mab_by_mapcode('LAWS0024A6UF', '002');
+        $this->insert_mapping($mab->id, $this->course1->id, $this->assign1, 'assign');
+
+        // Mock the manager to return a combined due date record for student1 only.
+        $this->setup_mock_manager_with_cdd(
+            [tests_data_provider::get_cdd_api_record()],
+            tests_data_provider::get_test_students_with_both_extensions()
+        );
+
+        $this->run_task($this->course1->id, 'all');
+
+        // Student1 is handled by the combined due date, so has a CDD backup and no EC backup.
+        $this->assertNotEmpty($this->get_override_backup($this->student1->id, extensionmanager::EXTENSION_CDD));
+        $this->assertFalse($this->get_override_backup($this->student1->id, extensionmanager::EXTENSION_EC));
+
+        // Student2 is not handled by the combined due date, so is processed for EC.
+        $this->assertNotEmpty($this->get_override_backup($this->student2->id, extensionmanager::EXTENSION_EC));
+        $this->assertFalse($this->get_override_backup($this->student2->id, extensionmanager::EXTENSION_CDD));
+    }
+
+    /**
+     * Test a queued "all" task overlaps a combined due date only request.
+     *
+     * @covers \local_sitsgradepush\task\process_extensions_all_mappings::adhoc_task_exists
+     * @return void
+     */
+    public function test_adhoc_task_exists_cdd_overlaps_all(): void {
+        $this->queue_task($this->course1->id, 'all');
+        $this->assertTrue(process_extensions_all_mappings::adhoc_task_exists($this->course1->id, 'cdd'));
+    }
+
+    /**
+     * Test a queued "ec" task does not overlap a combined due date only request.
+     *
+     * @covers \local_sitsgradepush\task\process_extensions_all_mappings::adhoc_task_exists
+     * @return void
+     */
+    public function test_adhoc_task_exists_cdd_no_overlap_with_ec(): void {
+        $this->queue_task($this->course1->id, 'ec');
+        $this->assertFalse(process_extensions_all_mappings::adhoc_task_exists($this->course1->id, 'cdd'));
     }
 
     /**
@@ -122,7 +172,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $this->insert_mapping($mab1->id, $this->course1->id, $this->assign1, 'assign');
         $this->insert_mapping($mab2->id, $course2->id, $assign2, 'assign');
 
-        $this->run_task($this->course1->id, 'both');
+        $this->run_task($this->course1->id, 'all');
 
         $this->assert_overrides_exist($this->assign1->id);
         $this->assert_overrides_empty($assign2->id);
@@ -143,7 +193,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $this->insert_mapping($mab1->id, $this->course1->id, $this->assign1, 'assign');
         $this->insert_mapping($mab2->id, $course2->id, $assign2, 'assign');
 
-        $this->run_task(0, 'both');
+        $this->run_task(0, 'all');
 
         $this->assert_overrides_exist($this->assign1->id);
         $this->assert_overrides_exist($assign2->id);
@@ -173,7 +223,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $task = new process_extensions_all_mappings();
         $task->set_custom_data((object)[
             'courseid' => $this->course1->id,
-            'extensiontype' => 'both',
+            'extensiontype' => 'all',
             'lastprocessedid' => 0,
         ]);
         $task->execute();
@@ -209,7 +259,7 @@ final class process_extensions_all_mappings_test extends extension_common {
         $task = new process_extensions_all_mappings();
         $task->set_custom_data((object)[
             'courseid' => $this->course1->id,
-            'extensiontype' => 'both',
+            'extensiontype' => 'all',
             'lastprocessedid' => 0,
         ]);
         $task->execute();
@@ -273,7 +323,7 @@ final class process_extensions_all_mappings_test extends extension_common {
             });
 
         $this->set_manager_instance($mockmanager);
-        $this->run_task(0, 'both');
+        $this->run_task(0, 'all');
 
         // Verify an error was logged for the first mapping.
         $errors = $DB->get_records('local_sitsgradepush_err_log');
@@ -310,25 +360,20 @@ final class process_extensions_all_mappings_test extends extension_common {
     }
 
     /**
-     * Set manager singleton instance via reflection.
+     * Queue a process extensions task with the given scope and type.
      *
-     * @param manager|null $manager The manager instance to set.
+     * @param int $courseid The course ID.
+     * @param string $extensiontype The extension type.
      * @return void
      */
-    protected function set_manager_instance(?manager $manager): void {
-        $managerreflection = new \ReflectionClass(manager::class);
-        $instance = $managerreflection->getProperty('instance');
-        $instance->setAccessible(true);
-        $instance->setValue(null, $manager);
-    }
-
-    /**
-     * Reset manager singleton instance.
-     *
-     * @return void
-     */
-    protected function reset_manager_instance(): void {
-        $this->set_manager_instance(null);
+    protected function queue_task(int $courseid, string $extensiontype): void {
+        $task = new process_extensions_all_mappings();
+        $task->set_custom_data((object)[
+            'courseid' => $courseid,
+            'extensiontype' => $extensiontype,
+            'lastprocessedid' => 0,
+        ]);
+        coretaskmanager::queue_adhoc_task($task);
     }
 
     /**

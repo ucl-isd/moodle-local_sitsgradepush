@@ -16,6 +16,8 @@
 
 namespace local_sitsgradepush\form;
 
+use local_sitsgradepush\extensionmanager;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once("$CFG->libdir/formslib.php");
@@ -44,10 +46,15 @@ class process_extensions_form extends \moodleform {
         $mform->addHelpButton('courseid', 'manualprocessextensions:courseid', 'local_sitsgradepush');
 
         $options = [
-            'both' => get_string('manualprocessextensions:extensiontype:both', 'local_sitsgradepush'),
+            'all' => get_string('manualprocessextensions:extensiontype:all', 'local_sitsgradepush'),
             'raa' => get_string('manualprocessextensions:extensiontype:raa', 'local_sitsgradepush'),
             'ec' => get_string('manualprocessextensions:extensiontype:ec', 'local_sitsgradepush'),
         ];
+
+        // Only show the combined due date option when the feature is enabled.
+        if (extensionmanager::is_cdd_enabled()) {
+            $options['cdd'] = get_string('manualprocessextensions:extensiontype:cdd', 'local_sitsgradepush');
+        }
 
         $mform->addElement(
             'select',
@@ -55,7 +62,7 @@ class process_extensions_form extends \moodleform {
             get_string('manualprocessextensions:extensiontype', 'local_sitsgradepush'),
             $options
         );
-        $mform->setDefault('extensiontype', 'both');
+        $mform->setDefault('extensiontype', 'all');
 
         $this->add_action_buttons(false, get_string('manualprocessextensions:submit', 'local_sitsgradepush'));
     }

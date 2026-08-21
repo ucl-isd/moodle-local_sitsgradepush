@@ -20,6 +20,7 @@ use assign;
 use cache;
 use context_course;
 use context_module;
+use local_sitsgradepush\api\client;
 use local_sitsgradepush\api\client_factory;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\assessment\assessment;
@@ -344,6 +345,10 @@ final class manager_test extends base_test_class {
         // Test marking scheme is supported.
         $mab->mkscode = 'UNA01';
         $this->assertTrue($this->manager->is_marking_scheme_supported($mab));
+
+        // Test an unknown marking scheme code is not supported.
+        $mab->mkscode = 'DOESNOTEXIST';
+        $this->assertFalse($this->manager->is_marking_scheme_supported($mab));
     }
 
     /**

@@ -233,6 +233,42 @@ class tests_data_provider {
     }
 
     /**
+     * Get a combined due date (CDD) API record.
+     *
+     * @return array
+     */
+    public static function get_cdd_api_record(): array {
+        return json_decode(file_get_contents(__DIR__ . "/cdd/cdd_api_record.json"), true);
+    }
+
+    /**
+     * Get a combined due date (CDD) API record that carries a re-assessment list.
+     *
+     * @return array
+     */
+    public static function get_cdd_api_record_reassessment(): array {
+        return json_decode(file_get_contents(__DIR__ . "/cdd/cdd_api_record_reassessment.json"), true);
+    }
+
+    /**
+     * Get a gated out combined due date (CDD) API record, i.e. one with no day based extension.
+     *
+     * @return array
+     */
+    public static function get_cdd_api_record_gated_out(): array {
+        return json_decode(file_get_contents(__DIR__ . "/cdd/cdd_api_record_gated_out.json"), true);
+    }
+
+    /**
+     * Get the combined due date (CDD) AWS event message body.
+     *
+     * @return string
+     */
+    public static function get_cdd_aws_event(): string {
+        return file_get_contents(__DIR__ . "/cdd/cdd_aws_event.json");
+    }
+
+    /**
      * Set a protected property.
      *
      * @param  object|string  $obj

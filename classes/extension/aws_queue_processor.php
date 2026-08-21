@@ -324,6 +324,7 @@ abstract class aws_queue_processor {
                 'attempts' => $record ? $record->attempts + 1 : 1,
                 'studentcode' => $result['studentcode'] ?? null,
                 'astcode' => $result['astcode'] ?? null,
+                'mabidentifier' => $result['mabidentifier'] ?? null,
                 'eventtimestamp' => $result['eventtimestamp'] ?? null,
                 'eventtimeus' => $result['eventtimeus'] ?? null,
                 'ignore_reason' => $result['ignore_reason'] ?? null,

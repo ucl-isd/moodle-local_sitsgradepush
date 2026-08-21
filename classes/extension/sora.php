@@ -244,6 +244,13 @@ class sora extends extension {
                 // Set the SITS mapping ID for the assessment.
                 $assessment->set_sits_mapping_id($mapping->id);
 
+                // Skip students with an active combined due date override on the mapped assessment.
+                // The combined due date is authoritative, so RAA updates must be ignored for them.
+                // When the combined due date is disabled, a stale override is removed so RAA can proceed.
+                if (extensionmanager::handle_cdd_supersession($assessment, $mapping, $this->get_userid())) {
+                    continue;
+                }
+
                 // Apply the extension to the assessment.
                 $assessment->apply_extension($this);
             } catch (\Throwable $e) {

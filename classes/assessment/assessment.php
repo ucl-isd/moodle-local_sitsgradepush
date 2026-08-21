@@ -18,6 +18,7 @@ namespace local_sitsgradepush\assessment;
 
 use core\clock;
 use core\di;
+use local_sitsgradepush\extension\cdd;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extension\extension;
 use local_sitsgradepush\extension\models\raa_required_provisions;
@@ -90,7 +91,10 @@ abstract class assessment implements iassessment {
         }
 
         // Do extension base on the extension type.
-        if ($extension instanceof ec) {
+        // Check CDD before EC as CDD is a subclass of EC.
+        if ($extension instanceof cdd) {
+            $this->apply_cdd_extension($extension);
+        } else if ($extension instanceof ec) {
             $this->apply_ec_extension($extension);
         } else if ($extension instanceof sora) {
             if (!$extension->raarequiredprovisions->has_extension()) {
@@ -306,12 +310,12 @@ abstract class assessment implements iassessment {
     }
 
     /**
-     * Delete applied EC override and restore original override if any.
+     * Delete an applied user override and restore the original override if any.
      *
      * @param \stdClass $mtsavedoverride - Override record saved in marks transfer overrides table.
      * @return void
      */
-    public function delete_ec_override(\stdClass $mtsavedoverride): void {
+    public function delete_user_override(\stdClass $mtsavedoverride): void {
         // Default not supported. Override in child class if needed.
     }
 
@@ -508,6 +512,18 @@ abstract class assessment implements iassessment {
     protected function apply_ec_extension(ec $ec): void {
         // Default not supported. Override in child class if needed.
         throw new \moodle_exception('error:ecextensionnotsupported', 'local_sitsgradepush');
+    }
+
+    /**
+     * Apply CDD extension.
+     *
+     * @param cdd $cdd
+     * @return void
+     * @throws \moodle_exception
+     */
+    protected function apply_cdd_extension(cdd $cdd): void {
+        // Default not supported. Override in child class if needed.
+        throw new \moodle_exception('error:cddextensionnotsupported', 'local_sitsgradepush');
     }
 
     /**

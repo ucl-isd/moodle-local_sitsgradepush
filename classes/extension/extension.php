@@ -117,9 +117,17 @@ abstract class extension implements iextension {
     public function get_mappings_by_mab(string $mabidentifier): array {
         global $DB;
 
+        // A valid MAB identifier is of the form "mapcode-mabseq", e.g. CCME0158A6UF-001.
+        // Guard against a missing or malformed identifier so an invalid lookup is skipped
+        // instead of raising an undefined array key warning on the sequence part.
+        $parts = explode('-', $mabidentifier);
+        if (count($parts) < 2 || $parts[0] === '' || $parts[1] === '') {
+            return [];
+        }
+
         // Extract the map code and MAB sequence number from the MAB identifier.
-        $mapcode = explode('-', $mabidentifier)[0];
-        $mabseq = explode('-', $mabidentifier)[1];
+        $mapcode = $parts[0];
+        $mabseq = $parts[1];
 
         $params = [
             'mapcode' => $mapcode,

@@ -494,11 +494,43 @@ abstract class activity extends assessment {
      *
      * @param ec $ec The EC extension object.
      * @return int The new due date as a Unix timestamp.
+     * @throws moodle_exception
      */
     protected function calculate_ec_new_duedate(ec $ec): int {
         $originalduedate = $this->get_end_date();
+
+        // Without an original due date there is nothing to anchor the new time to.
+        if (empty($originalduedate)) {
+            throw new moodle_exception('error:invalid_new_deadline', 'local_sitsgradepush', '', $ec->get_new_deadline());
+        }
+
+        // Combine the new deadline date with the original assessment time of day.
         $time = date('H:i:s', $originalduedate);
-        return strtotime($ec->get_new_deadline() . ' ' . $time);
+        $newduedate = strtotime($ec->get_new_deadline() . ' ' . $time);
+
+        // Guard against an unparseable deadline so a malformed value raises a catchable
+        // exception instead of a TypeError that would escape the queue processing loop.
+        if ($newduedate === false) {
+            throw new moodle_exception('error:invalid_new_deadline', 'local_sitsgradepush', '', $ec->get_new_deadline());
+        }
+
+        return $newduedate;
+    }
+
+    /**
+     * Get the active override of an extension type for a specific user from the marks transfer overrides table.
+     *
+     * @param string $extensiontype The extension type, e.g. EC, CDD.
+     * @param int $userid The Moodle user ID.
+     * @return mixed The active override record or false if not found.
+     */
+    protected function get_active_user_override(string $extensiontype, int $userid): mixed {
+        return extensionmanager::get_active_user_mt_overrides_by_mapid(
+            $this->sitsmappingid,
+            $this->get_id(),
+            $extensiontype,
+            $userid
+        );
     }
 
     /**
@@ -508,12 +540,7 @@ abstract class activity extends assessment {
      * @return mixed The active EC override record or false if not found.
      */
     protected function get_active_ec_override(int $userid): mixed {
-        return extensionmanager::get_active_user_mt_overrides_by_mapid(
-            $this->sitsmappingid,
-            $this->get_id(),
-            extensionmanager::EXTENSION_EC,
-            $userid
-        );
+        return $this->get_active_user_override(extensionmanager::EXTENSION_EC, $userid);
     }
 
     /**

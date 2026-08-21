@@ -20,6 +20,7 @@ use local_sitsgradepush\api\client;
 use local_sitsgradepush\api\irequest;
 use local_sitsgradepush\manager;
 use local_sitsgradepush\submission\submission;
+use sitsapiclient_easikit\requests\getcombinedduedate;
 use sitsapiclient_easikit\requests\getcomponentgrade;
 use sitsapiclient_easikit\requests\getmarkingschemes;
 use sitsapiclient_easikit\requests\getstudent;
@@ -62,6 +63,7 @@ class easikit extends client {
             manager::GET_STUDENT => new getstudent($data),
             manager::GET_STUDENTS => new getstudents($data),
             manager::GET_STUDENTS_V2 => new getstudentsv2($data),
+            manager::GET_COMBINED_DUE_DATE => new getcombinedduedate($data),
             manager::PUSH_SUBMISSION_LOG => new pushsubmissionlog($data, $submission),
             manager::GET_MARKING_SCHEMES => new getmarkingschemes(),
             default => null,

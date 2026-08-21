@@ -120,6 +120,7 @@
         <FIELD NAME="messageid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="AWS SQS Message ID"/>
         <FIELD NAME="studentcode" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Student code from message"/>
         <FIELD NAME="astcode" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Assessment type code from message"/>
+        <FIELD NAME="mabidentifier" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="MAB identifier from message, e.g. CCME0158A6UF-001"/>
         <FIELD NAME="eventtimestamp" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="AWS message timestamp"/>
         <FIELD NAME="eventtimeus" TYPE="int" LENGTH="18" NOTNULL="false" SEQUENCE="false" COMMENT="Event time of the message in microseconds since the epoch, used to order messages published within the same second"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Process status"/>
@@ -139,9 +140,11 @@
         <INDEX NAME="idx_queuename" UNIQUE="false" FIELDS="queuename"/>
         <INDEX NAME="idx_studentcode" UNIQUE="false" FIELDS="studentcode"/>
         <INDEX NAME="idx_astcode" UNIQUE="false" FIELDS="astcode"/>
+        <INDEX NAME="idx_mabidentifier" UNIQUE="false" FIELDS="mabidentifier"/>
         <INDEX NAME="idx_eventtimestamp" UNIQUE="false" FIELDS="eventtimestamp"/>
         <INDEX NAME="idx_queue_student_ast_ts" UNIQUE="false" FIELDS="queuename, studentcode, astcode, eventtimestamp"/>
         <INDEX NAME="idx_queue_student_ast_tsus" UNIQUE="false" FIELDS="queuename, studentcode, astcode, eventtimeus"/>
+        <INDEX NAME="idx_queue_student_mab_ts" UNIQUE="false" FIELDS="queuename, studentcode, mabidentifier, eventtimestamp"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_sitsgradepush_enrol" COMMENT="Store user enrolment events for assessment extension processing">

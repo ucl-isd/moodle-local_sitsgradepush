@@ -16,6 +16,7 @@
 
 namespace local_sitsgradepush\assessment;
 
+use local_sitsgradepush\extension\cdd;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extensionmanager;
 use mod_quiz\local\override_manager;
@@ -76,13 +77,13 @@ class quiz extends activity {
     }
 
     /**
-     * Delete applied EC override and restore original override if any.
+     * Delete an applied user override and restore the original override if any.
      *
      * @param \stdClass $mtsavedoverride - Override record saved in marks transfer overrides table.
      *
      * @return void
      */
-    public function delete_ec_override(\stdClass $mtsavedoverride): void {
+    public function delete_user_override(\stdClass $mtsavedoverride): void {
         global $DB;
 
         // Check if the override record saved in marks transfer overrides table exists.
@@ -144,44 +145,17 @@ class quiz extends activity {
      * @return void
      */
     protected function apply_ec_extension(ec $ec): void {
-        // Calculate the new due date.
-        $newduedate = $this->calculate_ec_new_duedate($ec);
+        $this->apply_user_date_extension($ec, extensionmanager::EXTENSION_EC);
+    }
 
-        // Pre-existing override.
-        $preexistingoverride = $this->get_override_record($ec->get_userid());
-
-        // If there is a pre-existing override, update it.
-        if (!empty($preexistingoverride)) {
-            $newoverride = clone $preexistingoverride;
-            $newoverride = (array)$newoverride;
-            $newoverride['timeclose'] = $newduedate;
-        } else {
-            $newoverride = [
-                'userid' => $ec->get_userid(),
-                'timeclose' => $newduedate,
-            ];
-        }
-
-        // Save the quiz's override.
-        $this->get_override_manager()->save_override($newoverride);
-
-        // Get the updated quiz's override record.
-        $quizoverride = $this->get_override_record($ec->get_userid());
-
-        // Get active EC override for the student if any using the helper method.
-        $mtoverride = $this->get_active_ec_override($ec->get_userid());
-
-        // Save override record in marks transfer overrides table.
-        $this->save_override(
-            extensionmanager::EXTENSION_EC,
-            $this->sitsmappingid,
-            $ec->get_userid(),
-            $mtoverride,
-            $quizoverride,
-            $preexistingoverride,
-            null,
-            $ec->get_latest_identifier() ?: null
-        );
+    /**
+     * Apply CDD extension to the quiz.
+     *
+     * @param cdd $cdd CDD extension object.
+     * @return void
+     */
+    protected function apply_cdd_extension(cdd $cdd): void {
+        $this->apply_user_date_extension($cdd, extensionmanager::EXTENSION_CDD);
     }
 
     /**
@@ -260,6 +234,54 @@ class quiz extends activity {
      */
     protected function get_assessment_sora_overrides(): array {
         return $this->find_assessment_raa_overrides('quiz_overrides', 'quiz', $this->sourceinstance->id);
+    }
+
+    /**
+     * Apply a user date extension of the given extension type to the quiz.
+     *
+     * @param ec $extension The extension.
+     * @param string $extensiontype The extension type, e.g. EC, CDD.
+     * @return void
+     */
+    private function apply_user_date_extension(ec $extension, string $extensiontype): void {
+        // Calculate the new due date.
+        $newduedate = $this->calculate_ec_new_duedate($extension);
+
+        // Pre-existing override.
+        $preexistingoverride = $this->get_override_record($extension->get_userid());
+
+        // If there is a pre-existing override, update it.
+        if (!empty($preexistingoverride)) {
+            $newoverride = clone $preexistingoverride;
+            $newoverride = (array)$newoverride;
+            $newoverride['timeclose'] = $newduedate;
+        } else {
+            $newoverride = [
+                'userid' => $extension->get_userid(),
+                'timeclose' => $newduedate,
+            ];
+        }
+
+        // Save the quiz's override.
+        $this->get_override_manager()->save_override($newoverride);
+
+        // Get the updated quiz's override record.
+        $quizoverride = $this->get_override_record($extension->get_userid());
+
+        // Get active override of the extension type for the student if any using the helper method.
+        $mtoverride = $this->get_active_user_override($extensiontype, $extension->get_userid());
+
+        // Save override record in marks transfer overrides table.
+        $this->save_override(
+            $extensiontype,
+            $this->sitsmappingid,
+            $extension->get_userid(),
+            $mtoverride,
+            $quizoverride,
+            $preexistingoverride,
+            null,
+            $extension->get_latest_identifier() ?: null
+        );
     }
 
     /**

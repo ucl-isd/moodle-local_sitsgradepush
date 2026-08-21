@@ -17,6 +17,7 @@
 namespace local_sitsgradepush\assessment;
 
 use cache;
+use local_sitsgradepush\extension\cdd;
 use local_sitsgradepush\extension\ec;
 use local_sitsgradepush\extensionmanager;
 use mod_lesson\event\group_override_created;
@@ -99,13 +100,13 @@ class lesson extends activity {
     }
 
     /**
-     * Delete applied EC override and restore original override if any.
+     * Delete an applied user override and restore the original override if any.
      *
      * @param \stdClass $mtsavedoverride - Override record saved in marks transfer overrides table.
      *
      * @return void
      */
-    public function delete_ec_override(\stdClass $mtsavedoverride): void {
+    public function delete_user_override(\stdClass $mtsavedoverride): void {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/lesson/locallib.php');
 
@@ -159,35 +160,17 @@ class lesson extends activity {
      * @return void
      */
     protected function apply_ec_extension(ec $ec): void {
-        global $CFG;
-        require_once($CFG->dirroot . '/mod/lesson/locallib.php');
+        $this->apply_user_date_extension($ec, extensionmanager::EXTENSION_EC);
+    }
 
-        // Calculate the new due date.
-        $newduedate = $this->calculate_ec_new_duedate($ec);
-
-        // Pre-existing override.
-        $preexistingoverride = $this->get_override_record($ec->get_userid());
-
-        // Override the lesson settings for user.
-        $this->override_deadline($newduedate, null, $ec->get_userid());
-
-        // Get the lesson override record.
-        $lessonoverride = $this->get_override_record($ec->get_userid());
-
-        // Get active EC override for the student if any.
-        $mtoverride = $this->get_active_ec_override($ec->get_userid());
-
-        // Save override record in marks transfer overrides table.
-        $this->save_override(
-            extensionmanager::EXTENSION_EC,
-            $this->sitsmappingid,
-            $ec->get_userid(),
-            $mtoverride,
-            $lessonoverride,
-            $preexistingoverride,
-            null,
-            $ec->get_latest_identifier() ?: null
-        );
+    /**
+     * Apply CDD extension to the lesson.
+     *
+     * @param cdd $cdd The CDD extension.
+     * @return void
+     */
+    protected function apply_cdd_extension(cdd $cdd): void {
+        $this->apply_user_date_extension($cdd, extensionmanager::EXTENSION_CDD);
     }
 
     /**
@@ -264,6 +247,45 @@ class lesson extends activity {
         $timelimit = $this->get_time_limit();
 
         return $timelimit ? min($timelimit, $lessonduration) : $lessonduration;
+    }
+
+    /**
+     * Apply a user date extension of the given extension type to the lesson.
+     *
+     * @param ec $extension The extension.
+     * @param string $extensiontype The extension type, e.g. EC, CDD.
+     * @return void
+     */
+    private function apply_user_date_extension(ec $extension, string $extensiontype): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/lesson/locallib.php');
+
+        // Calculate the new due date.
+        $newduedate = $this->calculate_ec_new_duedate($extension);
+
+        // Pre-existing override.
+        $preexistingoverride = $this->get_override_record($extension->get_userid());
+
+        // Override the lesson settings for user.
+        $this->override_deadline($newduedate, null, $extension->get_userid());
+
+        // Get the lesson override record.
+        $lessonoverride = $this->get_override_record($extension->get_userid());
+
+        // Get active override of the extension type for the student if any.
+        $mtoverride = $this->get_active_user_override($extensiontype, $extension->get_userid());
+
+        // Save override record in marks transfer overrides table.
+        $this->save_override(
+            $extensiontype,
+            $this->sitsmappingid,
+            $extension->get_userid(),
+            $mtoverride,
+            $lessonoverride,
+            $preexistingoverride,
+            null,
+            $extension->get_latest_identifier() ?: null
+        );
     }
 
     /**

@@ -52,7 +52,7 @@ class process_extensions_all_mappings extends adhoc_task {
 
         $data = $this->get_custom_data();
         $courseid = $data->courseid ?? 0;
-        $extensiontype = $data->extensiontype ?? 'both';
+        $extensiontype = $data->extensiontype ?? 'all';
         $lastprocessedid = $data->lastprocessedid ?? 0;
 
         $sql = "SELECT am.*, cg.mapcode, cg.mabseq, cg.astcode
@@ -83,12 +83,22 @@ class process_extensions_all_mappings extends adhoc_task {
 
                 $students = manager::get_manager()->get_students_from_sits($fullmapping, true, 2);
 
-                if ($extensiontype === 'raa' || $extensiontype === 'both') {
-                    extensionmanager::update_sora_for_mapping($fullmapping, $students);
+                // Process combined due date (CDD) extension first so EC and RAA are only applied
+                // to students not already handled by the combined due date.
+                $cddhandled = [];
+                if ($extensiontype === 'cdd' || $extensiontype === 'all') {
+                    $cddhandled = extensionmanager::update_cdd_for_mapping($fullmapping);
                 }
 
-                if ($extensiontype === 'ec' || $extensiontype === 'both') {
-                    extensionmanager::update_ec_for_mapping($fullmapping, $students);
+                // Exclude students handled by the combined due date from EC and RAA processing.
+                $remaining = extensionmanager::filter_out_cdd_handled_students($students, $cddhandled);
+
+                if ($extensiontype === 'raa' || $extensiontype === 'all') {
+                    extensionmanager::update_sora_for_mapping($fullmapping, $remaining);
+                }
+
+                if ($extensiontype === 'ec' || $extensiontype === 'all') {
+                    extensionmanager::update_ec_for_mapping($fullmapping, $remaining);
                 }
 
                 $lastid = $mapping->id;
@@ -127,11 +137,11 @@ class process_extensions_all_mappings extends adhoc_task {
      *
      * Overlap rules:
      * - Course scope overlaps if either is 0 (all courses) or both are the same course.
-     * - Extension type overlaps if either is "both" or both are the same type.
+     * - Extension type overlaps if either is "all" or both are the same type.
      * - A task is considered overlapping if both course scope and extension type overlap.
      *
      * @param int $courseid Course ID, 0 for all courses.
-     * @param string $extensiontype Extension type: "raa", "ec", or "both".
+     * @param string $extensiontype Extension type: "raa", "ec", "cdd", or "all".
      * @return bool
      */
     public static function adhoc_task_exists(int $courseid, string $extensiontype): bool {
@@ -154,7 +164,7 @@ class process_extensions_all_mappings extends adhoc_task {
             }
 
             $existingcourseid = (int)($data->courseid ?? 0);
-            $existingtype = $data->extensiontype ?? 'both';
+            $existingtype = $data->extensiontype ?? 'all';
 
             // Check course scope overlap.
             $courseoverlap = ($existingcourseid === 0
@@ -162,8 +172,8 @@ class process_extensions_all_mappings extends adhoc_task {
                 || $existingcourseid === $courseid);
 
             // Check extension type overlap.
-            $typeoverlap = ($existingtype === 'both'
-                || $extensiontype === 'both'
+            $typeoverlap = ($existingtype === 'all'
+                || $extensiontype === 'all'
                 || $existingtype === $extensiontype);
 
             if ($courseoverlap && $typeoverlap) {
