@@ -74,7 +74,7 @@ class coursework extends submission {
         // We use authorid to identify the user being graded, since userid may be the user who submitted on their behalf.
         $submissions = $DB->get_records_sql(
             "SELECT id, userid as submittedby, authorid as userid, timecreated, timemodified, finalisedstatus,
-                    manualsrscode, createdby, lastupdatedby, allocatableid, allocatableuser, allocatablegroup,
+                    manualsrscode, createdby, lastupdatedby, allocatableid,
                     allocatabletype, firstpublished, lastpublished, timesubmitted
                     FROM {coursework_submissions}
                     WHERE courseworkid = :courseworkid AND authorid = :gradeduserid",
