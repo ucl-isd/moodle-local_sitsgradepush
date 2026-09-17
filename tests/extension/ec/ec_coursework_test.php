@@ -78,7 +78,6 @@ final class ec_coursework_test extends ec_base {
             'allocatableid' => $this->student1->id,
             'extended_deadline' => strtotime('2025-02-20 12:00'),
             'allocatabletype' => 'user',
-            'allocatableuser' => $this->student1->id,
             'createdbyid' => 2,
             'timecreated' => $this->clock->time(),
         ];

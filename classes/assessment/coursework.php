@@ -402,7 +402,7 @@ class coursework extends activity {
         } else {
             // Create a new override.
             $override = new stdClass();
-            $override->allocatableid = $override->allocatableuser = $userid;
+            $override->allocatableid = $userid;
             $override->allocatabletype = 'user';
             $override->courseworkid = $this->get_source_instance()->id;
             $override->extended_deadline = $newduedate;
