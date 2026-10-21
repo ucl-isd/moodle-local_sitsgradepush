@@ -107,6 +107,9 @@ class pushrecord {
     /** @var bool Is submission log pushed */
     public bool $issublogpushed = false;
 
+    /** @var bool Student is in SITS for the other mapping type, e.g. a resit student on a main mapping */
+    public bool $wrongmappingtype = false;
+
     /** @var bool Is marks updated after transfer */
     public bool $marksupdatedaftertransfer = false;
 
@@ -179,10 +182,12 @@ class pushrecord {
         }
 
         if ($mapping->reassessment == 1) {
-            return $student['assessment']['resit_number'] > 0;
+            $valid = $student['assessment']['resit_number'] > 0;
         } else {
-            return $student['assessment']['resit_number'] == 0;
+            $valid = $student['assessment']['resit_number'] == 0;
         }
+        $this->wrongmappingtype = !$valid;
+        return $valid;
     }
 
     /**
@@ -191,7 +196,8 @@ class pushrecord {
      * @return bool
      */
     public function should_transfer_mark(): bool {
-        return $this->marks != '-' && !($this->isgradepushed && $this->lastgradepushresult === 'success');
+        return $this->marks != '-' && !$this->wrongmappingtype &&
+            !($this->isgradepushed && $this->lastgradepushresult === 'success');
     }
 
     /**
@@ -201,7 +207,7 @@ class pushrecord {
      */
     public function is_non_submitted(): bool {
         // Student has not submitted, marks is not given and grade is not pushed successfully yet.
-        return $this->marks == '-' && $this->handindatetime == '-' &&
+        return $this->marks == '-' && $this->handindatetime == '-' && !$this->wrongmappingtype &&
             !($this->isgradepushed && $this->lastgradepushresult === 'success');
     }
 

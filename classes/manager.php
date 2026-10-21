@@ -515,14 +515,8 @@ class manager {
             $DB->delete_records(self::TABLE_ASSESSMENT_MAPPING, ['id' => $existingmapping->id]);
             assesstype::update_assess_type($existingmapping, assesstype::ACTION_UNLOCK);
 
-            // Delete any SORA overrides for the deleted mapping.
-            extensionmanager::delete_sora_overrides($existingmapping);
-
-            // Delete EC overrides for the deleted mapping.
-            extensionmanager::delete_ec_overrides($existingmapping->id);
-
-            // Delete CDD overrides for the deleted mapping.
-            extensionmanager::delete_cdd_overrides($existingmapping->id);
+            // Remove the overrides of the deleted mapping.
+            extensionmanager::remove_mapping_overrides($existingmapping);
 
             // Clear mapping MAB info cache.
             $this->clear_mapping_mab_info_cache($existingmapping->id);
@@ -1044,6 +1038,34 @@ class manager {
     }
 
     /**
+     * Get the mappings each student has marks transferred successfully for.
+     *
+     * @param array $mappingids Assessment mapping IDs
+     * @return array Mapping IDs keyed by user ID
+     */
+    public function get_mark_transferred_mappings(array $mappingids): array {
+        global $DB;
+
+        if (empty($mappingids)) {
+            return [];
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($mappingids, SQL_PARAMS_NAMED);
+        $params['type'] = self::PUSH_GRADE;
+        $sql = "SELECT DISTINCT userid, assessmentmappingid
+                FROM {" . self::TABLE_TRANSFER_LOG . "}
+                WHERE assessmentmappingid $insql AND type = :type AND errlogid IS NULL";
+
+        $result = [];
+        $records = $DB->get_recordset_sql($sql, $params);
+        foreach ($records as $record) {
+            $result[$record->userid][] = $record->assessmentmappingid;
+        }
+        $records->close();
+        return $result;
+    }
+
+    /**
      * Get the assessment data.
      *
      * @param string $sourcetype
@@ -1064,6 +1086,7 @@ class manager {
 
         $assessmentdata = [];
         $assessmentdata['studentsnotrecognized'] = [];
+        $matched = [];
 
         try {
             $students = $assessment->get_all_participants();
@@ -1076,6 +1099,9 @@ class manager {
         if (empty($mappings)) {
             return [];
         }
+
+        // Students with marks transferred for a mapping are kept in that mapping only.
+        $transferredmappings = $this->get_mark_transferred_mappings(array_column($mappings, 'id'));
 
         // Only process the mapping that matches the assessment mapping ID if assessmentmappingid is given.
         if ($assessmentmappingid) {
@@ -1095,6 +1121,9 @@ class manager {
             $mapping->students = [];
             $mapping->errorgettingstudents = 0;
 
+            // Re-assessment marks can be transferred in any academic year, main assessment marks only in the current one.
+            $mapping->transferable = $mapping->reassessment == 1 || $this->is_current_academic_year_activity($mapping->courseid);
+
             try {
                 $studentsfromsits[$mabkey] = array_column($this->get_students_from_sits($mapping), null, 'code');
             } catch (\moodle_exception $e) {
@@ -1104,19 +1133,23 @@ class manager {
 
             // Students here is all the participants in that assessment.
             foreach ($students as $key => $student) {
+                // Skip students whose marks were transferred for other mappings only.
+                if (isset($transferredmappings[$student->id]) && !in_array($mapping->id, $transferredmappings[$student->id])) {
+                    continue;
+                }
                 $studentrecord = new pushrecord($student, $assessment, $mapping);
                 // Add participants who have push records of this mapping or
                 // are in the studentsfromsits array and valid to the mapping type, e.g. main or re-assessment.
                 $validrecord = $studentrecord->check_record_from_sits($mapping, $studentsfromsits[$mabkey]);
                 if ($studentrecord->componentgrade == $mabkey || $validrecord) {
                     $mapping->students[] = $studentrecord;
-                    if ($studentrecord->should_transfer_mark()) {
+                    if ($mapping->transferable && $studentrecord->should_transfer_mark()) {
                         $mapping->markscount++;
                     }
-                    if ($studentrecord->is_non_submitted()) {
+                    if ($mapping->transferable && $studentrecord->is_non_submitted()) {
                         $mapping->nonsubmittedcount++;
                     }
-                    unset($students[$key]);
+                    $matched[$key] = true;
                 }
             }
 
@@ -1127,7 +1160,7 @@ class manager {
         $invalidstudents = new \stdClass();
         $invalidstudents->formattedname = get_string('invalidstudents', 'local_sitsgradepush');
         $invalidstudents->students = [];
-        foreach ($students as $student) {
+        foreach (array_diff_key($students, $matched) as $student) {
             $invalidstudents->students[] = new pushrecord($student, $assessment);
         }
         $assessmentdata['invalidstudents'] = $invalidstudents;
@@ -1391,9 +1424,11 @@ class manager {
         // Get existing mappings for this activity.
         if ($existingmappings = $this->get_assessment_mappings($assessment)) {
             // Make sure it does not map to another component grade with same map code and period slot code.
+            // Only the same component grade can be mapped again, for the other marks transfer type.
             foreach ($existingmappings as $existingmapping) {
                 if (
-                    $existingmapping->mapcode == $componentgrade->mapcode
+                    $existingmapping->componentgradeid != $componentgradeid
+                    && $existingmapping->mapcode == $componentgrade->mapcode
                     && $existingmapping->periodslotcode == $componentgrade->periodslotcode
                 ) {
                     throw new \moodle_exception('error:same_map_code_for_same_activity', 'local_sitsgradepush');
@@ -1674,14 +1709,8 @@ class manager {
         // Unlock the Moodle assessment in the local_assess_type plugin.
         assesstype::update_assess_type($mapping, assesstype::ACTION_UNLOCK);
 
-        // Delete any SORA overrides for the deleted mapping.
-        extensionmanager::delete_sora_overrides($mapping);
-
-        // Delete any EC overrides for the deleted mapping.
-        extensionmanager::delete_ec_overrides($mappingid);
-
-        // Delete any CDD overrides for the deleted mapping.
-        extensionmanager::delete_cdd_overrides($mappingid);
+        // Remove the overrides of the deleted mapping.
+        extensionmanager::remove_mapping_overrides($mapping);
 
         // Clear mapping MAB info cache.
         $this->clear_mapping_mab_info_cache($mappingid);

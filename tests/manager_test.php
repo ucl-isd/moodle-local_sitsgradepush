@@ -20,6 +20,8 @@ use assign;
 use cache;
 use context_course;
 use context_module;
+use core\clock;
+use core\di;
 use local_sitsgradepush\api\client;
 use local_sitsgradepush\api\client_factory;
 use local_sitsgradepush\api\irequest;
@@ -591,6 +593,59 @@ final class manager_test extends base_test_class {
     }
 
     /**
+     * Test an activity can be mapped to the main assessment and the re-assessment of the same MAB only.
+     *
+     * @covers \local_sitsgradepush\manager::save_assessment_mapping
+     * @covers \local_sitsgradepush\manager::validate_component_grade
+     * @covers \local_sitsgradepush\assessment\assessment::can_map_to_mab
+     * @return void
+     */
+    public function test_save_assessment_mapping_main_and_reassessment(): void {
+        global $DB;
+
+        $this->setup_testing_environment();
+        $mab2 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '002']);
+        $mab3 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '003']);
+        $mab4 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'MSIN0047A7PF', 'mabseq' => '002']);
+        $main = $this->markstransfertype['main'];
+        $reassess = $this->markstransfertype['reassessment'];
+
+        // Map the assignment to the main assessment.
+        $this->save_mapping($this->mab1->id, $this->assign1->cmid, $main);
+        $assessment = assessmentfactory::get_assessment('mod', $this->assign1->cmid);
+
+        // Another MAB with the same map code and period slot is not allowed for either mapping type.
+        foreach ([$main, $reassess] as $type) {
+            foreach ([$mab2, $mab3] as $mab) {
+                $this->assertFalse($assessment->can_map_to_mab($mab->id, $type));
+                try {
+                    $this->save_mapping($mab->id, $this->assign1->cmid, $type);
+                    $this->fail('Exception expected for the same map code with a different MAB.');
+                } catch (\moodle_exception $e) {
+                    $this->assertEquals('error:same_map_code_for_same_activity', $e->errorcode);
+                }
+            }
+        }
+
+        // A MAB of another module delivery is allowed for the re-assessment.
+        $this->assertTrue($assessment->can_map_to_mab($mab4->id, $reassess));
+
+        // The same MAB is allowed for the re-assessment only.
+        $this->assertFalse($assessment->can_map_to_mab($this->mab1->id, $main));
+        $this->assertTrue($assessment->can_map_to_mab($this->mab1->id, $reassess));
+        $this->save_mapping($this->mab1->id, $this->assign1->cmid, $reassess);
+        $params = ['sourcetype' => 'mod', 'sourceid' => $this->assign1->cmid];
+        $mappings = $DB->get_records(manager::TABLE_ASSESSMENT_MAPPING, $params);
+        $this->assertEqualsCanonicalizing([$main, $reassess], array_column($mappings, 'reassessment'));
+        $this->assertEquals([$this->mab1->id], array_unique(array_column($mappings, 'componentgradeid')));
+
+        // Mapping the same MAB again for the same mapping type is still not allowed.
+        $this->assertFalse($assessment->can_map_to_mab($this->mab1->id, $reassess));
+        $this->expectExceptionMessage(get_string('error:no_update_for_same_mapping', 'local_sitsgradepush'));
+        $this->save_mapping($this->mab1->id, $this->assign1->cmid, $main);
+    }
+
+    /**
      * Test the get api client list method.
      *
      * @covers \local_sitsgradepush\manager::get_api_client_list
@@ -1023,6 +1078,140 @@ final class manager_test extends base_test_class {
 
         // Test array is returned if no mapping id is provided.
         $this->assertIsArray($this->manager->get_assessment_data('mod', $this->assign1->cmid));
+    }
+
+    /**
+     * Test the get mark transferred mappings method.
+     *
+     * @covers \local_sitsgradepush\manager::get_mark_transferred_mappings
+     * @return void
+     */
+    public function test_get_mark_transferred_mappings(): void {
+        // Test empty mapping ids returns an empty array.
+        $this->assertSame([], $this->manager->get_mark_transferred_mappings([]));
+
+        // Successful mark transfers.
+        $this->insert_transfer_log(1001, $this->student1->id);
+        $this->insert_transfer_log(1002, $this->student1->id);
+
+        // Failed mark transfer and successful submission log transfer are ignored.
+        $this->insert_transfer_log(1001, $this->student2->id, manager::PUSH_GRADE, 5);
+        $this->insert_transfer_log(1001, $this->student2->id, manager::PUSH_SUBMISSION_LOG);
+
+        // Mark transfer for a mapping not asked for is ignored.
+        $this->insert_transfer_log(1003, $this->teacher1->id);
+
+        $result = $this->manager->get_mark_transferred_mappings([1001, 1002]);
+        $this->assertEquals([$this->student1->id], array_keys($result));
+        $mappingids = $result[$this->student1->id];
+        sort($mappingids);
+        $this->assertEquals([1001, 1002], $mappingids);
+    }
+
+    /**
+     * Test a student with marks transferred stays in that mapping only when mapped to main and re-assessment.
+     *
+     * @covers \local_sitsgradepush\manager::get_assessment_data
+     * @return void
+     */
+    public function test_get_assessment_data_keeps_transferred_student_in_its_mapping(): void {
+        // Map the assignment to the main assessment.
+        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
+        $mainmappingid = $this->mappingid1;
+
+        // Student 1 becomes a resit student in SITS.
+        $this->set_sits_student_resit_number(1);
+
+        // Map the same assignment to the re-assessment of the same MAB.
+        $reassessmappingid = $this->save_mapping($this->mab1->id, $this->assign1->cmid, $this->markstransfertype['reassessment']);
+
+        // Without marks transferred, student 1 is under the re-assessment mapping only.
+        $data = $this->manager->get_assessment_data('mod', $this->assign1->cmid);
+        $this->assertNotContains($this->student1->id, array_column($data['mappings'][$mainmappingid]->students, 'userid'));
+        $this->assertContains($this->student1->id, array_column($data['mappings'][$reassessmappingid]->students, 'userid'));
+
+        // Marks of student 1 were transferred for the main mapping before becoming a resit student.
+        $this->insert_transfer_log($mainmappingid, $this->student1->id);
+
+        // Student 1 is now under the main mapping only and is not an invalid student.
+        $data = $this->manager->get_assessment_data('mod', $this->assign1->cmid);
+        $this->assertContains($this->student1->id, array_column($data['mappings'][$mainmappingid]->students, 'userid'));
+        $this->assertNotContains($this->student1->id, array_column($data['mappings'][$reassessmappingid]->students, 'userid'));
+        $this->assertNotContains($this->student1->id, array_column($data['invalidstudents']->students, 'userid'));
+    }
+
+    /**
+     * Test only re-assessment marks can be transferred for a course not in the current academic year.
+     *
+     * @covers \local_sitsgradepush\manager::get_assessment_data
+     * @return void
+     */
+    public function test_get_assessment_data_transferable_per_mapping(): void {
+        // Map the assignment to the main assessment and the re-assessment.
+        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
+        $mainmappingid = $this->mappingid1;
+        $reassessmappingid = $this->save_mapping($this->mab1->id, $this->assign1->cmid, $this->markstransfertype['reassessment']);
+
+        // Both mappings are transferable in the current academic year.
+        $data = $this->manager->get_assessment_data('mod', $this->assign1->cmid);
+        $this->assertTrue($data['mappings'][$mainmappingid]->transferable);
+        $this->assertTrue($data['mappings'][$reassessmappingid]->transferable);
+        $this->assertEquals(1, $data['mappings'][$mainmappingid]->markscount);
+
+        // The course is no longer in the current academic year.
+        set_config('late_summer_assessment_end_' . date('Y'), date('Y-m-d', strtotime('-1 year')), 'block_lifecycle');
+
+        // Only the re-assessment mapping is transferable and the main mapping has no marks to transfer.
+        $data = $this->manager->get_assessment_data('mod', $this->assign1->cmid);
+        $this->assertFalse($data['mappings'][$mainmappingid]->transferable);
+        $this->assertTrue($data['mappings'][$reassessmappingid]->transferable);
+        $this->assertEquals(0, $data['mappings'][$mainmappingid]->markscount);
+
+        // Student 1 is still listed under the main mapping, only not counted for transfer.
+        // The student is not dropped to the invalid students list, so the dashboard still shows the student under the
+        // main mapping with nothing to transfer.
+        $this->assertContains($this->student1->id, array_column($data['mappings'][$mainmappingid]->students, 'userid'));
+    }
+
+    /**
+     * Test the push task skips students in SITS for the other mapping type and mappings not transferable.
+     *
+     * @covers \local_sitsgradepush\taskmanager::run_task
+     * @return void
+     */
+    public function test_run_task_skips_students_and_mappings_not_transferable(): void {
+        global $DB, $USER;
+
+        // Map the assignment to the main assessment.
+        $this->setup_testing_environment(assessmentfactory::get_assessment('mod', $this->assign1->cmid));
+        $mainmappingid = $this->mappingid1;
+
+        // A failed mark transfer keeps student 1 in the main mapping.
+        $this->insert_transfer_log($mainmappingid, $this->student1->id, manager::PUSH_GRADE, 5);
+
+        // Student 1 becomes a resit student in SITS.
+        $this->set_sits_student_resit_number(1);
+        $taskid = $DB->insert_record('local_sitsgradepush_tasks', [
+            'userid' => $USER->id,
+            'timescheduled' => di::get(clock::class)->time(),
+            'assessmentmappingid' => $mainmappingid,
+        ]);
+
+        // Student 1 is not transferred for the main mapping and the task completes.
+        $this->expectOutputRegex('/Completed push task/');
+        taskmanager::run_task($taskid);
+        $this->assertEquals(1, $DB->count_records(manager::TABLE_TRANSFER_LOG, ['assessmentmappingid' => $mainmappingid]));
+        $task = $DB->get_record('local_sitsgradepush_tasks', ['id' => $taskid]);
+        $this->assertEquals(100, $task->progress);
+        $this->assertEquals(taskmanager::PUSH_TASK_STATUS_COMPLETED, $task->status);
+
+        // Student 1 is valid for the main mapping again, but the course is no longer in the current academic year.
+        $this->set_sits_student_resit_number(0);
+        set_config('late_summer_assessment_end_' . date('Y'), date('Y-m-d', strtotime('-1 year')), 'block_lifecycle');
+
+        // Nothing is transferred for the main mapping of a past course.
+        taskmanager::run_task($taskid);
+        $this->assertEquals(1, $DB->count_records(manager::TABLE_TRANSFER_LOG, ['assessmentmappingid' => $mainmappingid]));
     }
 
     /**
@@ -1716,22 +1905,7 @@ final class manager_test extends base_test_class {
         $this->mab1 = $DB->get_record('local_sitsgradepush_mab', ['mapcode' => 'LAWS0024A6UF', 'mabseq' => '001']);
 
         // Set the return student data from SITS.
-        $rseq = $reassess == 1 ? str_pad($reassess, 3, '0', STR_PAD_LEFT) : '0';
-        $students = [
-          [
-            'code' => 12345678,
-            'spr_code' => '12345678/1',
-            'forename' => 'Test',
-            'surname' => 'Student',
-            'assessment' => [
-              'identifier' => '12345678_1-2023-T1_2-' . $rseq,
-              'resit_number' => $reassess,
-            ],
-          ],
-        ];
-        $apiclient = $this->get_apiclient_for_testing(false, $students);
-        tests_data_provider::set_protected_property($this->manager, 'apiclient', $apiclient);
-        $this->manager->get_students_from_sits($this->mab1);
+        $this->set_sits_student_resit_number($reassess);
 
         if (!is_null($assessment)) {
             // Map the component grade to the assignment.
@@ -1745,6 +1919,76 @@ final class manager_test extends base_test_class {
             // Set assessment mapping.
             $this->assessmentmapping1 = $this->manager->get_assessment_mappings($assessment, $this->mab1->id);
         }
+    }
+
+    /**
+     * Map an activity to a component grade.
+     *
+     * @param int $componentgradeid Component grade id.
+     * @param int $cmid Course module id.
+     * @param int $reassessment Mapping is re-assessment or not.
+     * @return int Mapping id.
+     */
+    private function save_mapping(int $componentgradeid, int $cmid, int $reassessment): int {
+        return $this->manager->save_assessment_mapping((object)[
+            'componentgradeid' => $componentgradeid,
+            'sourcetype' => 'mod',
+            'sourceid' => $cmid,
+            'reassessment' => $reassessment,
+        ]);
+    }
+
+    /**
+     * Set the resit number of student 1 in the SITS students of component grade 1.
+     *
+     * @param int $resitnumber Resit number.
+     * @return void
+     */
+    private function set_sits_student_resit_number(int $resitnumber): void {
+        $students = [
+            [
+                'code' => 12345678,
+                'spr_code' => '12345678/1',
+                'forename' => 'Test',
+                'surname' => 'Student',
+                'assessment' => [
+                    'identifier' => '12345678_1-2023-T1_2-' . str_pad($resitnumber, 3, '0', STR_PAD_LEFT),
+                    'resit_number' => $resitnumber,
+                ],
+            ],
+        ];
+        $apiclient = $this->get_apiclient_for_testing(false, $students);
+        tests_data_provider::set_protected_property($this->manager, 'apiclient', $apiclient);
+        $this->manager->get_students_from_sits($this->mab1, true);
+    }
+
+    /**
+     * Insert a transfer log.
+     *
+     * @param int $mappingid Assessment mapping id.
+     * @param int $userid User id.
+     * @param string $type Transfer type.
+     * @param int|null $errlogid Error log id, null for a successful transfer.
+     * @return void
+     */
+    private function insert_transfer_log(
+        int $mappingid,
+        int $userid,
+        string $type = manager::PUSH_GRADE,
+        ?int $errlogid = null
+    ): void {
+        global $DB, $USER;
+
+        $DB->insert_record(manager::TABLE_TRANSFER_LOG, (object)[
+            'type' => $type,
+            'userid' => $userid,
+            'assessmentmappingid' => $mappingid,
+            'requestbody' => '{"actual_mark":"80.00000","actual_grade":""}',
+            'response' => json_encode(['code' => $errlogid ? '-1' : '0', 'message' => 'Test']),
+            'usermodified' => $USER->id,
+            'errlogid' => $errlogid,
+            'timecreated' => di::get(clock::class)->time(),
+        ]);
     }
 
     /**

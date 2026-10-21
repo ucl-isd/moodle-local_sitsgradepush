@@ -978,5 +978,30 @@ function xmldb_local_sitsgradepush_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026081800, 'local', 'sitsgradepush');
     }
 
+    if ($oldversion < 2026100600) {
+        // Allow one source to map to the same component grade for main and reassessment.
+        $table = new xmldb_table('local_sitsgradepush_mapping');
+        $index = new xmldb_index('idx_sid_stype_cid', XMLDB_INDEX_UNIQUE, ['sourceid', 'sourcetype', 'componentgradeid']);
+
+        // Conditionally launch drop index idx_sid_stype_cid.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        $index = new xmldb_index(
+            'idx_sid_stype_cid_re',
+            XMLDB_INDEX_UNIQUE,
+            ['sourceid', 'sourcetype', 'componentgradeid', 'reassessment']
+        );
+
+        // Conditionally launch add index idx_sid_stype_cid_re.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Sitsgradepush savepoint reached.
+        upgrade_plugin_savepoint(true, 2026100600, 'local', 'sitsgradepush');
+    }
+
     return true;
 }

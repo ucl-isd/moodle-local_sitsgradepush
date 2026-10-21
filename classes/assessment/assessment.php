@@ -175,15 +175,14 @@ abstract class assessment implements iassessment {
         // Check if the mab is valid for a new mapping if existing mappings are found.
         if (!empty($mappings)) {
             foreach ($mappings as $mapping) {
-                // An assessment can only map to one marks transfer type, i.e. normal or re-assessment.
-                if ($mapping->reassessment != $reassess) {
-                    return false;
-                }
-                // Check this assessment does not map to the same mab.
+                // The same mab can be mapped once for each marks transfer type.
                 if ($mapping->componentgradeid == $mab->id) {
-                    return false;
+                    if ($mapping->reassessment == $reassess) {
+                        return false;
+                    }
+                    continue;
                 }
-                // Check this assessment does not map to a mab that has the same map code and period slot code.
+                // Check this assessment does not map to another mab that has the same map code and period slot code.
                 if (
                     $mapping->mapcode == $mab->mapcode
                     && $mapping->periodslotcode == $mab->periodslotcode

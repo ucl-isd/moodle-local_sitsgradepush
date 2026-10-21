@@ -85,7 +85,8 @@ class taskmanager {
                 $assessmentmapping->id
             )
         ) {
-            if (!empty($mapping->students)) {
+            // Skip if marks transfer is not allowed for the mapping, e.g. main assessment of a past course.
+            if (!empty($mapping->students) && $mapping->transferable) {
                 // Number of students in the mapping.
                 $numberofstudents = count($mapping->students);
 
@@ -96,8 +97,11 @@ class taskmanager {
                 $i = 0;
                 // Push mark and submission log for each student in the mapping.
                 foreach ($mapping->students as $student) {
-                    $manager->push_grade_to_sits($mapping, $student->userid, $task);
-                    $manager->push_submission_log_to_sits($mapping, $student->userid, $task->id);
+                    // Skip students who are in SITS for the other mapping type.
+                    if (!$student->wrongmappingtype) {
+                        $manager->push_grade_to_sits($mapping, $student->userid, $task);
+                        $manager->push_submission_log_to_sits($mapping, $student->userid, $task->id);
+                    }
                     $i++;
 
                     // Calculate progress.
