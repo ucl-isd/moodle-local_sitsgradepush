@@ -16,9 +16,11 @@
 
 namespace local_sitsgradepush;
 
+use core\task\manager as coretaskmanager;
 use local_sitsgradepush\extension\cdd;
 use local_sitsgradepush\extension\cdd\cdd_base;
 use local_sitsgradepush\extension\ec;
+use local_sitsgradepush\task\process_extensions_new_mapping;
 
 defined('MOODLE_INTERNAL') || die();
 global $CFG;
@@ -183,6 +185,53 @@ final class extensionmanager_test extends cdd_base {
             'extensiontype' => extensionmanager::EXTENSION_EC,
         ]);
         $this->assertEmpty($ecbackup->restored_by);
+    }
+
+    /**
+     * Test a student keeps one combined due date override when the activity is mapped to the main assessment
+     * and the re-assessment of the same MAB, and it is restored only when the last mapping is removed.
+     *
+     * @covers \local_sitsgradepush\extensionmanager::remove_mapping_overrides
+     * @covers \local_sitsgradepush\extensionmanager::take_over_same_mab_overrides
+     * @return void
+     */
+    public function test_same_mab_mappings_share_cdd_override(): void {
+        global $DB;
+        $this->setAdminUser();
+
+        // Map the assignment to the main assessment and the re-assessment of the same MAB.
+        $activity = $this->setup_common_test_data();
+        $mainmapping = $this->get_mapping();
+        $reassessmappingid = $this->insert_mapping($mainmapping->componentgradeid, $this->course1->id, $activity, 'assign', 1);
+        $DB->set_field(manager::TABLE_ASSESSMENT_MAPPING, 'enableextension', 1);
+        $mappings = $DB->get_records(manager::TABLE_ASSESSMENT_MAPPING, null, 'id');
+
+        // Apply the combined due date for student2 through both mappings.
+        $cdd = new cdd();
+        $cddrecord = tests_data_provider::get_cdd_api_record();
+        $cddrecord['student_programme_route_code'] = '87654321/1';
+        $cdd->set_properties_from_cdd_api($cddrecord);
+        $cdd->process_extension(array_values($mappings));
+
+        // One active record, taken over by the mapping processed last.
+        $conditions = ['userid' => $this->student2->id, 'extensiontype' => extensionmanager::EXTENSION_CDD];
+        $records = $DB->get_records('local_sitsgradepush_overrides', $conditions);
+        $this->assertCount(1, $records);
+        $this->assertEquals($reassessmappingid, reset($records)->mapid);
+
+        // Remove the re-assessment mapping, the override is handed over to the main mapping and kept.
+        manager::get_manager()->remove_mapping($this->course1->id, $reassessmappingid);
+        $record = $DB->get_record('local_sitsgradepush_overrides', $conditions);
+        $this->assertEquals($this->mappingid, $record->mapid);
+        $this->assertEmpty($record->restored_by);
+        $this->assertNotEmpty($DB->get_record('assign_overrides', ['assignid' => $activity->id, 'userid' => $this->student2->id]));
+        $this->assertEmpty(coretaskmanager::get_adhoc_tasks(process_extensions_new_mapping::class));
+
+        // Remove the main mapping, the last one, the override is restored.
+        manager::get_manager()->remove_mapping($this->course1->id, $this->mappingid);
+        $record = $DB->get_record('local_sitsgradepush_overrides', $conditions);
+        $this->assertNotEmpty($record->restored_by);
+        $this->assertFalse($DB->get_record('assign_overrides', ['assignid' => $activity->id, 'userid' => $this->student2->id]));
     }
 
     /**

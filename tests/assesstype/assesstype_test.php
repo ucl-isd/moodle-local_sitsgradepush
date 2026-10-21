@@ -338,6 +338,37 @@ final class assesstype_test extends \advanced_testcase {
     }
 
     /**
+     * Test an assessment mapped to main and re-assessment stays locked until both mappings are removed.
+     *
+     * @covers \local_sitsgradepush\assesstype::update_assess_type
+     */
+    public function test_unlock_kept_while_other_mapping_exists(): void {
+        $manager = manager::get_manager();
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $this->course->id]);
+        $mab = array_values($this->mabs)[1];
+
+        // Map the assignment to the main assessment and the re-assessment of the same MAB.
+        $mappingids = [];
+        foreach ([0, 1] as $reassessment) {
+            $mappingids[] = $manager->save_assessment_mapping((object)[
+                'componentgradeid' => $mab->id,
+                'sourcetype' => assessmentfactory::SOURCETYPE_MOD,
+                'sourceid' => $assign->cmid,
+                'reassessment' => $reassessment,
+            ]);
+        }
+        $this->assert_lock_status(0, $assign->cmid);
+
+        // Removing one mapping keeps the assignment locked.
+        $manager->remove_mapping($this->course->id, $mappingids[0]);
+        $this->assert_lock_status(0, $assign->cmid);
+
+        // Removing the last mapping unlocks the assignment.
+        $manager->remove_mapping($this->course->id, $mappingids[1]);
+        $this->assert_lock_status(0, $assign->cmid, false);
+    }
+
+    /**
      * Test grade item updated event handler.
      *
      * @covers \local_sitsgradepush\assesstype::grade_item_updated

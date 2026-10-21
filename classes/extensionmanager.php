@@ -303,6 +303,73 @@ class extensionmanager {
     }
 
     /**
+     * Remove the overrides of a deleted mapping.
+     * If the activity is still mapped to the same MAB by the other mapping type, the overrides are kept
+     * and handed over to that mapping, so they are restored only when the last mapping is removed.
+     *
+     * @param \stdClass $deletedmapping
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function remove_mapping_overrides(\stdClass $deletedmapping): void {
+        global $DB;
+
+        // Find the other mapping type from the same activity to the same MAB.
+        $othermappingid = $DB->get_field(manager::TABLE_ASSESSMENT_MAPPING, 'id', [
+            'sourcetype' => $deletedmapping->sourcetype,
+            'sourceid' => $deletedmapping->sourceid,
+            'componentgradeid' => $deletedmapping->componentgradeid,
+        ]);
+
+        // Hand the overrides over to the other mapping, students keep their overrides.
+        if ($othermappingid) {
+            $DB->set_field(self::TABLE_OVERRIDES, 'mapid', $othermappingid, ['mapid' => $deletedmapping->id]);
+            return;
+        }
+
+        // This was the last mapping to the MAB, delete the overrides and restore the original ones.
+        self::delete_sora_overrides($deletedmapping);
+        self::delete_ec_overrides($deletedmapping->id);
+        self::delete_cdd_overrides($deletedmapping->id);
+    }
+
+    /**
+     * Take over a student's active overrides from the other mapping type to the same activity and MAB,
+     * so the student keeps a single override record holding the original override backup.
+     *
+     * @param \stdClass $mapping The mapping being processed.
+     * @param int $userid Moodle user ID.
+     * @return void
+     * @throws \dml_exception
+     */
+    public static function take_over_same_mab_overrides(\stdClass $mapping, int $userid): void {
+        global $DB;
+
+        // Move the student's active overrides of the other mappings to the same activity and MAB to this mapping.
+        $sql = "UPDATE {" . self::TABLE_OVERRIDES . "}
+                SET mapid = :mapid
+                WHERE cmid = :cmid
+                AND userid = :userid
+                AND restored_by IS NULL
+                AND mapid IN (
+                    SELECT other.id
+                    FROM {" . manager::TABLE_ASSESSMENT_MAPPING . "} other
+                    JOIN {" . manager::TABLE_ASSESSMENT_MAPPING . "} am
+                    ON am.sourcetype = other.sourcetype
+                    AND am.sourceid = other.sourceid
+                    AND am.componentgradeid = other.componentgradeid
+                    WHERE am.id = :thismapid
+                    AND other.id <> am.id
+                )";
+        $DB->execute($sql, [
+            'mapid' => $mapping->id,
+            'cmid' => $mapping->sourceid,
+            'userid' => $userid,
+            'thismapid' => $mapping->id,
+        ]);
+    }
+
+    /**
      * Check if the extension is eligible for the Moodle source.
      *
      * @param assessment $assessment
