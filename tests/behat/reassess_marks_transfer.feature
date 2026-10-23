@@ -253,3 +253,15 @@ Feature: Marks transfer from Moodle to SITS for re-assessment
     And I run all adhoc tasks
     And I reload the page
     Then I should see "0" marks to transfer for "Coursework 4000 word written case studies"
+
+  @javascript
+  Scenario: Show marks transfer history of an assignment mapped to the main assessment and the re-assessment
+    Given the following "activities" exist:
+      | activity | name     | intro   | course | idnumber | section |
+      | assign   | Assign 1 | A1 desc | C1     | assign1  | 1       |
+    And the "mod_assign" "assign1" is mapped to "Coursework 4000 word written case studies"
+    And the "mod_assign" "assign1" is a re-assessment and mapped to "Coursework 4000 word written case studies"
+    And I am on the "Assign 1" "assign activity" page logged in as teacher1
+    When I navigate to "SITS Marks Transfer" in current page administration
+    Then I should see "Coursework 4000 word written case studies (Main assessment)"
+    And I should see "Coursework 4000 word written case studies (Re-assessment)"

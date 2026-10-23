@@ -77,3 +77,18 @@ Feature: Remove Moodle source for SITS assessment component
     And I click on the "Transfer marks" button for "72hr take-home examination (3000 words)"
     And I press "Confirm"
     And "Remove source" "button" should not be visible
+
+  @javascript
+  Scenario: Remove the main assessment source of an assignment also mapped to the re-assessment
+    Given the following config values are set as admin:
+      | reassessment_enabled | 1 | local_sitsgradepush |
+    And the "mod_assign" "assign1" is mapped to "72hr take-home examination (3000 words)"
+    And the "mod_assign" "assign1" is a re-assessment and mapped to "72hr take-home examination (3000 words)"
+    And I am on the "Course 1" course page logged in as teacher1
+    And I click on "More" "link" in the ".secondary-navigation" "css_element"
+    And I select "SITS Marks Transfer" from secondary navigation
+    And I click on the "Remove source" button for "72hr take-home examination (3000 words)"
+    And I click on "Confirm" "button" in the "Remove source" "dialogue"
+    And I should see "72hr take-home examination (3000 words)" is not mapped
+    When I click on the marks transfer types dropdown menu and select "Re-assessment"
+    Then I should see "Assign 1" is mapped to "72hr take-home examination (3000 words)"

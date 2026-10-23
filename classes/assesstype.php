@@ -63,6 +63,17 @@ class assesstype {
                 return;
             }
 
+            // Keep the assessment locked if it is still mapped, e.g. to the other mapping type.
+            if (
+                $action === self::ACTION_UNLOCK &&
+                $DB->record_exists(
+                    manager::TABLE_ASSESSMENT_MAPPING,
+                    ['sourcetype' => $mapping->sourcetype, 'sourceid' => $mapping->sourceid]
+                )
+            ) {
+                return;
+            }
+
             $assessment = assessmentfactory::get_assessment($mapping->sourcetype, $mapping->sourceid);
             $gradeitems = $assessment->get_grade_items();
             $gradeitem = is_array($gradeitems) && !empty($gradeitems) ? reset($gradeitems) : null;
