@@ -61,19 +61,13 @@ class renderer extends plugin_renderer_base {
         // Check if the user has the capability to see the submission log column.
         $showsublogcolumn = has_capability('local/sitsgradepush:showsubmissionlogcolumn', \context_course::instance($courseid));
 
-        // Check if the course is in the current academic year.
-        $iscurrentacademicyear = $this->manager->is_current_academic_year_activity($courseid);
+        // Marks transfer is allowed if any mapping is transferable.
+        $anytransferable = !empty(array_filter(array_column($assessmentdata['mappings'], 'transferable')));
 
         $mappingtables = [];
         $totalmarkscount = 0;
         $runningtasks = [];
         foreach ($assessmentdata['mappings'] as $mapping) {
-            // Remove current academic year restriction for re-assessment.
-            // A source can only be either normal or re-assessment, not both.
-            if ($mapping->reassessment == 1) {
-                $iscurrentacademicyear = true;
-            }
-
             $students = null;
             // Modify the timestamp format and add the label for the last push result.
             if (!empty($mapping->students)) {
@@ -97,12 +91,21 @@ class renderer extends plugin_renderer_base {
             $mappingtable = new \stdClass();
             $mappingtable->mappingid = $mapping->id;
             $mappingtable->markscount = $mapping->markscount ?? 0;
-            $mappingtable->tabletitle = $mapping->formattedname;
+            $mappingtable->tabletitle = get_string(
+                $mapping->reassessment ? 'label:reassessment' : 'label:mainassessment',
+                'local_sitsgradepush',
+                $mapping->formattedname
+            );
             $mappingtable->students = $students;
             $mappingtable->showsublogcolumn = $showsublogcolumn;
             $mappingtable->taskrunning = false;
             $mappingtable->taskprogress = 0;
             $mappingtable->warningmessage = $this->get_warning_message_for_history_page_table($mapping, $courseid);
+
+            // Show past course warning on the table if other mappings can still transfer marks.
+            if (!$mapping->transferable && $anytransferable) {
+                $mappingtable->warningmessage = get_string('error:pastcourse', 'local_sitsgradepush');
+            }
 
             // Check if there is a task running for the assessment mapping.
             if ($taskrunning = taskmanager::get_pending_task_in_queue($mapping->id)) {
@@ -125,7 +128,7 @@ class renderer extends plugin_renderer_base {
 
         // Render the table.
         return $this->output->render_from_template('local_sitsgradepush/marks_transfer_history_page', [
-            'currentacademicyear' => $iscurrentacademicyear,
+            'currentacademicyear' => $anytransferable,
             'module-delivery-tables' => $mappingtables,
             'transfer-all-button-label' => get_string('label:pushgrade', 'local_sitsgradepush'),
             'latest-transferred-text' => $this->get_latest_tranferred_text($assessmentdata['mappings']),

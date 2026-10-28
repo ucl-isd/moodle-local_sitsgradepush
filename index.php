@@ -128,8 +128,8 @@ if (!empty($content)) {
                 throw new \moodle_exception('error:mappingcoursemismatch', 'local_sitsgradepush');
             }
 
-            // Skip if there is no student in the mapping.
-            if (empty($mapping->students)) {
+            // Skip if there is no student in the mapping or marks transfer is not allowed.
+            if (empty($mapping->students) || !$mapping->transferable) {
                 continue;
             }
 
@@ -141,6 +141,10 @@ if (!empty($content)) {
 
             // Push grades for each student in the mapping.
             foreach ($mapping->students as $student) {
+                // Skip students who are in SITS for the other mapping type.
+                if ($student->wrongmappingtype) {
+                    continue;
+                }
                 $manager->push_grade_to_sits($mapping, $student->userid);
                 $manager->push_submission_log_to_sits($mapping, $student->userid);
             }

@@ -99,6 +99,12 @@ class ec extends extension {
                 }
                 $assessment->set_sits_mapping_id($mapping->id);
 
+                // Take over the student's overrides from the other mapping type to the same MAB.
+                // The override lookups below are by this mapping's ID, so without this an override applied through
+                // the other mapping is not found, and a second override would be saved with that override as its
+                // original backup.
+                extensionmanager::take_over_same_mab_overrides($mapping, $this->get_userid());
+
                 // Skip students with an active combined due date override on the mapped assessment.
                 // The combined due date is authoritative, so EC updates must be ignored for them.
                 // When the combined due date is disabled, a stale override is removed so EC can proceed.

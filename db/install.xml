@@ -26,7 +26,7 @@
       <INDEXES>
         <INDEX NAME="idx_courseid" UNIQUE="false" FIELDS="courseid"/>
         <INDEX NAME="idx_sid_stype" UNIQUE="false" FIELDS="sourceid, sourcetype"/>
-        <INDEX NAME="idx_sid_stype_cid" UNIQUE="true" FIELDS="sourceid, sourcetype, componentgradeid"/>
+        <INDEX NAME="idx_sid_stype_cid_re" UNIQUE="true" FIELDS="sourceid, sourcetype, componentgradeid, reassessment"/>
         <INDEX NAME="idx_userid" UNIQUE="false" FIELDS="userid"/>
       </INDEXES>
     </TABLE>
